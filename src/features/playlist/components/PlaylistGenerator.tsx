@@ -1,5 +1,3 @@
-"use client";
-
 export default function PlaylistGenerator() {
   return (
     <div className="space-y-4">
