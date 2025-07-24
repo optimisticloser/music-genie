@@ -4,14 +4,13 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { 
   Sparkles, 
   Play, 
   MoreHorizontal,
-  Clock,
-  Heart
+  Clock
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -53,8 +52,7 @@ const mockPlaylists: Playlist[] = [
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [user, setUser] = useState<any>(null);
-  const [profile, setProfile] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -75,7 +73,7 @@ export default function DashboardPage() {
           .eq("id", user.id)
           .single();
 
-        setProfile(profile);
+        // setProfile(profile); // This line was removed as per the edit hint
       } catch (error) {
         console.error("Error fetching user:", error);
         router.push("/login");
@@ -137,7 +135,7 @@ export default function DashboardPage() {
         {/* Welcome Back */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Bem-vindo de volta, {profile?.full_name || user.email}
+            Bem-vindo de volta, {user.email}
           </h2>
           <p className="text-gray-600">
             Suas playlists criadas e descobertas musicais

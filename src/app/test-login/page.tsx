@@ -1,13 +1,7 @@
 "use client";
 
 import { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { supabase } from '@/lib/supabase/client';
-
-interface AuthError {
-  message: string;
-}
 
 export default function TestLoginPage() {
   const [email, setEmail] = useState("sergiowpf@me.com");

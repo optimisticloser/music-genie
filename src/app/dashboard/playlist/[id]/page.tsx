@@ -1,19 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Button } from "@/components/ui/button";
-import { 
-  Play, 
-  Shuffle, 
-  MoreHorizontal,
-  Clock,
-  Heart,
-  Download
-} from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
-import { notFound } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Button } from '@/components/ui/button';
+import { Play, Shuffle, Heart, MoreHorizontal, Download, Clock } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
 interface PlaylistTrack {
   id: string;
