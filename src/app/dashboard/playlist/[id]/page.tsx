@@ -7,14 +7,15 @@ import { Button } from '@/components/ui/button';
 import { Play, Shuffle, Heart, MoreHorizontal, Download, Clock } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
-interface PlaylistTrack {
-  id: string;
-  title: string;
-  artist: string;
-  album: string;
-  duration: string;
-  artwork?: string;
-}
+// Interface for future use when implementing real track data
+// interface PlaylistTrack {
+//   id: string;
+//   title: string;
+//   artist: string;
+//   album: string;
+//   duration: string;
+//   artwork?: string;
+// }
 
 // Interface for future use when implementing real playlist data
 // interface Playlist {
