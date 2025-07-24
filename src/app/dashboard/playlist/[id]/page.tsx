@@ -13,11 +13,30 @@ import {
   Download
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import { notFound } from 'next/navigation';
+
+interface PlaylistTrack {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  duration: string;
+  artwork?: string;
+}
+
+interface Playlist {
+  id: string;
+  title: string;
+  creator: string;
+  description: string;
+  artwork?: string;
+  tracks: PlaylistTrack[];
+}
 
 export default function PlaylistPage() {
   const router = useRouter();
   const params = useParams();
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

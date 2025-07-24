@@ -9,7 +9,6 @@ import {
   Search,
   Play,
   MoreHorizontal,
-  Clock
 } from "lucide-react";
 
 export default function SearchPage() {

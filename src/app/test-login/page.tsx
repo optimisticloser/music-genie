@@ -1,18 +1,19 @@
 "use client";
 
-import { useState } from "react";
-import { createBrowserClient } from "@supabase/ssr";
+import { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { supabase } from '@/lib/supabase/client';
+
+interface AuthError {
+  message: string;
+}
 
 export default function TestLoginPage() {
   const [email, setEmail] = useState("sergiowpf@me.com");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
-
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null);
 
   const handleLogin = async () => {
     setLoading(true);

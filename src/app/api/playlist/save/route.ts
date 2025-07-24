@@ -1,6 +1,11 @@
 import { NextResponse } from "next/server";
 import createClient from "@/lib/supabase/server";
 
+interface Song {
+  title?: string;
+  artist?: string;
+}
+
 export async function POST(req: Request) {
   try {
     const supabase = await createClient();
@@ -53,7 +58,7 @@ export async function POST(req: Request) {
 
     // Save tracks if available
     if (playlist.songs && playlist.songs.length > 0) {
-      const tracks = playlist.songs.map((song: any, index: number) => ({
+      const tracks = playlist.songs.map((song: Song, index: number) => ({
         playlist_id: savedPlaylist.id,
         title: song.title || "Unknown",
         artist: song.artist || "Unknown",

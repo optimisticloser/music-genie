@@ -4,15 +4,52 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import Link from "next/link";
 import { 
   Sparkles, 
   Play, 
   MoreHorizontal,
-  Clock
+  Clock,
+  Heart
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+
+interface Playlist {
+  id: string;
+  name: string;
+  creator: string;
+  gradient: string;
+  trackCount: number;
+  duration: string;
+}
+
+const mockPlaylists: Playlist[] = [
+  {
+    id: '1',
+    name: 'Good Vibes Mix',
+    creator: 'Music Genie AI',
+    gradient: 'from-blue-400 to-purple-600',
+    trackCount: 45,
+    duration: '2h 34m',
+  },
+  {
+    id: '2',
+    name: 'Chill Evening',
+    creator: 'Music Genie AI',
+    gradient: 'from-green-400 to-blue-600',
+    trackCount: 32,
+    duration: '1h 48m',
+  },
+  {
+    id: '3',
+    name: 'Workout Beats',
+    creator: 'Music Genie AI',
+    gradient: 'from-red-400 to-orange-600',
+    trackCount: 28,
+    duration: '1h 12m',
+  },
+];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -64,50 +101,6 @@ export default function DashboardPage() {
   if (!user) {
     return null;
   }
-
-  // Mock playlists data - will be replaced with real data later
-  const mockPlaylists = [
-    {
-      id: "1",
-      name: "Jazzercise: The Ad Rhythm",
-      creator: "Sergio Fernandes",
-      gradient: "from-gray-400 to-gray-700",
-      trackCount: 12,
-      duration: "47 min"
-    },
-    {
-      id: "2",
-      name: "Quiet Lens: Jazz for Reflection",
-      creator: "Music Genie AI",
-      gradient: "from-amber-200 to-orange-400",
-      trackCount: 15,
-      duration: "52 min"
-    },
-    {
-      id: "3",
-      name: "Severance Beats: Jazz for the Relentless",
-      creator: "Music Genie AI",
-      gradient: "from-green-300 to-green-600",
-      trackCount: 18,
-      duration: "1h 3min"
-    },
-    {
-      id: "4",
-      name: "Jazzed Up Nights",
-      creator: "Music Genie AI",
-      gradient: "from-yellow-300 to-amber-500",
-      trackCount: 10,
-      duration: "38 min"
-    },
-    {
-      id: "5",
-      name: "Smooth Operator Sessions",
-      creator: "Music Genie AI",
-      gradient: "from-purple-400 to-purple-700",
-      trackCount: 14,
-      duration: "51 min"
-    }
-  ];
 
   return (
     <ScrollArea className="h-full">

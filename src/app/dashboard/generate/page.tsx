@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { PageHeader } from '@/components/shared/PageHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Music, Loader2, CheckCircle, AlertCircle } from 'lucide-react';

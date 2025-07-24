@@ -70,7 +70,10 @@ export interface PlaylistCoverArtGenerationInput {
 }
 
 export interface PlaylistCoverArtGenerationOutput {
-  cover_art?: any; // Image type from SDK
+  cover_art?: {
+    url?: string;
+    description?: string;
+  };
   design_description?: string;
 }
 
