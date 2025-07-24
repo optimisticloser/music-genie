@@ -1,14 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that require authentication
 const PROTECTED_ROUTES = [
   "/dashboard",
   "/dashboard/history",
   "/dashboard/settings",
 ];
 
-// Routes that should redirect authenticated users
 const AUTH_ROUTES = [
   "/login",
   "/signup",
@@ -31,40 +29,36 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({
-            request,
+          cookiesToSet.forEach(({ name, value, options }) => {
+            request.cookies.set(name, value);
+            response = NextResponse.next({
+              request: {
+                headers: request.headers,
+              },
+            });
+            response.cookies.set(name, value, options);
           });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
         },
       },
     }
   );
 
-  // Refresh session if expired
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  const path = request.nextUrl.pathname;
-
-  // Redirect unauthenticated users to login
-  if (!user && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/login";
-    url.searchParams.set("next", path);
-    return NextResponse.redirect(url);
+  // Don't interfere with auth callback
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return response;
   }
 
-  // Redirect authenticated users away from auth pages
+  const { data: { user } } = await supabase.auth.getUser();
+  const path = request.nextUrl.pathname;
+
+  if (!user && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
+    const redirectUrl = new URL('/login', request.url);
+    return NextResponse.redirect(redirectUrl);
+  }
+
   if (user && AUTH_ROUTES.some(route => path.startsWith(route))) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+    const redirectUrl = new URL('/dashboard', request.url);
+    return NextResponse.redirect(redirectUrl);
   }
 
   return response;

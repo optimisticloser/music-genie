@@ -1,5 +1,13 @@
-import { ReactNode } from "react";
+import { AppLayout } from "@/components/layout/AppLayout";
 
-export default function DashboardLayout({ children }: { children: ReactNode }) {
-  return <main className="container mx-auto p-6">{children}</main>;
+export default function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <AppLayout>
+      {children}
+    </AppLayout>
+  );
 } 
