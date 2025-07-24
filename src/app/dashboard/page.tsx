@@ -67,13 +67,7 @@ export default function DashboardPage() {
 
         setUser(user);
 
-        const { data: profile } = await supabase
-          .from("users")
-          .select("*")
-          .eq("id", user.id)
-          .single();
-
-        // setProfile(profile); // This line was removed as per the edit hint
+        // Profile data can be fetched here if needed in the future
       } catch (error) {
         console.error("Error fetching user:", error);
         router.push("/login");

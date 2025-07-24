@@ -16,14 +16,15 @@ interface PlaylistTrack {
   artwork?: string;
 }
 
-interface Playlist {
-  id: string;
-  title: string;
-  creator: string;
-  description: string;
-  artwork?: string;
-  tracks: PlaylistTrack[];
-}
+// Interface for future use when implementing real playlist data
+// interface Playlist {
+//   id: string;
+//   title: string;
+//   creator: string;
+//   description: string;
+//   artwork?: string;
+//   tracks: PlaylistTrack[];
+// }
 
 export default function PlaylistPage() {
   const router = useRouter();

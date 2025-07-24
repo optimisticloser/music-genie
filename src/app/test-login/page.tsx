@@ -39,7 +39,7 @@ export default function TestLoginPage() {
     setResult(null);
 
     try {
-      const { data: { session }, error } = await supabase.auth.getSession();
+      const { error } = await supabase.auth.getSession();
       if (error) {
         setResult({ error: error.message });
       } else {
