@@ -25,15 +25,16 @@ export default function TestLoginPage() {
         password,
       });
 
-      setResult({ data, error });
-      
-      if (!error && data.user) {
+      if (error) {
+        setResult({ error: error.message });
+      } else if (data.user) {
+        setResult({ success: true });
         console.log("✅ Login successful:", data.user.email);
         // Redirect to dashboard after successful login
         window.location.href = "/dashboard";
       }
     } catch (err) {
-      setResult({ error: err });
+      setResult({ error: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
@@ -45,9 +46,13 @@ export default function TestLoginPage() {
 
     try {
       const { data: { session }, error } = await supabase.auth.getSession();
-      setResult({ session, error });
+      if (error) {
+        setResult({ error: error.message });
+      } else {
+        setResult({ success: true });
+      }
     } catch (err) {
-      setResult({ error: err });
+      setResult({ error: err instanceof Error ? err.message : 'Unknown error' });
     } finally {
       setLoading(false);
     }
