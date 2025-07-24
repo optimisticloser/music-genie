@@ -2,12 +2,13 @@
 
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { Suspense } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle, ArrowLeft, RefreshCw, Mail } from "lucide-react";
 
-export default function AuthCodeErrorPage() {
+function AuthCodeErrorContent() {
   const searchParams = useSearchParams();
   const error = searchParams.get("error");
   const description = searchParams.get("description");
@@ -28,63 +29,86 @@ export default function AuthCodeErrorPage() {
   };
 
   return (
+    <Card>
+      <CardHeader className="text-center">
+        <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
+          <AlertCircle className="h-6 w-6 text-red-600" />
+        </div>
+        <CardTitle className="text-2xl font-bold text-gray-900">
+          Erro na Confirmação
+        </CardTitle>
+        <CardDescription className="text-gray-600">
+          Houve um problema ao confirmar sua conta
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <Alert>
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>
+            {getErrorMessage()}
+          </AlertDescription>
+        </Alert>
+
+        <div className="space-y-4">
+          <Button asChild className="w-full">
+            <Link href="/login">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Voltar para o Login
+            </Link>
+          </Button>
+
+          <Button variant="outline" asChild className="w-full">
+            <Link href="/signup">
+              <RefreshCw className="mr-2 h-4 w-4" />
+              Criar Nova Conta
+            </Link>
+          </Button>
+
+          {error === "no_code" && (
+            <Button variant="outline" asChild className="w-full">
+              <Link href="/forgot-password">
+                <Mail className="mr-2 h-4 w-4" />
+                Reenviar Email de Confirmação
+              </Link>
+            </Button>
+          )}
+        </div>
+
+        <div className="text-center text-sm text-gray-500">
+          <p>Se o problema persistir, entre em contato conosco.</p>
+          {error && (
+            <p className="mt-2 text-xs">
+              Código do erro: {error}
+            </p>
+          )}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function LoadingFallback() {
+  return (
+    <Card>
+      <CardHeader className="text-center">
+        <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-4">
+          <div className="w-6 h-6 border-2 border-gray-300 border-t-gray-600 rounded-full animate-spin"></div>
+        </div>
+        <CardTitle className="text-2xl font-bold text-gray-900">
+          Carregando...
+        </CardTitle>
+      </CardHeader>
+    </Card>
+  );
+}
+
+export default function AuthCodeErrorPage() {
+  return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4">
-              <AlertCircle className="h-6 w-6 text-red-600" />
-            </div>
-            <CardTitle className="text-2xl font-bold text-gray-900">
-              Erro na Confirmação
-            </CardTitle>
-            <CardDescription className="text-gray-600">
-              Houve um problema ao confirmar sua conta
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                {getErrorMessage()}
-              </AlertDescription>
-            </Alert>
-
-            <div className="space-y-4">
-              <Button asChild className="w-full">
-                <Link href="/login">
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  Voltar para o Login
-                </Link>
-              </Button>
-
-              <Button variant="outline" asChild className="w-full">
-                <Link href="/signup">
-                  <RefreshCw className="mr-2 h-4 w-4" />
-                  Criar Nova Conta
-                </Link>
-              </Button>
-
-              {error === "no_code" && (
-                <Button variant="outline" asChild className="w-full">
-                  <Link href="/forgot-password">
-                    <Mail className="mr-2 h-4 w-4" />
-                    Reenviar Email de Confirmação
-                  </Link>
-                </Button>
-              )}
-            </div>
-
-            <div className="text-center text-sm text-gray-500">
-              <p>Se o problema persistir, entre em contato conosco.</p>
-              {error && (
-                <p className="mt-2 text-xs">
-                  Código do erro: {error}
-                </p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        <Suspense fallback={<LoadingFallback />}>
+          <AuthCodeErrorContent />
+        </Suspense>
       </div>
     </div>
   );
