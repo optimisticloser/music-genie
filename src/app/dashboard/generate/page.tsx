@@ -141,12 +141,16 @@ export default function GeneratePage() {
 
     setIsGeneratingPrompt(true);
     try {
+      // Separar category_selections e custom_text
+      const categorySelections = selectedTags.map(tag => `${tag.category}: ${tag.label}`);
+      const customText = promptParts.join(' + ');
+
       const response = await fetch('/api/playlist/prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category_selections: [],
-          custom_text: allSelections  // Enviar TUDO concatenado como custom_text
+          category_selections: categorySelections,
+          custom_text: customText
         })
       });
 
