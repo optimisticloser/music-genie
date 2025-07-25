@@ -6,10 +6,7 @@ import {
   Music, 
   Heart, 
   Zap, 
-  Users, 
-  Play,
-  ArrowRight,
-  Check
+  ArrowRight
 } from "lucide-react";
 
 export default function LandingPage() {
@@ -157,8 +154,8 @@ export default function LandingPage() {
                 Descreva
               </h3>
               <p className="text-gray-600">
-                Diga o que você quer ouvir: "músicas para estudar", 
-                "rock dos anos 80", "jazz relaxante"...
+                Diga o que você quer ouvir: &quot;músicas para estudar&quot;, 
+                &quot;rock dos anos 80&quot;, &quot;jazz relaxante&quot;...
               </p>
             </div>
 
