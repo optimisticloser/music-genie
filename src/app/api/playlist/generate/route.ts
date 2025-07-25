@@ -55,21 +55,26 @@ export async function POST(req: NextRequest) {
 
     // If user has Spotify connected, search for tracks
     const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
+    console.log("🎵 Spotify connected:", isSpotifyConnected);
     
     if (isSpotifyConnected && output.songs && output.songs.length > 0) {
+      console.log("🎵 Enriching songs with Spotify data...");
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       
       if (accessToken) {
         const enrichedSongs = [];
+        let foundCount = 0;
         
         for (const song of output.songs) {
           if (song.title && song.artist) {
             try {
               const searchQuery = `${song.title} ${song.artist}`;
+              console.log(`🎵 Searching for: ${searchQuery}`);
               const tracks = await searchTracks(searchQuery, accessToken, 1);
               
               if (tracks.length > 0) {
                 const track = tracks[0];
+                console.log(`🎵 Found: ${track.name} by ${track.artists[0].name}`);
                 enrichedSongs.push({
                   ...song,
                   spotify_id: track.id,
@@ -80,14 +85,16 @@ export async function POST(req: NextRequest) {
                   external_url: track.external_urls.spotify,
                   found_on_spotify: true
                 });
+                foundCount++;
               } else {
+                console.log(`🎵 Not found: ${song.title} by ${song.artist}`);
                 enrichedSongs.push({
                   ...song,
                   found_on_spotify: false
                 });
               }
             } catch (error) {
-              console.error(`Error searching for track ${song.title}:`, error);
+              console.error(`❌ Error searching for track ${song.title}:`, error);
               enrichedSongs.push({
                 ...song,
                 found_on_spotify: false
@@ -96,8 +103,13 @@ export async function POST(req: NextRequest) {
           }
         }
         
+        console.log(`🎵 Spotify enrichment complete: ${foundCount}/${output.songs.length} tracks found`);
         output.songs = enrichedSongs;
+      } else {
+        console.log("🎵 No access token available for Spotify search");
       }
+    } else {
+      console.log("🎵 Spotify not connected or no songs to enrich");
     }
 
     return NextResponse.json({ 

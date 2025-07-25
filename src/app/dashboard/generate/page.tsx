@@ -346,6 +346,8 @@ export default function GeneratePage() {
     setError(null);
 
     try {
+      console.log('💾 Saving playlist to database and Spotify...');
+      
       const response = await fetch('/api/playlist/save', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -360,9 +362,19 @@ export default function GeneratePage() {
       }
 
       const { playlist, spotify_playlist_url } = await response.json();
+      console.log('💾 Playlist saved successfully:', playlist.id);
+      console.log('🎵 Spotify playlist URL:', spotify_playlist_url);
+      
       setSavedPlaylistId(playlist.id);
       setSpotifyPlaylistUrl(spotify_playlist_url);
       setError(null);
+      
+      // Show success message
+      if (spotify_playlist_url) {
+        alert(`Playlist salva com sucesso!\n\nSpotify: ${spotify_playlist_url}`);
+      } else {
+        alert('Playlist salva no banco de dados, mas não foi possível criar no Spotify.');
+      }
       
     } catch (err) {
       console.error('Save error:', err);

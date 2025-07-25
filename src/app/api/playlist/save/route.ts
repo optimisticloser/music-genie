@@ -53,10 +53,18 @@ export async function POST(req: NextRequest) {
 
     // Create playlist on Spotify if connected
     if (isSpotifyConnected && playlist.songs && playlist.songs.length > 0) {
+      console.log("🎵 Creating Spotify playlist for user:", user.id);
+      console.log("🎵 Playlist name:", playlist.name);
+      console.log("🎵 Number of songs:", playlist.songs.length);
+      
       try {
         const accessToken = await SpotifyService.getValidAccessToken(user.id);
+        console.log("🎵 Access token obtained:", !!accessToken);
+        
         if (accessToken) {
           const spotifyUser = await getCurrentUser(accessToken);
+          console.log("🎵 Spotify user:", spotifyUser.display_name);
+          
           const spotifyPlaylist = await createPlaylist(
             spotifyUser.id,
             playlist.name,
@@ -65,20 +73,35 @@ export async function POST(req: NextRequest) {
             false // private playlist
           );
           
+          console.log("🎵 Spotify playlist created:", spotifyPlaylist.id);
+          console.log("🎵 Spotify playlist URL:", spotifyPlaylist.external_url);
+          
           spotifyPlaylistId = spotifyPlaylist.id;
           spotifyPlaylistUrl = spotifyPlaylist.external_url;
 
           // Add tracks to Spotify playlist
           const tracksWithSpotifyId = playlist.songs.filter((song: Song) => song.spotify_id);
+          console.log("🎵 Tracks with Spotify ID:", tracksWithSpotifyId.length);
+          
           if (tracksWithSpotifyId.length > 0) {
             const trackUris = tracksWithSpotifyId.map((song: Song) => `spotify:track:${song.spotify_id}`);
+            console.log("🎵 Adding tracks to Spotify playlist:", trackUris.length);
             await addTracksToPlaylist(spotifyPlaylistId, trackUris, accessToken);
+            console.log("🎵 Tracks added successfully to Spotify");
+          } else {
+            console.log("🎵 No tracks with Spotify ID found");
           }
+        } else {
+          console.log("🎵 No access token available");
         }
       } catch (error) {
-        console.error("Error creating Spotify playlist:", error);
+        console.error("❌ Error creating Spotify playlist:", error);
         // Continue without Spotify integration
       }
+    } else {
+      console.log("🎵 Spotify not connected or no songs available");
+      console.log("🎵 Spotify connected:", isSpotifyConnected);
+      console.log("🎵 Songs available:", playlist.songs?.length || 0);
     }
 
     // Calculate total duration
