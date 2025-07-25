@@ -25,10 +25,12 @@ export default function LoginPage() {
       
       if (result?.error) {
         setError(result.error);
+        setIsLoading(false);
       }
-    } catch {
+      // Se não há erro, o signIn já fez redirect, então não precisamos fazer nada
+    } catch (error) {
+      console.error('Login error:', error);
       setError("Erro inesperado. Tente novamente.");
-    } finally {
       setIsLoading(false);
     }
   }

@@ -5,6 +5,11 @@ const PROTECTED_ROUTES = [
   "/dashboard",
   "/dashboard/history",
   "/dashboard/settings",
+  "/dashboard/discover",
+  "/dashboard/radio",
+  "/dashboard/generate",
+  "/dashboard/search",
+  "/dashboard/playlist",
 ];
 
 const AUTH_ROUTES = [
