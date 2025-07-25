@@ -479,7 +479,7 @@ export default function GeneratePage() {
               <div className="text-center py-12">
                 <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-2xl font-medium text-gray-800 mb-2">
-                  Let's build your perfect playlist
+                  Let&apos;s build your perfect playlist
                 </h2>
                 <p className="text-gray-600 mb-8">
                   Start by choosing one of the options below, or type what you have in mind
@@ -618,7 +618,6 @@ export default function GeneratePage() {
                                 src={song.album_art_url} 
                                 alt={`${song.title} album art`}
                                 className="w-10 h-10 rounded object-cover"
-                                // eslint-disable-next-line @next/next/no-img-element
                               />
                             )}
                             <div className="flex-1">
