@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Play, Pause, Heart, MoreHorizontal, Download, Clock, Music, ExternalLink } from 'lucide-react';
+import { Play, Pause, Heart, MoreHorizontal, Clock, Music, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 interface PlaylistTrack {
@@ -37,7 +37,7 @@ interface Playlist {
 export default function PlaylistPage() {
   const router = useRouter();
   const params = useParams();
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
