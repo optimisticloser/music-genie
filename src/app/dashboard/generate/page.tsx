@@ -361,9 +361,10 @@ export default function GeneratePage() {
         throw new Error('Failed to save playlist');
       }
 
-      const { playlist, spotify_playlist_url } = await response.json();
+      const { playlist, spotify_playlist_url, debug } = await response.json();
       console.log('💾 Playlist saved successfully:', playlist.id);
       console.log('🎵 Spotify playlist URL:', spotify_playlist_url);
+      console.log('🔍 Debug info:', debug);
       
       setSavedPlaylistId(playlist.id);
       setSpotifyPlaylistUrl(spotify_playlist_url);

@@ -164,7 +164,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ 
       playlist: savedPlaylist,
       spotify_playlist_url: spotifyPlaylistUrl,
-      message: "Playlist saved successfully" 
+      message: "Playlist saved successfully",
+      debug: {
+        spotify_connected: isSpotifyConnected,
+        songs_count: playlist.songs?.length || 0,
+        spotify_songs_count: playlist.songs?.filter((s: Song) => s.spotify_id).length || 0,
+        spotify_playlist_created: !!spotifyPlaylistUrl
+      }
     });
 
   } catch (error) {
