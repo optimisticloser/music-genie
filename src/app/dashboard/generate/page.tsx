@@ -145,13 +145,23 @@ export default function GeneratePage() {
       const categorySelections = selectedTags.map(tag => `${tag.category}: ${tag.label}`);
       const customText = promptParts.join(' + ');
 
+      // Debug logs
+      console.log('🔍 DEBUG - selectedTags:', selectedTags);
+      console.log('🔍 DEBUG - promptParts:', promptParts);
+      console.log('🔍 DEBUG - categorySelections:', categorySelections);
+      console.log('🔍 DEBUG - customText:', customText);
+
+      const requestBody = {
+        category_selections: categorySelections,
+        custom_text: customText
+      };
+
+      console.log('🔍 DEBUG - Request body:', requestBody);
+
       const response = await fetch('/api/playlist/prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          category_selections: categorySelections,
-          custom_text: customText
-        })
+        body: JSON.stringify(requestBody)
       });
 
       if (!response.ok) throw new Error('Failed to generate prompt');
