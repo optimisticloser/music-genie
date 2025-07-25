@@ -48,6 +48,7 @@ export default function PlaylistPage() {
   const [isAddedToSpotify, setIsAddedToSpotify] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
+  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -211,6 +212,42 @@ export default function PlaylistPage() {
     }
   };
 
+  const handleUpdateImages = async () => {
+    if (!playlist || isUpdatingImages) return;
+
+    try {
+      setIsUpdatingImages(true);
+      console.log('🔄 Updating images for playlist:', playlist.id);
+
+      const response = await fetch(`/api/playlists/${playlist.id}/update-images`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        console.log('✅ Images updated:', data);
+        
+        // Reload playlist to show updated images
+        await loadPlaylist();
+        
+        // Show success message
+        alert(`✅ ${data.message}`);
+      } else {
+        const error = await response.json();
+        console.error('Failed to update images:', error);
+        alert(`❌ Erro ao atualizar imagens: ${error.error}`);
+      }
+    } catch (error) {
+      console.error('Error updating images:', error);
+      alert('❌ Erro ao atualizar imagens');
+    } finally {
+      setIsUpdatingImages(false);
+    }
+  };
+
   if (loading || loadingPlaylist) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -322,7 +359,7 @@ export default function PlaylistPage() {
 
         {/* Spotify Action Button */}
         <div className="px-4 md:px-8 py-6 bg-white border-b border-gray-100">
-          <div className="flex justify-center">
+          <div className="flex justify-center gap-4 flex-wrap">
             {isAddedToSpotify ? (
               <Button 
                 size="lg" 
@@ -342,6 +379,29 @@ export default function PlaylistPage() {
                 Adicionar ao Spotify
               </Button>
             )}
+            
+            {/* Update Images Button */}
+            <Button 
+              variant="outline"
+              size="lg" 
+              className="border-blue-500 text-blue-600 hover:bg-blue-50 px-6 md:px-8 py-4 rounded-full font-semibold text-base flex items-center gap-3"
+              onClick={handleUpdateImages}
+              disabled={isUpdatingImages}
+            >
+              {isUpdatingImages ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                  Atualizando...
+                </>
+              ) : (
+                <>
+                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">🖼️</span>
+                  </div>
+                  Atualizar Imagens
+                </>
+              )}
+            </Button>
           </div>
         </div>
 
