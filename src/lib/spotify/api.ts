@@ -127,24 +127,45 @@ export async function createPlaylist(
   accessToken: string,
   isPublic: boolean = false
 ): Promise<{ id: string; uri: string; external_url: string }> {
+  // Sanitize inputs
+  const sanitizedName = name.substring(0, 100); // Spotify limit is 100 chars
+  const sanitizedDescription = description.substring(0, 300); // Spotify limit is 300 chars
+  
+  console.log("🎵 Creating Spotify playlist with:");
+  console.log("🎵 User ID:", userId);
+  console.log("🎵 Name:", sanitizedName);
+  console.log("🎵 Description:", sanitizedDescription);
+  console.log("🎵 Public:", isPublic);
+  
+  const requestBody = {
+    name: sanitizedName,
+    description: sanitizedDescription,
+    public: isPublic
+  };
+  
+  console.log("🎵 Request body:", JSON.stringify(requestBody));
+  
   const response = await fetch(`${SPOTIFY_API_BASE}/users/${userId}/playlists`, {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${accessToken}`,
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({
-      name,
-      description,
-      public: isPublic
-    })
+    body: JSON.stringify(requestBody)
   });
 
+  console.log("🎵 Spotify API response status:", response.status);
+  console.log("🎵 Spotify API response status text:", response.statusText);
+
   if (!response.ok) {
-    throw new Error(`Failed to create playlist: ${response.statusText}`);
+    const errorText = await response.text();
+    console.error("🎵 Spotify API error response:", errorText);
+    throw new Error(`Failed to create playlist: ${response.statusText} - ${errorText}`);
   }
 
   const playlist = await response.json();
+  console.log("🎵 Spotify playlist created successfully:", playlist.id);
+  
   return {
     id: playlist.id,
     uri: playlist.uri,
