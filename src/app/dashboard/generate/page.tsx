@@ -85,7 +85,12 @@ export default function GeneratePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category_selections: [],
+          category_selections: [
+            { category: "Style", selection: parts[0] || "" },
+            { category: "Mood", selection: parts[1] || "" },
+            { category: "Activity", selection: parts[2] || "" },
+            { category: "Additional", selection: parts.slice(3).join(' ') || "" }
+          ].filter(item => item.selection.trim() !== ""),
           custom_text: parts.join(' ')
         })
       });
