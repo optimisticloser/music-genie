@@ -3,14 +3,15 @@ import { workflowAI } from "./client";
 // === Playlist Prompt Generation ===
 export interface PlaylistPromptGenerationInput {
   category_selections?: {
-    categories?: string[];
-    selections?: string[];
-  };
+    category?: string;
+    selection?: string;
+  }[];
   custom_text?: string;
 }
 
 export interface PlaylistPromptGenerationOutput {
   playlist_prompt?: string;
+  prompt_suggestions?: string[];
 }
 
 export const playlistPromptAgent = workflowAI.agent<
@@ -18,8 +19,8 @@ export const playlistPromptAgent = workflowAI.agent<
   PlaylistPromptGenerationOutput
 >({
   id: "playlist-prompt-generation",
-  schemaId: 1,
-  version: "dev",
+  schemaId: 3,
+  version: "5.1",
   useCache: "auto",
 });
 
