@@ -3,7 +3,7 @@ import createClient from "@/lib/supabase/server";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const supabase = await createClient();
@@ -13,7 +13,8 @@ export async function GET(
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const playlistId = params.id;
+    const resolvedParams = await params;
+    const playlistId = resolvedParams.id;
 
     // Get playlist details
     const { data: playlist, error: playlistError } = await supabase

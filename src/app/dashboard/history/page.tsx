@@ -82,7 +82,7 @@ export default function HistoryPage() {
     }
 
     getUser();
-  }, [router]);
+  }, [router]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPlaylists = useCallback(async (page: number = pagination.page) => {
     try {

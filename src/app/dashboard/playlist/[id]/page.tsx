@@ -64,7 +64,7 @@ export default function PlaylistPage() {
     }
 
     getUser();
-  }, [router, params.id]);
+  }, [router, params.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadPlaylist = useCallback(async () => {
     try {
