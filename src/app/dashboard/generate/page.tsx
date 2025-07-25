@@ -1,15 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Music, Loader2, CheckCircle, AlertCircle } from 'lucide-react';
-
-interface Tag {
-  id: string;
-  label: string;
-  category: string;
-}
+import { Music, Loader2, CheckCircle, AlertCircle, X } from 'lucide-react';
+import { SuggestionCarousel } from '@/components/shared/SuggestionCarousel';
 
 interface GeneratedPlaylist {
   name?: string;
@@ -33,126 +28,99 @@ interface GeneratedPlaylist {
   }[];
 }
 
-const TAG_CATEGORIES = {
-  genre: [
-    { id: 'indie-folk', label: 'Indie Folk', category: 'genre' },
-    { id: 'mellow', label: 'Mellow', category: 'genre' },
-    { id: 'pop', label: 'Pop', category: 'genre' },
-    { id: 'rock', label: 'Rock', category: 'genre' },
-    { id: 'hip-hop-rap', label: 'Hip-Hop/Rap', category: 'genre' },
-    { id: 'electronic', label: 'Electronic', category: 'genre' },
-    { id: 'classic-rock', label: 'Classic Rock', category: 'genre' },
-    { id: 'alternative-rock', label: 'Alternative Rock', category: 'genre' },
-    { id: 'indie', label: 'Indie', category: 'genre' },
-  ],
-  mood: [
-    { id: 'chill', label: 'Chill', category: 'mood' },
-    { id: 'energetic', label: 'Energetic', category: 'mood' },
-    { id: 'melancholic', label: 'Melancholic', category: 'mood' },
-    { id: 'upbeat', label: 'Upbeat', category: 'mood' },
-    { id: 'romantic', label: 'Romantic', category: 'mood' },
-    { id: 'nostalgic', label: 'Nostalgic', category: 'mood' },
-  ],
-  era: [
-    { id: '2010s', label: '2010s', category: 'era' },
-    { id: '2000s', label: '2000s', category: 'era' },
-    { id: '90s', label: '90s', category: 'era' },
-    { id: '80s', label: '80s', category: 'era' },
-    { id: '70s', label: '70s', category: 'era' },
-  ],
-  occasion: [
-    { id: 'road-trip', label: 'Road Trip', category: 'occasion' },
-    { id: 'workout', label: 'Workout', category: 'occasion' },
-    { id: 'study', label: 'Study', category: 'occasion' },
-    { id: 'party', label: 'Party', category: 'occasion' },
-    { id: 'relaxing', label: 'Relaxing', category: 'occasion' },
-    { id: 'cooking', label: 'Cooking', category: 'occasion' },
-  ],
-  theme: [
-    { id: 'movies-soundtrack', label: 'Movies Soundtrack', category: 'theme' },
-    { id: 'adventure', label: 'Adventure', category: 'theme' },
-    { id: 'summer-vibes', label: 'Summer Vibes', category: 'theme' },
-    { id: 'rainy-day', label: 'Rainy Day', category: 'theme' },
-    { id: 'late-night', label: 'Late Night', category: 'theme' },
-  ]
-};
-
 export default function GeneratePage() {
-  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
-  const [customDescription, setCustomDescription] = useState('');
+  // Estados principais
+  const [mode, setMode] = useState<'initial' | 'building'>('initial');
+  const [promptParts, setPromptParts] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
+  const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [generatedPlaylist, setGeneratedPlaylist] = useState<GeneratedPlaylist | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generationStep, setGenerationStep] = useState<'idle' | 'prompt' | 'generating' | 'complete' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string | null>(null);
 
-  const toggleTag = (tag: Tag) => {
-    setSelectedTags(prev => {
-      const exists = prev.find(t => t.id === tag.id);
-      if (exists) {
-        return prev.filter(t => t.id !== tag.id);
-      } else {
-        return [...prev, tag];
-      }
-    });
+  // Carrega sugestões iniciais
+  useEffect(() => {
+    loadSuggestions('initial');
+  }, []);
+
+  // Carrega sugestões baseadas no modo
+  const loadSuggestions = async (requestMode: 'initial' | 'enhancement', currentPrompt?: string) => {
+    setIsLoadingSuggestions(true);
+    try {
+      const response = await fetch('/api/prompt-suggestions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          current_prompt: currentPrompt || promptParts.join(' '),
+          mode: requestMode
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to load suggestions');
+
+      const { suggestions: newSuggestions } = await response.json();
+      setSuggestions(newSuggestions);
+    } catch (error) {
+      console.error('Error loading suggestions:', error);
+      setSuggestions([]);
+    } finally {
+      setIsLoadingSuggestions(false);
+    }
   };
 
-  const isTagSelected = (tagId: string) => {
-    return selectedTags.some(tag => tag.id === tagId);
+  // Adiciona sugestão ao prompt
+  const handleAddSuggestion = (suggestion: string) => {
+    if (mode === 'initial') {
+      // Primeira seleção - prompt completo
+      setPromptParts([suggestion]);
+      setMode('building');
+      loadSuggestions('enhancement', suggestion);
+    } else {
+      // Adições subsequentes - complementos
+      const newPromptParts = [...promptParts, suggestion];
+      setPromptParts(newPromptParts);
+      loadSuggestions('enhancement', newPromptParts.join(' '));
+    }
   };
 
-  const toggleCategory = (category: string) => {
-    setActiveCategory(prev => prev === category ? null : category);
+  // Adiciona input customizado
+  const handleAddCustomInput = () => {
+    if (!customInput.trim()) return;
+
+    if (mode === 'initial') {
+      setPromptParts([customInput.trim()]);
+      setMode('building');
+      loadSuggestions('enhancement', customInput.trim());
+    } else {
+      const newPromptParts = [...promptParts, customInput.trim()];
+      setPromptParts(newPromptParts);
+      loadSuggestions('enhancement', newPromptParts.join(' '));
+    }
+
+    setCustomInput('');
   };
 
-  const generatePromptPreview = () => {
-    if (selectedTags.length === 0 && !customDescription.trim()) {
-      return 'Describe your perfect playlist...';
-    }
+  // Remove parte do prompt
+  const handleRemovePromptPart = (index: number) => {
+    const newPromptParts = promptParts.filter((_, i) => i !== index);
+    setPromptParts(newPromptParts);
 
-    const genres = selectedTags.filter(t => t.category === 'genre').map(t => t.label.toLowerCase());
-    const moods = selectedTags.filter(t => t.category === 'mood').map(t => t.label.toLowerCase());
-    const eras = selectedTags.filter(t => t.category === 'era').map(t => t.label);
-    const occasions = selectedTags.filter(t => t.category === 'occasion').map(t => t.label);
-    const themes = selectedTags.filter(t => t.category === 'theme').map(t => t.label);
-
-    let prompt = '';
-    
-    if (moods.length > 0) {
-      prompt += moods.join(' ') + ' ';
+    if (newPromptParts.length === 0) {
+      setMode('initial');
+      loadSuggestions('initial');
+    } else {
+      loadSuggestions('enhancement', newPromptParts.join(' '));
     }
-    
-    if (genres.length > 0) {
-      prompt += genres.join(' ') + ' songs ';
-    }
-    
-    if (eras.length > 0) {
-      prompt += 'from ' + eras.join(', ') + ' ';
-    }
-    
-    if (themes.length > 0) {
-      prompt += themes.join(', ') + ', ';
-    }
-    
-    if (occasions.length > 0) {
-      prompt += 'perfect for ' + occasions.map(o => 
-        o.includes(':') ? 'an ' + o : o
-      ).join(' ');
-    }
-
-    if (customDescription.trim()) {
-      if (prompt) prompt += ' ';
-      prompt += customDescription.trim();
-    }
-
-    return prompt.trim().replace(/,$/, '');
   };
 
+  // Gera playlist
   const handleGenerate = async () => {
-    if (selectedTags.length === 0 && !customDescription.trim()) {
-      setError('Please select at least one tag or add a custom description');
+    if (promptParts.length === 0) {
+      setError('Please add at least one prompt part');
       return;
     }
 
@@ -162,16 +130,18 @@ export default function GeneratePage() {
     setGenerationStep('prompt');
 
     try {
-      // Step 1: Generate prompt from tags and custom text
+      const finalPrompt = promptParts.join(' ');
+
+      // Step 1: Generate prompt from parts
       const promptResponse = await fetch('/api/playlist/prompt', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category_selections: {
-            categories: selectedTags.map(t => t.category),
-            selections: selectedTags.map(t => t.label)
+            categories: [],
+            selections: []
           },
-          custom_text: customDescription
+          custom_text: finalPrompt
         })
       });
 
@@ -206,6 +176,39 @@ export default function GeneratePage() {
     }
   };
 
+  // Salva playlist
+  const handleSaveToLibrary = async () => {
+    if (!generatedPlaylist) return;
+
+    setIsSaving(true);
+    setError(null);
+
+    try {
+      const response = await fetch('/api/playlist/save', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          playlist: generatedPlaylist,
+          prompt: promptParts.join(' ')
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to save playlist');
+      }
+
+      const { playlist } = await response.json();
+      setSavedPlaylistId(playlist.id);
+      setError(null);
+      
+    } catch (err) {
+      console.error('Save error:', err);
+      setError(err instanceof Error ? err.message : 'Failed to save playlist');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const getStepIcon = () => {
     switch (generationStep) {
       case 'prompt':
@@ -232,46 +235,12 @@ export default function GeneratePage() {
       case 'error':
         return 'Generation failed';
       default:
-        return '';
-    }
-  };
-
-  const handleSaveToLibrary = async () => {
-    if (!generatedPlaylist) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      const response = await fetch('/api/playlist/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playlist: generatedPlaylist,
-          prompt: generatePromptPreview()
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save playlist');
-      }
-
-      const { playlist } = await response.json();
-      setSavedPlaylistId(playlist.id);
-      
-      // Show success message
-      setError(null);
-      
-    } catch (err) {
-      console.error('Save error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save playlist');
-    } finally {
-      setIsSaving(false);
+        return 'Generate';
     }
   };
 
   return (
-    <div className="bg-gray-50 pb-20">
+    <div className="bg-gray-50 min-h-screen pb-20">
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
         <div className="flex items-center justify-between max-w-4xl mx-auto">
@@ -286,12 +255,19 @@ export default function GeneratePage() {
             <Button 
               variant="outline" 
               className="px-6 py-2 rounded-full"
+              onClick={() => {
+                setMode('initial');
+                setPromptParts([]);
+                setGeneratedPlaylist(null);
+                setError(null);
+                loadSuggestions('initial');
+              }}
             >
-              Cancel
+              Clear
             </Button>
             <Button 
               onClick={handleGenerate}
-              disabled={isGenerating || (selectedTags.length === 0 && !customDescription.trim())}
+              disabled={isGenerating || promptParts.length === 0}
               className="px-6 py-2 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full font-medium flex items-center gap-2"
             >
               {isGenerating ? (
@@ -328,83 +304,83 @@ export default function GeneratePage() {
           </div>
         )}
 
-        {/* Selected Tags */}
-        {selectedTags.length > 0 && (
+        {/* Selected Prompt Parts */}
+        {promptParts.length > 0 && (
           <div className="mb-8">
             <div className="flex flex-wrap gap-3 mb-6">
-              {selectedTags.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag)}
-                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-full text-sm font-medium flex items-center gap-2 transition-colors"
+              {promptParts.map((part, index) => (
+                <div
+                  key={index}
+                  className="flex items-center gap-2 bg-blue-100 text-blue-800 rounded-full px-4 py-2 text-sm font-medium border border-blue-200"
                 >
-                  {tag.label}
-                  <span className="text-gray-500">×</span>
-                </button>
+                  <span>"{part}"</span>
+                  <button
+                    onClick={() => handleRemovePromptPart(index)}
+                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               ))}
             </div>
           </div>
         )}
 
-        {/* Dynamic Prompt Preview */}
+        {/* Main Input */}
         <div className="mb-8">
           <div className="bg-white rounded-xl p-6 shadow-sm border border-gray-200">
-            <p className="text-lg leading-relaxed text-center">
-              <span className="bg-gradient-to-r from-blue-500 via-purple-500 via-pink-500 to-orange-500 bg-clip-text text-transparent font-medium">
-                {generatePromptPreview()}
-              </span>
-            </p>
-          </div>
-        </div>
-
-        {/* Custom Description Input */}
-        <div className="mb-8">
-          <div className="relative">
-            <Music className="absolute left-4 top-1/2 transform -translate-y-1/2 text-red-400 w-5 h-5" />
-            <Input
-              placeholder="Describe your playlist"
-              value={customDescription}
-              onChange={(e) => setCustomDescription(e.target.value)}
-              className="pl-12 py-4 text-lg bg-gray-100 border-0 rounded-xl placeholder:text-gray-400"
-            />
-          </div>
-        </div>
-
-        {/* Category Buttons */}
-        <div className="grid grid-cols-5 gap-4 mb-8">
-          {['Genre', 'Mood', 'Era', 'Occasion', 'Theme'].map((category) => (
-            <button
-              key={category}
-              onClick={() => toggleCategory(category.toLowerCase())}
-              className={`px-4 py-3 rounded-xl text-sm font-medium transition-colors ${
-                activeCategory === category.toLowerCase()
-                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                  : 'bg-gray-200 hover:bg-gray-300'
-              }`}
-            >
-              {category}
-            </button>
-          ))}
-        </div>
-
-        {/* Tag Categories - Only show when category is active */}
-        {activeCategory && (
-          <div className="mb-8">
-            <div className="flex flex-wrap gap-3">
-              {TAG_CATEGORIES[activeCategory as keyof typeof TAG_CATEGORIES]?.map((tag) => (
-                <button
-                  key={tag.id}
-                  onClick={() => toggleTag(tag)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    isTagSelected(tag.id)
-                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
-                      : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
-                  }`}
-                >
-                  {tag.label}
-                </button>
-              ))}
+            {mode === 'initial' ? (
+              <h2 className="text-xl font-medium text-center mb-6 text-gray-800">
+                Type anything you want your playlist to be like
+              </h2>
+            ) : (
+              <h2 className="text-xl font-medium text-center mb-6 text-gray-800">
+                Anything else you want to add?
+              </h2>
+            )}
+            
+            <div className="relative mb-6">
+              <Music className="absolute left-4 top-1/2 transform -translate-y-1/2 text-red-400 w-5 h-5" />
+              <Input
+                placeholder="Ex: 'para academia', 'com guitarras pesadas', 'que me façam dançar'"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleAddCustomInput();
+                  }
+                }}
+                className="pl-12 py-4 text-lg bg-gray-100 border-0 rounded-xl placeholder:text-gray-400"
+              />
+              <Button
+                onClick={handleAddCustomInput}
+                disabled={!customInput.trim()}
+                className="absolute right-2 top-1/2 transform -translate-y-1/2 px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm"
+              >
+                Add
+              </Button>
             </div>
+          </div>
+        </div>
+
+        {/* Suggestion Carousel */}
+        {suggestions.length > 0 && (
+          <div className="mb-8">
+            {mode === 'initial' && (
+              <p className="text-center text-gray-600 mb-4">
+                Or choose any of these options
+              </p>
+            )}
+            {isLoadingSuggestions ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+              </div>
+            ) : (
+              <SuggestionCarousel
+                suggestions={suggestions}
+                onAddSuggestion={handleAddSuggestion}
+              />
+            )}
           </div>
         )}
 

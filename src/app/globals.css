@@ -119,3 +119,34 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Custom animations for suggestion carousel */
+@keyframes scroll-left {
+  from {
+    transform: translateX(0%);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes scroll-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
+
+.animate-scroll-left {
+  animation: scroll-left 10s linear infinite;
+}
+
+.animate-scroll-right {
+  animation: scroll-right 10s linear infinite;
+}
+
+.animation-paused {
+  animation-play-state: paused;
+}

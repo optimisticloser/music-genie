@@ -241,6 +241,33 @@ export type Database = {
           }
         ]
       }
+      demo_prompts: {
+        Row: {
+          id: string
+          prompt: string
+          category: string
+          popularity_score: number
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          prompt: string
+          category?: string
+          popularity_score?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          prompt?: string
+          category?: string
+          popularity_score?: number
+          is_active?: boolean
+          created_at?: string
+        }
+        Relationships: []
+      }
       user_preferences: {
         Row: {
           user_id: string
