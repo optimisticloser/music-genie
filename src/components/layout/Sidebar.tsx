@@ -28,22 +28,22 @@ interface SidebarProps {
 
 const navigationItems = [
   { name: 'Início', href: '/dashboard', icon: Home },
-  { name: 'Descobrir', href: '/discover', icon: Sparkles },
-  { name: 'Rádio', href: '/radio', icon: Radio },
+  { name: 'Descobrir', href: '/dashboard/discover', icon: Sparkles },
+  { name: 'Rádio', href: '/dashboard/radio', icon: Radio },
   { name: 'Gerar AI', href: '/dashboard/generate', icon: Sparkles, highlight: true },
 ];
 
 const libraryItems = [
-  { name: 'Adições recentes', href: '/library/recent', icon: Clock },
-  { name: 'Artistas', href: '/library/artists', icon: Mic2 },
-  { name: 'Álbuns', href: '/library/albums', icon: Disc3 },
-  { name: 'Músicas', href: '/library/songs', icon: Music },
-  { name: 'Feito para você', href: '/library/made-for-you', icon: Heart },
+  { name: 'Adições recentes', href: '/dashboard/history', icon: Clock },
+  { name: 'Artistas', href: '/dashboard/search', icon: Mic2 },
+  { name: 'Álbuns', href: '/dashboard/search', icon: Disc3 },
+  { name: 'Músicas', href: '/dashboard/search', icon: Music },
+  { name: 'Feito para você', href: '/dashboard/discover', icon: Heart },
 ];
 
 const playlistItems = [
   { name: 'Todas as playlists', href: '/dashboard/history', icon: ListMusic },
-  { name: 'Músicas favoritas', href: '/playlists/favorites', icon: Heart },
+  { name: 'Músicas favoritas', href: '/dashboard/search', icon: Heart },
 ];
 
 export function Sidebar({ onClose }: SidebarProps) {
