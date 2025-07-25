@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
@@ -109,6 +109,7 @@ export default function GeneratePage() {
   // Carrega sugestões iniciais
   useEffect(() => {
     loadSuggestions('initial');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Carrega sugestões baseadas no modo
@@ -538,7 +539,7 @@ export default function GeneratePage() {
                       key={index}
                       className="flex items-center gap-2 bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-sm border border-blue-200"
                     >
-                      <span>"{part}"</span>
+                      <span>&quot;{part}&quot;</span>
                       <button
                         onClick={() => handleRemovePromptPart(index)}
                         className="text-blue-600 hover:text-blue-800 transition-colors"
@@ -617,6 +618,7 @@ export default function GeneratePage() {
                                 src={song.album_art_url} 
                                 alt={`${song.title} album art`}
                                 className="w-10 h-10 rounded object-cover"
+                                // eslint-disable-next-line @next/next/no-img-element
                               />
                             )}
                             <div className="flex-1">

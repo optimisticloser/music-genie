@@ -1,5 +1,5 @@
 import createClient from '@/lib/supabase/server';
-import { refreshAccessToken, isTokenExpired } from '@/lib/spotify/api';
+import { refreshAccessToken } from '@/lib/spotify/api';
 import { SpotifyTokens } from '@/types';
 
 export class SpotifyService {

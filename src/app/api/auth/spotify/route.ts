@@ -1,7 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { getSpotifyAuthUrl } from '@/lib/spotify/api';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   try {
     // Generate a random state for security
     const state = Math.random().toString(36).substring(2, 15);
