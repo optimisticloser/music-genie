@@ -40,12 +40,37 @@ export class SpotifyService {
     const tokens = await this.getUserTokens(userId);
     
     if (!tokens) {
+      console.log("🎵 No tokens found for user:", userId);
       return null;
     }
 
-    // For now, we'll assume tokens are valid
-    // In a production app, you'd store and check expiry times
-    return tokens.access_token;
+    // Try to use the current token first
+    try {
+      // Test the token by making a simple API call
+      const response = await fetch('https://api.spotify.com/v1/me', {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`
+        }
+      });
+
+      if (response.ok) {
+        console.log("🎵 Token is valid");
+        return tokens.access_token;
+      } else if (response.status === 401) {
+        console.log("🎵 Token expired, attempting to refresh...");
+        // Token is expired, try to refresh
+        const refreshSuccess = await this.refreshUserTokens(userId);
+        if (refreshSuccess) {
+          const newTokens = await this.getUserTokens(userId);
+          return newTokens?.access_token || null;
+        }
+      }
+    } catch (error) {
+      console.error("🎵 Error testing token:", error);
+    }
+
+    console.log("🎵 Could not get valid access token");
+    return null;
   }
 
   // Refresh user's Spotify tokens

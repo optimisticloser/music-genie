@@ -48,6 +48,7 @@ export async function POST(req: NextRequest) {
 
     // Check if user has Spotify connected
     const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
+    console.log("🎵 User Spotify connection status:", isSpotifyConnected);
     let spotifyPlaylistId: string | null = null;
     let spotifyPlaylistUrl: string | null = null;
 
@@ -137,7 +138,7 @@ export async function POST(req: NextRequest) {
     if (playlist.songs && playlist.songs.length > 0) {
       const tracks = playlist.songs.map((song: Song, index: number) => ({
         playlist_id: savedPlaylist.id,
-        spotify_track_id: song.spotify_id || null,
+        spotify_track_id: song.spotify_id || "not_found", // Use a placeholder instead of null
         track_name: song.title || "Unknown",
         artist_name: song.artist || "Unknown",
         album_name: song.album_name || "Generated",
