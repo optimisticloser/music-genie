@@ -68,24 +68,56 @@ export async function POST(req: NextRequest) {
         for (const song of output.songs) {
           if (song.title && song.artist) {
             try {
-              const searchQuery = `${song.title} ${song.artist}`;
+              // Use a more specific search query with quotes for exact matches
+              const searchQuery = `track:"${song.title}" artist:"${song.artist}"`;
               console.log(`🎵 Searching for: ${searchQuery}`);
-              const tracks = await searchTracks(searchQuery, accessToken, 1);
+              const tracks = await searchTracks(searchQuery, accessToken, 5); // Get more results to find better matches
               
               if (tracks.length > 0) {
-                const track = tracks[0];
-                console.log(`🎵 Found: ${track.name} by ${track.artists[0].name}`);
-                enrichedSongs.push({
-                  ...song,
-                  spotify_id: track.id,
-                  album_name: track.album.name,
-                  album_art_url: track.album.images[0]?.url,
-                  duration_ms: track.duration_ms,
-                  preview_url: track.preview_url,
-                  external_url: track.external_urls.spotify,
-                  found_on_spotify: true
-                });
-                foundCount++;
+                // Find the best match by comparing artist names
+                let bestTrack = tracks[0];
+                let bestScore = 0;
+                
+                for (const track of tracks) {
+                  const artistMatch = track.artists.some(artist => 
+                    artist.name.toLowerCase().includes(song.artist!.toLowerCase()) ||
+                    song.artist!.toLowerCase().includes(artist.name.toLowerCase())
+                  );
+                  
+                  const titleMatch = track.name.toLowerCase().includes(song.title!.toLowerCase()) ||
+                    song.title!.toLowerCase().includes(track.name.toLowerCase());
+                  
+                  const score = (artistMatch ? 2 : 0) + (titleMatch ? 1 : 0);
+                  
+                  if (score > bestScore) {
+                    bestScore = score;
+                    bestTrack = track;
+                  }
+                }
+                
+                console.log(`🎵 Best match found: ${bestTrack.name} by ${bestTrack.artists[0].name} (score: ${bestScore})`);
+                console.log(`🎵 Original: ${song.title} by ${song.artist}`);
+                
+                // Only accept matches with a minimum score (artist match is most important)
+                if (bestScore >= 2) {
+                  enrichedSongs.push({
+                    ...song,
+                    spotify_id: bestTrack.id,
+                    album_name: bestTrack.album.name,
+                    album_art_url: bestTrack.album.images[0]?.url,
+                    duration_ms: bestTrack.duration_ms,
+                    preview_url: bestTrack.preview_url,
+                    external_url: bestTrack.external_urls.spotify,
+                    found_on_spotify: true
+                  });
+                  foundCount++;
+                } else {
+                  console.log(`🎵 Match score too low (${bestScore}), marking as not found`);
+                  enrichedSongs.push({
+                    ...song,
+                    found_on_spotify: false
+                  });
+                }
               } else {
                 console.log(`🎵 Not found: ${song.title} by ${song.artist}`);
                 enrichedSongs.push({
