@@ -14,17 +14,23 @@ import {
   Heart,
   ListMusic,
   Search,
-  Plus
+  Plus,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Button } from '@/components/ui/button';
+
+interface SidebarProps {
+  onClose?: () => void;
+}
 
 const navigationItems = [
   { name: 'Início', href: '/dashboard', icon: Home },
   { name: 'Descobrir', href: '/discover', icon: Sparkles },
   { name: 'Rádio', href: '/radio', icon: Radio },
-  { name: 'Gerar AI', href: '/generate', icon: Sparkles, highlight: true },
+  { name: 'Gerar AI', href: '/dashboard/generate', icon: Sparkles, highlight: true },
 ];
 
 const libraryItems = [
@@ -36,11 +42,11 @@ const libraryItems = [
 ];
 
 const playlistItems = [
-  { name: 'Todas as playlists', href: '/playlists', icon: ListMusic },
+  { name: 'Todas as playlists', href: '/dashboard/history', icon: ListMusic },
   { name: 'Músicas favoritas', href: '/playlists/favorites', icon: Heart },
 ];
 
-export function Sidebar() {
+export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
@@ -52,6 +58,7 @@ export function Sidebar() {
     } else {
       router.push('/dashboard/search');
     }
+    onClose?.();
   };
 
   const handleSearchFocus = () => {
@@ -60,16 +67,39 @@ export function Sidebar() {
     }
   };
 
+  const handleNavigation = (href: string) => {
+    router.push(href);
+    onClose?.();
+  };
+
   return (
-    <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-      {/* Header */}
-      <div className="p-4 border-b border-gray-200">
+    <div className="w-64 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
+      {/* Desktop Header */}
+      <div className="hidden md:flex p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
             <Music className="w-5 h-5 text-white" />
           </div>
           <h1 className="text-xl font-semibold text-gray-900">Music Genie</h1>
         </div>
+      </div>
+
+      {/* Mobile Header */}
+      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+            <Music className="w-5 h-5 text-white" />
+          </div>
+          <h1 className="text-lg font-semibold text-gray-900">Music Genie</h1>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onClose}
+          className="p-2"
+        >
+          <X className="w-5 h-5" />
+        </Button>
       </div>
 
       {/* Search */}
@@ -93,11 +123,11 @@ export function Sidebar() {
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
             return (
-              <Link
+              <button
                 key={item.name}
-                href={item.href}
+                onClick={() => handleNavigation(item.href)}
                 className={cn(
-                  "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
                   isActive 
                     ? "bg-red-100 text-red-700" 
                     : "text-gray-700 hover:bg-gray-100",
@@ -115,7 +145,7 @@ export function Sidebar() {
                     <div className="w-2 h-2 bg-red-500 rounded-full"></div>
                   </div>
                 )}
-              </Link>
+              </button>
             );
           })}
         </div>
@@ -131,11 +161,11 @@ export function Sidebar() {
             {libraryItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <Link
+                <button
                   key={item.name}
-                  href={item.href}
+                  onClick={() => handleNavigation(item.href)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
                     isActive 
                       ? "bg-red-100 text-red-700" 
                       : "text-gray-700 hover:bg-gray-100"
@@ -146,7 +176,7 @@ export function Sidebar() {
                     isActive ? "text-red-600" : "text-gray-500"
                   )} />
                   {item.name}
-                </Link>
+                </button>
               );
             })}
           </div>
@@ -168,11 +198,11 @@ export function Sidebar() {
             {playlistItems.map((item) => {
               const isActive = pathname === item.href;
               return (
-                <Link
+                <button
                   key={item.name}
-                  href={item.href}
+                  onClick={() => handleNavigation(item.href)}
                   className={cn(
-                    "flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors",
+                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
                     isActive 
                       ? "bg-red-100 text-red-700" 
                       : "text-gray-700 hover:bg-gray-100"
@@ -183,7 +213,7 @@ export function Sidebar() {
                     isActive ? "text-red-600" : "text-gray-500"
                   )} />
                   {item.name}
-                </Link>
+                </button>
               );
             })}
           </div>

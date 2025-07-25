@@ -154,24 +154,24 @@ export default function PlaylistPage() {
         {/* Header with Artwork and Info */}
         <div className={`bg-gradient-to-br ${playlist.gradient} relative`}>
           <div className="absolute inset-0 bg-black/20"></div>
-          <div className="relative px-8 py-12 flex items-end gap-8">
+          <div className="relative px-4 md:px-8 py-6 md:py-12 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
             {/* Large Artwork */}
-            <div className="w-64 h-64 bg-black/20 rounded-2xl shadow-2xl flex-shrink-0 overflow-hidden">
+            <div className="w-32 h-32 md:w-64 md:h-64 bg-black/20 rounded-xl md:rounded-2xl shadow-2xl flex-shrink-0 overflow-hidden mx-auto md:mx-0">
               <div className={`w-full h-full bg-gradient-to-br ${playlist.gradient} flex items-center justify-center`}>
-                <div className="text-white/30 text-6xl font-bold">
+                <div className="text-white/30 text-3xl md:text-6xl font-bold">
                   {playlist.title.charAt(0)}
                 </div>
               </div>
             </div>
 
             {/* Playlist Info */}
-            <div className="text-white flex-1 min-w-0">
+            <div className="text-white flex-1 min-w-0 text-center md:text-left">
               <p className="text-sm font-medium mb-2 opacity-90">Playlist</p>
-              <h1 className="text-5xl font-bold mb-4 leading-tight">
+              <h1 className="text-2xl md:text-5xl font-bold mb-3 md:mb-4 leading-tight">
                 {playlist.title}
               </h1>
-              <div className="mb-6">
-                <p className="text-red-300 font-semibold text-lg mb-2">
+              <div className="mb-4 md:mb-6">
+                <p className="text-red-300 font-semibold text-base md:text-lg mb-2">
                   {playlist.creator}
                 </p>
                 {playlist.description && (
@@ -187,7 +187,7 @@ export default function PlaylistPage() {
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-sm opacity-90">
+              <div className="flex items-center gap-1 text-sm opacity-90 justify-center md:justify-start">
                 <span>{playlist.total_tracks} músicas</span>
                 <span>•</span>
                 <span>{playlist.duration}</span>
@@ -199,70 +199,72 @@ export default function PlaylistPage() {
         </div>
 
         {/* Action Buttons */}
-        <div className="px-8 py-6 bg-white border-b border-gray-100">
-          <div className="flex items-center gap-4">
-            <Button 
-              size="lg" 
-              className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-semibold"
-              onClick={() => console.log("Play playlist:", playlist.id)}
-            >
-              <Play className="w-5 h-5 mr-2 ml-0.5" />
-              Reproduzir
-            </Button>
-            
-            <Button 
-              variant="outline" 
-              size="lg" 
-              className="px-8 py-3 rounded-full font-semibold border-gray-300"
-              onClick={() => console.log("Shuffle playlist:", playlist.id)}
-            >
-              <Shuffle className="w-5 h-5 mr-2" />
-              Aleatório
-            </Button>
+        <div className="px-4 md:px-8 py-4 md:py-6 bg-white border-b border-gray-100">
+          <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4">
+            <div className="flex gap-2 md:gap-4 w-full sm:w-auto">
+              <Button 
+                size="lg" 
+                className="bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 rounded-full font-semibold flex-1 sm:flex-none"
+                onClick={() => console.log("Play playlist:", playlist.id)}
+              >
+                <Play className="w-4 h-4 md:w-5 md:h-5 mr-2 ml-0.5" />
+                Reproduzir
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                size="lg" 
+                className="px-6 md:px-8 py-3 rounded-full font-semibold border-gray-300 flex-1 sm:flex-none"
+                onClick={() => console.log("Shuffle playlist:", playlist.id)}
+              >
+                <Shuffle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                Aleatório
+              </Button>
+            </div>
 
-            <div className="flex items-center gap-2 ml-auto">
+            <div className="flex items-center gap-1 md:gap-2 ml-auto">
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="rounded-full"
+                className="rounded-full p-2"
                 onClick={() => console.log("Like playlist:", playlist.id)}
               >
-                <Heart className="w-5 h-5" />
+                <Heart className="w-4 h-4 md:w-5 md:h-5" />
               </Button>
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="rounded-full"
+                className="rounded-full p-2"
                 onClick={() => console.log("Download playlist:", playlist.id)}
               >
-                <Download className="w-5 h-5" />
+                <Download className="w-4 h-4 md:w-5 md:h-5" />
               </Button>
               {playlist.spotify_playlist_id && (
                 <Button 
                   variant="ghost" 
                   size="sm" 
-                  className="rounded-full"
+                  className="rounded-full p-2"
                   onClick={() => window.open(`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`, '_blank')}
                 >
-                  <Music className="w-5 h-5" />
+                  <Music className="w-4 h-4 md:w-5 md:h-5" />
                 </Button>
               )}
               <Button 
                 variant="ghost" 
                 size="sm" 
-                className="rounded-full"
+                className="rounded-full p-2"
                 onClick={() => console.log("More options:", playlist.id)}
               >
-                <MoreHorizontal className="w-5 h-5" />
+                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5" />
               </Button>
             </div>
           </div>
         </div>
 
         {/* Track List */}
-        <div className="px-8 py-6">
+        <div className="px-4 md:px-8 py-4 md:py-6">
           {/* Header */}
-          <div className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200 mb-4">
+          <div className="hidden md:grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200 mb-4">
             <div className="w-8"></div>
             <div>Música</div>
             <div>Artista</div>
@@ -272,7 +274,7 @@ export default function PlaylistPage() {
             </div>
           </div>
 
-          {/* Tracks */}
+                    {/* Tracks */}
           <div className="space-y-1">
             {playlist.tracks.length === 0 ? (
               <div className="text-center py-8">
@@ -280,86 +282,124 @@ export default function PlaylistPage() {
                 <p className="text-gray-600">Esta playlist não possui músicas</p>
               </div>
             ) : (
-              playlist.tracks.map((track: PlaylistTrack, index: number) => (
-                <div 
-                  key={track.id}
-                  className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
-                  onClick={() => console.log("Play track:", track.id)}
-                >
-                {/* Track Number / Play Button */}
-                <div className="w-8 flex items-center justify-center">
-                  <span className="text-sm text-gray-500 group-hover:hidden">
-                    {index + 1}
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-6 h-6 p-0 hidden group-hover:flex opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("Play track:", track.id);
-                    }}
-                  >
-                    <Play className="w-3 h-3" />
-                  </Button>
+              <>
+                {/* Desktop Track List */}
+                <div className="hidden md:block">
+                  {playlist.tracks.map((track: PlaylistTrack, index: number) => (
+                    <div 
+                      key={track.id}
+                      className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
+                      onClick={() => console.log("Play track:", track.id)}
+                    >
+                      {/* Track Number / Play Button */}
+                      <div className="w-8 flex items-center justify-center">
+                        <span className="text-sm text-gray-500 group-hover:hidden">
+                          {index + 1}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-6 h-6 p-0 hidden group-hover:flex opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("Play track:", track.id);
+                          }}
+                        >
+                          <Play className="w-3 h-3" />
+                        </Button>
+                      </div>
+
+                      {/* Track Info */}
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0">
+                          <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-medium text-gray-900 truncate">
+                            {track.title}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Artist */}
+                      <div className="flex items-center min-w-0">
+                        <p className="text-gray-600 truncate">
+                          {track.artist}
+                        </p>
+                      </div>
+
+                      {/* Album */}
+                      <div className="flex items-center min-w-0">
+                        <p className="text-gray-600 truncate">
+                          {track.album}
+                        </p>
+                      </div>
+
+                      {/* Duration & Actions */}
+                      <div className="flex items-center justify-center gap-2">
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("Like track:", track.id);
+                          }}
+                        >
+                          <Heart className="w-4 h-4" />
+                        </Button>
+                        <span className="text-sm text-gray-500 min-w-[35px] text-center">
+                          {track.duration}
+                        </span>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            console.log("More options for track:", track.id);
+                          }}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
 
-                {/* Track Info */}
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0">
-                    <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-medium text-gray-900 truncate">
-                      {track.title}
-                    </p>
-                  </div>
-                </div>
+                {/* Mobile Track List */}
+                <div className="md:hidden space-y-2">
+                  {playlist.tracks.map((track: PlaylistTrack, index: number) => (
+                    <div 
+                      key={track.id}
+                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
+                      onClick={() => console.log("Play track:", track.id)}
+                    >
+                      {/* Track Number */}
+                      <div className="w-8 flex items-center justify-center">
+                        <span className="text-sm text-gray-500 font-medium">
+                          {index + 1}
+                        </span>
+                      </div>
 
-                {/* Artist */}
-                <div className="flex items-center min-w-0">
-                  <p className="text-gray-600 truncate">
-                    {track.artist}
-                  </p>
-                </div>
+                      {/* Track Info */}
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">
+                          {track.title}
+                        </p>
+                        <p className="text-sm text-gray-600 truncate">
+                          {track.artist} • {track.album}
+                        </p>
+                      </div>
 
-                {/* Album */}
-                <div className="flex items-center min-w-0">
-                  <p className="text-gray-600 truncate">
-                    {track.album}
-                  </p>
+                      {/* Duration */}
+                      <div className="text-sm text-gray-500">
+                        {track.duration}
+                      </div>
+                    </div>
+                  ))}
                 </div>
-
-                {/* Duration & Actions */}
-                <div className="flex items-center justify-center gap-2">
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("Like track:", track.id);
-                    }}
-                  >
-                    <Heart className="w-4 h-4" />
-                  </Button>
-                  <span className="text-sm text-gray-500 min-w-[35px] text-center">
-                    {track.duration}
-                  </span>
-                  <Button 
-                    variant="ghost" 
-                    size="sm" 
-                    className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      console.log("More options for track:", track.id);
-                    }}
-                  >
-                    <MoreHorizontal className="w-4 h-4" />
-                  </Button>
-                </div>
-                </div>
-              ))
+              </>
             )}
           </div>
         </div>

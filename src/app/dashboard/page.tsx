@@ -121,31 +121,31 @@ export default function DashboardPage() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Hero Section */}
-        <div className="mb-12">
-          <div className="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 rounded-3xl p-12 text-center border border-red-100">
+        <div className="mb-8 md:mb-12">
+          <div className="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 rounded-2xl md:rounded-3xl p-6 md:p-12 text-center border border-red-100">
             <div className="max-w-2xl mx-auto">
-              <div className="w-20 h-20 bg-gradient-to-br from-red-500 to-pink-600 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Sparkles className="w-10 h-10 text-white" />
+              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
+                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
               </div>
               
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
                 Crie sua playlist perfeita
               </h1>
               
-              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+              <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8 leading-relaxed">
                 Descreva o que você quer ouvir e nossa IA criará uma playlist personalizada 
                 com as melhores músicas para o momento.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
                 <Button 
                   size="lg" 
-                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  className="bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 text-base md:text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
                   onClick={() => router.push("/dashboard/generate")}
                 >
-                  <Sparkles className="w-5 h-5 mr-2" />
+                  <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                   Gerar com IA
                 </Button>
                 
@@ -153,11 +153,11 @@ export default function DashboardPage() {
                   <Button 
                     size="lg" 
                     variant="outline"
-                    className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className="border-green-600 text-green-600 hover:bg-green-50 px-6 md:px-8 py-3 text-base md:text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
                     onClick={handleConnectSpotify}
                     disabled={connectingSpotify}
                   >
-                    <Music className="w-5 h-5 mr-2" />
+                    <Music className="w-4 h-4 md:w-5 md:h-5 mr-2" />
                     {connectingSpotify ? 'Conectando...' : 'Conectar Spotify'}
                   </Button>
                 )}
@@ -167,19 +167,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Welcome Back */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        <div className="mb-6 md:mb-8">
+          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
             Bem-vindo de volta, {user.email}
           </h2>
-          <p className="text-gray-600">
+          <p className="text-gray-600 text-sm md:text-base">
             Suas playlists criadas e descobertas musicais
           </p>
           
           {spotifyConnected && (
-            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+            <div className="mt-4 p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg">
               <div className="flex items-center gap-2">
-                <Music className="w-5 h-5 text-green-600" />
-                <span className="text-green-800 font-medium">
+                <Music className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
+                <span className="text-green-800 font-medium text-sm md:text-base">
                   Spotify conectado! Você pode salvar playlists diretamente na sua conta.
                 </span>
               </div>
@@ -188,15 +188,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Playlists Grid */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Playlists</h3>
+        <div className="mb-8 md:mb-12">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900">Playlists</h3>
             <Button variant="ghost" size="sm" className="text-gray-500">
               Ver todas
             </Button>
           </div>
           
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
             {loadingPlaylists ? (
               // Loading state
               Array.from({ length: 4 }).map((_, i) => (
@@ -278,15 +278,15 @@ export default function DashboardPage() {
         </div>
 
         {/* Recently Played */}
-        <div className="mb-12">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-semibold text-gray-900">Tocadas recentemente</h3>
+        <div className="mb-8 md:mb-12">
+          <div className="flex items-center justify-between mb-4 md:mb-6">
+            <h3 className="text-lg md:text-xl font-semibold text-gray-900">Tocadas recentemente</h3>
             <Button variant="ghost" size="sm" className="text-gray-500">
               Ver todas
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
             {loadingPlaylists ? (
               // Loading state for recent playlists
               Array.from({ length: 3 }).map((_, i) => (

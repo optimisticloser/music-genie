@@ -155,18 +155,18 @@ export default function HistoryPage() {
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-8">
+      <div className="p-4 md:p-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Histórico</h1>
-          <p className="text-gray-600">
+        <div className="mb-6 md:mb-8">
+          <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2">Histórico</h1>
+          <p className="text-gray-600 text-sm md:text-base">
             Todas as suas playlists criadas com IA
           </p>
         </div>
 
         {/* Filters and Search */}
-        <div className="mb-8">
-          <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="mb-6 md:mb-8">
+          <div className="flex flex-col gap-4 mb-4 md:mb-6">
             {/* Search */}
             <div className="flex-1 relative">
               <Input
@@ -186,48 +186,51 @@ export default function HistoryPage() {
               </Button>
             </div>
 
-            {/* Status Filter */}
-            <div className="flex gap-2">
-              <Button
-                variant={statusFilter === "all" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange("all")}
-              >
-                Todas
-              </Button>
-              <Button
-                variant={statusFilter === "draft" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange("draft")}
-              >
-                Rascunho
-              </Button>
-              <Button
-                variant={statusFilter === "published" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleFilterChange("published")}
-              >
-                Publicadas
-              </Button>
-            </div>
+            {/* Filters Row */}
+            <div className="flex flex-col sm:flex-row gap-3">
+              {/* Status Filter */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={statusFilter === "all" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFilterChange("all")}
+                >
+                  Todas
+                </Button>
+                <Button
+                  variant={statusFilter === "draft" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFilterChange("draft")}
+                >
+                  Rascunho
+                </Button>
+                <Button
+                  variant={statusFilter === "published" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleFilterChange("published")}
+                >
+                  Publicadas
+                </Button>
+              </div>
 
-            {/* Sort */}
-            <div className="flex gap-2">
-              <Button
-                variant={sortBy === "created_at" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("created_at", sortOrder === "desc" ? "asc" : "desc")}
-              >
-                <Calendar className="w-4 h-4 mr-1" />
-                Data {sortBy === "created_at" && (sortOrder === "desc" ? "↓" : "↑")}
-              </Button>
-              <Button
-                variant={sortBy === "title" ? "default" : "outline"}
-                size="sm"
-                onClick={() => handleSortChange("title", sortOrder === "desc" ? "asc" : "desc")}
-              >
-                Nome {sortBy === "title" && (sortOrder === "desc" ? "↓" : "↑")}
-              </Button>
+              {/* Sort */}
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={sortBy === "created_at" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleSortChange("created_at", sortOrder === "desc" ? "asc" : "desc")}
+                >
+                  <Calendar className="w-4 h-4 mr-1" />
+                  Data {sortBy === "created_at" && (sortOrder === "desc" ? "↓" : "↑")}
+                </Button>
+                <Button
+                  variant={sortBy === "title" ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleSortChange("title", sortOrder === "desc" ? "asc" : "desc")}
+                >
+                  Nome {sortBy === "title" && (sortOrder === "desc" ? "↓" : "↑")}
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -284,7 +287,7 @@ export default function HistoryPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-6">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
               {playlists.map((playlist) => (
                 <Link key={playlist.id} href={`/dashboard/playlist/${playlist.id}`}>
                   <Card className="group cursor-pointer hover:shadow-lg transition-all">
