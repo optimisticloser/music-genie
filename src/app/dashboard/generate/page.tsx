@@ -5,6 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
 
+interface Tag {
+  id: string;
+  label: string;
+  category: string;
+}
+
 interface GeneratedPlaylist {
   name?: string;
   essay?: string;
@@ -27,12 +33,58 @@ interface GeneratedPlaylist {
   }[];
 }
 
+const TAG_CATEGORIES = {
+  genre: [
+    { id: 'indie-folk', label: 'Indie Folk', category: 'genre' },
+    { id: 'mellow', label: 'Mellow', category: 'genre' },
+    { id: 'pop', label: 'Pop', category: 'genre' },
+    { id: 'rock', label: 'Rock', category: 'genre' },
+    { id: 'hip-hop-rap', label: 'Hip-Hop/Rap', category: 'genre' },
+    { id: 'electronic', label: 'Electronic', category: 'genre' },
+    { id: 'classic-rock', label: 'Classic Rock', category: 'genre' },
+    { id: 'alternative-rock', label: 'Alternative Rock', category: 'genre' },
+    { id: 'indie', label: 'Indie', category: 'genre' },
+  ],
+  mood: [
+    { id: 'chill', label: 'Chill', category: 'mood' },
+    { id: 'energetic', label: 'Energetic', category: 'mood' },
+    { id: 'melancholic', label: 'Melancholic', category: 'mood' },
+    { id: 'upbeat', label: 'Upbeat', category: 'mood' },
+    { id: 'romantic', label: 'Romantic', category: 'mood' },
+    { id: 'nostalgic', label: 'Nostalgic', category: 'mood' },
+  ],
+  era: [
+    { id: '2010s', label: '2010s', category: 'era' },
+    { id: '2000s', label: '2000s', category: 'era' },
+    { id: '90s', label: '90s', category: 'era' },
+    { id: '80s', label: '80s', category: 'era' },
+    { id: '70s', label: '70s', category: 'era' },
+  ],
+  occasion: [
+    { id: 'road-trip', label: 'Road Trip', category: 'occasion' },
+    { id: 'workout', label: 'Workout', category: 'occasion' },
+    { id: 'study', label: 'Study', category: 'occasion' },
+    { id: 'party', label: 'Party', category: 'occasion' },
+    { id: 'relaxing', label: 'Relaxing', category: 'occasion' },
+    { id: 'cooking', label: 'Cooking', category: 'occasion' },
+  ],
+  source: [
+    { id: 'movies-soundtrack', label: 'Movies Soundtrack', category: 'source' },
+    { id: 'tv-shows', label: 'TV Shows', category: 'source' },
+    { id: 'video-games', label: 'Video Games', category: 'source' },
+    { id: 'commercials', label: 'Commercials', category: 'source' },
+    { id: 'viral-tiktok', label: 'Viral TikTok', category: 'source' },
+  ]
+};
+
 export default function GeneratePage() {
   // Estados principais
   const [promptParts, setPromptParts] = useState<string[]>([]);
+  const [selectedTags, setSelectedTags] = useState<Tag[]>([]);
   const [customInput, setCustomInput] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
@@ -55,7 +107,7 @@ export default function GeneratePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          current_prompt: currentPromptText || promptParts.join(' '),
+          current_prompt: currentPromptText || getAllSelections(),
           mode: requestMode
         })
       });
@@ -72,9 +124,17 @@ export default function GeneratePage() {
     }
   };
 
+  // Helper para obter todas as seleções como string
+  const getAllSelections = () => {
+    const tagLabels = selectedTags.map(tag => tag.label);
+    const allSelections = [...promptParts, ...tagLabels];
+    return allSelections.join(' ');
+  };
+
   // Gera prompt usando WorkflowAI
-  const generatePromptFromParts = async (parts: string[]) => {
-    if (parts.length === 0) {
+  const generatePromptFromParts = async () => {
+    const allSelections = getAllSelections();
+    if (!allSelections.trim()) {
       setCurrentPrompt('');
       return;
     }
@@ -85,13 +145,8 @@ export default function GeneratePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          category_selections: [
-            { category: "Style", selection: parts[0] || "" },
-            { category: "Mood", selection: parts[1] || "" },
-            { category: "Activity", selection: parts[2] || "" },
-            { category: "Additional", selection: parts.slice(3).join(' ') || "" }
-          ].filter(item => item.selection.trim() !== ""),
-          custom_text: parts.join(' ')
+          category_selections: [],
+          custom_text: allSelections  // Enviar TUDO concatenado como custom_text
         })
       });
 
@@ -115,8 +170,8 @@ export default function GeneratePage() {
     setPromptParts(newPromptParts);
     
     // Gera novo prompt e carrega sugestões
-    await generatePromptFromParts(newPromptParts);
-    loadSuggestions('enhancement', newPromptParts.join(' '));
+    await generatePromptFromParts();
+    loadSuggestions('enhancement');
   };
 
   // Adiciona input customizado
@@ -128,8 +183,26 @@ export default function GeneratePage() {
     setCustomInput('');
 
     // Gera novo prompt e carrega sugestões
-    await generatePromptFromParts(newPromptParts);
-    loadSuggestions('enhancement', newPromptParts.join(' '));
+    await generatePromptFromParts();
+    loadSuggestions('enhancement');
+  };
+
+  // Toggle tag das categorias predefinidas
+  const toggleTag = async (tag: Tag) => {
+    const exists = selectedTags.find(t => t.id === tag.id);
+    let newSelectedTags: Tag[];
+    
+    if (exists) {
+      newSelectedTags = selectedTags.filter(t => t.id !== tag.id);
+    } else {
+      newSelectedTags = [...selectedTags, tag];
+    }
+    
+    setSelectedTags(newSelectedTags);
+    
+    // Gera novo prompt e carrega sugestões
+    await generatePromptFromParts();
+    loadSuggestions('enhancement');
   };
 
   // Remove parte do prompt
@@ -137,13 +210,39 @@ export default function GeneratePage() {
     const newPromptParts = promptParts.filter((_, i) => i !== index);
     setPromptParts(newPromptParts);
 
-    if (newPromptParts.length === 0) {
+    if (newPromptParts.length === 0 && selectedTags.length === 0) {
       setCurrentPrompt('');
+      setActiveCategory(null);
       loadSuggestions('initial');
     } else {
-      await generatePromptFromParts(newPromptParts);
-      loadSuggestions('enhancement', newPromptParts.join(' '));
+      await generatePromptFromParts();
+      loadSuggestions('enhancement');
     }
+  };
+
+  // Remove tag selecionada
+  const handleRemoveTag = async (tagId: string) => {
+    const newSelectedTags = selectedTags.filter(t => t.id !== tagId);
+    setSelectedTags(newSelectedTags);
+
+    if (promptParts.length === 0 && newSelectedTags.length === 0) {
+      setCurrentPrompt('');
+      setActiveCategory(null);
+      loadSuggestions('initial');
+    } else {
+      await generatePromptFromParts();
+      loadSuggestions('enhancement');
+    }
+  };
+
+  // Toggle categoria
+  const toggleCategory = (category: string) => {
+    setActiveCategory(prev => prev === category ? null : category);
+  };
+
+  // Verifica se tag está selecionada
+  const isTagSelected = (tagId: string) => {
+    return selectedTags.some(tag => tag.id === tagId);
   };
 
   // Gera playlist
@@ -243,7 +342,7 @@ export default function GeneratePage() {
   };
 
   // Determina se estamos no estado vazio (sem seleções)
-  const isEmpty = promptParts.length === 0;
+  const isEmpty = promptParts.length === 0 && selectedTags.length === 0;
 
   return (
     <div className="bg-gray-50 min-h-screen">
@@ -263,9 +362,11 @@ export default function GeneratePage() {
               className="px-6 py-2 rounded-full"
               onClick={() => {
                 setPromptParts([]);
+                setSelectedTags([]);
                 setCurrentPrompt('');
                 setGeneratedPlaylist(null);
                 setError(null);
+                setActiveCategory(null);
                 loadSuggestions('initial');
               }}
             >
@@ -329,7 +430,8 @@ export default function GeneratePage() {
                 
                 {/* Carrossel só aparece quando vazio */}
                 {suggestions.length > 0 && (
-                  <div className="mt-8">
+                  <div className="mb-8">
+                    <p className="text-gray-600 mb-4">Popular playlist ideas:</p>
                     {isLoadingSuggestions ? (
                       <div className="flex justify-center py-8">
                         <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -353,11 +455,28 @@ export default function GeneratePage() {
               </div>
             )}
 
-            {/* Selected Prompt Parts - Só quando tem seleções */}
+            {/* Selected Items - Só quando tem seleções */}
             {!isEmpty && (
               <div className="space-y-4">
-                {/* Tags */}
+                {/* Tags and Parts */}
                 <div className="flex flex-wrap gap-2">
+                  {/* Tags das categorias */}
+                  {selectedTags.map((tag) => (
+                    <div
+                      key={tag.id}
+                      className="flex items-center gap-2 bg-green-100 text-green-800 rounded-full px-3 py-1 text-sm border border-green-200"
+                    >
+                      <span>{tag.label}</span>
+                      <button
+                        onClick={() => handleRemoveTag(tag.id)}
+                        className="text-green-600 hover:text-green-800 transition-colors"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                  
+                  {/* Parts do texto customizado */}
                   {promptParts.map((part, index) => (
                     <div
                       key={index}
@@ -476,8 +595,49 @@ export default function GeneratePage() {
             )}
           </div>
 
-          {/* Input Area - Só aparece quando tem seleções OU no estado inicial */}
+          {/* Input Area - Sempre visível */}
           <div className="border-t border-gray-200 bg-white p-6">
+            
+            {/* Categorias predefinidas - SEMPRE VISÍVEIS */}
+            <div className="mb-6">
+              {isEmpty && <p className="text-gray-600 mb-4 text-center">Or choose any of these options</p>}
+              
+              {/* Category Buttons */}
+              <div className="flex flex-wrap gap-3 justify-center mb-4">
+                {['Genre', 'Mood', 'Era', 'Occasion', 'Source'].map((category) => (
+                  <button
+                    key={category}
+                    onClick={() => toggleCategory(category.toLowerCase())}
+                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+                      activeCategory === category.toLowerCase()
+                        ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                        : 'bg-gray-200 hover:bg-gray-300'
+                    }`}
+                  >
+                    {category}
+                  </button>
+                ))}
+              </div>
+
+              {/* Tags da categoria ativa */}
+              {activeCategory && (
+                <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto mb-4">
+                  {TAG_CATEGORIES[activeCategory as keyof typeof TAG_CATEGORIES]?.map((tag) => (
+                    <button
+                      key={tag.id}
+                      onClick={() => toggleTag(tag)}
+                      className={`px-3 py-2 rounded-full text-sm font-medium transition-colors ${
+                        isTagSelected(tag.id)
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                      }`}
+                    >
+                      {tag.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
             
             {/* Sugestões - Só aparecem quando não está vazio (modo enhancement) */}
             {!isEmpty && suggestions.length > 0 && (
