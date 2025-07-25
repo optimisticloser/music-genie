@@ -2,6 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import createClient from "@/lib/supabase/server";
 import { SpotifyService } from "@/lib/services/spotify";
 
+interface TrackUpdateData {
+  album_art_url?: string;
+  preview_url?: string;
+  duration_ms?: number;
+}
+
 export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -80,7 +86,7 @@ export async function POST(
         const spotifyTrack = await response.json();
         
         // Update track with new data
-        const updateData: any = {};
+        const updateData: TrackUpdateData = {};
         
         if (!track.album_art_url && spotifyTrack.album?.images?.[0]?.url) {
           updateData.album_art_url = spotifyTrack.album.images[0].url;
