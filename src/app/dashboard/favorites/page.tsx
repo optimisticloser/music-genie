@@ -25,28 +25,6 @@ export default function FavoritesPage() {
   const [error, setError] = useState<string | null>(null);
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
-  useEffect(() => {
-    async function getUser() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          router.push("/login");
-          return;
-        }
-
-        await loadFavorites();
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/login");
-      } finally {
-        setLoading(false);
-      }
-    }
-
-    getUser();
-  }, [router]);
-
   const loadFavorites = useCallback(async () => {
     try {
       setLoading(true);
@@ -67,6 +45,28 @@ export default function FavoritesPage() {
       setLoading(false);
     }
   }, [sortOrder]);
+
+  useEffect(() => {
+    async function getUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        await loadFavorites();
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        router.push("/login");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    getUser();
+  }, [router, loadFavorites]);
 
   const toggleSortOrder = () => {
     setSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');

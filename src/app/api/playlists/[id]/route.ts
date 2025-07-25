@@ -76,7 +76,7 @@ export async function GET(
       status: playlist.status,
       creator: playlist.users.full_name || playlist.users.email,
       total_tracks: playlist.total_tracks,
-      duration: formatDuration(playlist.total_duration_ms),
+      duration: formatDuration(playlist.total_duration_ms || 0),
       spotify_playlist_id: playlist.spotify_playlist_id,
       gradient: generateGradient(playlist.id),
       created_at: playlist.created_at,

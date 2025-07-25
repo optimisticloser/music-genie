@@ -38,7 +38,6 @@ interface Playlist {
 export default function PlaylistPage() {
   const router = useRouter();
   const params = useParams();
-  const [, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
@@ -59,7 +58,6 @@ export default function PlaylistPage() {
           return;
         }
 
-        setUser(user);
         await loadPlaylist();
       } catch (error) {
         console.error("Error fetching user:", error);

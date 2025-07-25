@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
@@ -647,9 +648,11 @@ export default function GeneratePage() {
                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-3 flex-1">
                             {song.album_art_url && (
-                              <img 
+                              <Image 
                                 src={song.album_art_url} 
                                 alt={`${song.title} album art`}
+                                width={40}
+                                height={40}
                                 className="w-10 h-10 rounded object-cover"
                               />
                             )}

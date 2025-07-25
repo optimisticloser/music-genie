@@ -7,13 +7,9 @@ import {
   Sparkles, 
   Radio, 
   Clock, 
-  Mic2, 
-  Disc3, 
   Music, 
   Heart,
-  ListMusic,
   Search,
-  Plus,
   X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
