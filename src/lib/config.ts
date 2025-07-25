@@ -2,7 +2,7 @@ export const siteConfig = {
   name: "Music Genie",
   description: "Gerador de Playlists com IA",
   fullDescription: "Crie playlists personalizadas com inteligência artificial e salve diretamente no Spotify. Descubra novas músicas baseadas no seu gosto musical.",
-  url: "https://music-genie.vercel.app",
+  url: "https://music-genie-seven.vercel.app",
   ogImage: "/og-image.png",
   links: {
     github: "https://github.com/optimisticloser/music-genie",
@@ -23,7 +23,7 @@ export const siteConfig = {
   authors: [
     {
       name: "Music Genie Team",
-      url: "https://music-genie.vercel.app",
+      url: "https://music-genie-seven.vercel.app",
     },
   ],
   features: [

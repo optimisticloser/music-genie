@@ -203,6 +203,7 @@ Se você encontrar algum problema ou tiver dúvidas:
 
 ### Como obter ajuda
 
+- 🌐 **Site**: [music-genie-seven.vercel.app](https://music-genie-seven.vercel.app)
 - 📧 **Email**: support@musicgenie.app
 - 🐛 **Issues**: [GitHub Issues](https://github.com/optimisticloser/music-genie/issues)
 - 📖 **Documentação**: [Wiki do projeto](https://github.com/optimisticloser/music-genie/wiki)
