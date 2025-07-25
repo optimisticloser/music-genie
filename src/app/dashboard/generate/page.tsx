@@ -372,7 +372,27 @@ export default function GeneratePage() {
       
       // Show success message
       if (spotify_playlist_url) {
-        alert(`Playlist salva com sucesso!\n\nSpotify: ${spotify_playlist_url}`);
+        // Create a more elegant success message
+        const successMessage = document.createElement('div');
+        successMessage.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        successMessage.innerHTML = `
+          <div class="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
+            <div class="text-green-500 text-4xl mb-4">🎉</div>
+            <h3 class="text-lg font-semibold mb-2">Playlist criada com sucesso!</h3>
+            <p class="text-gray-600 mb-4">Sua playlist foi salva e está disponível no Spotify.</p>
+            <div class="space-y-2">
+              <a href="${spotify_playlist_url}" target="_blank" rel="noopener noreferrer" 
+                 class="block w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition-colors">
+                🎵 Abrir no Spotify
+              </a>
+              <button onclick="this.parentElement.parentElement.parentElement.remove()" 
+                      class="block w-full bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition-colors">
+                Fechar
+              </button>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(successMessage);
       } else {
         alert('Playlist salva no banco de dados, mas não foi possível criar no Spotify.');
       }
