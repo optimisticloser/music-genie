@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Play, Shuffle, Heart, MoreHorizontal, Download, Clock, Music } from 'lucide-react';
+import { Play, Pause, Heart, MoreHorizontal, Download, Clock, Music, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
 interface PlaylistTrack {
@@ -42,6 +42,9 @@ export default function PlaylistPage() {
   const [playlist, setPlaylist] = useState<Playlist | null>(null);
   const [loadingPlaylist, setLoadingPlaylist] = useState(true);
   const [playlistError, setPlaylistError] = useState<string | null>(null);
+  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isAddedToSpotify, setIsAddedToSpotify] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -82,6 +85,7 @@ export default function PlaylistPage() {
 
       const data = await response.json();
       setPlaylist(data.playlist);
+      setIsAddedToSpotify(!!data.playlist.spotify_playlist_id);
     } catch (error) {
       console.error('Error loading playlist:', error);
       setPlaylistError(error instanceof Error ? error.message : 'Erro ao carregar playlist');
@@ -89,6 +93,69 @@ export default function PlaylistPage() {
       setLoadingPlaylist(false);
     }
   }, [params.id]);
+
+  const handlePlayPreview = async (track: PlaylistTrack) => {
+    if (!track.preview_url) return;
+
+    if (playingTrack === track.id) {
+      // Pausar
+      if (audio) {
+        audio.pause();
+        setAudio(null);
+      }
+      setPlayingTrack(null);
+    } else {
+      // Parar áudio anterior
+      if (audio) {
+        audio.pause();
+        audio.currentTime = 0;
+      }
+
+      // Tocar nova música
+      const newAudio = new Audio(track.preview_url);
+      newAudio.addEventListener('ended', () => {
+        setPlayingTrack(null);
+        setAudio(null);
+      });
+      
+      newAudio.play();
+      setAudio(newAudio);
+      setPlayingTrack(track.id);
+    }
+  };
+
+  const handleAddToSpotify = async () => {
+    if (!playlist) return;
+
+    try {
+      const response = await fetch('/api/playlist/save', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          playlistId: playlist.id,
+          saveToSpotify: true,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.spotify_playlist_id) {
+          setIsAddedToSpotify(true);
+          setPlaylist(prev => prev ? { ...prev, spotify_playlist_id: data.spotify_playlist_id } : null);
+        }
+      }
+    } catch (error) {
+      console.error('Error adding to Spotify:', error);
+    }
+  };
+
+  const handleOpenSpotify = () => {
+    if (playlist?.spotify_playlist_id) {
+      window.open(`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`, '_blank');
+    }
+  };
 
   if (loading || loadingPlaylist) {
     return (
@@ -101,25 +168,12 @@ export default function PlaylistPage() {
     );
   }
 
-  if (!user) {
-    return null;
-  }
-
   if (playlistError) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="text-red-500 text-2xl mb-4">⚠️</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao carregar playlist</h2>
-          <p className="text-gray-600 mb-4">{playlistError}</p>
-          <div className="flex gap-4 justify-center">
-            <Button onClick={loadPlaylist} variant="outline">
-              Tentar novamente
-            </Button>
-            <Button onClick={() => router.push('/dashboard')}>
-              Voltar ao Dashboard
-            </Button>
-          </div>
+          <p className="text-red-600 mb-4">{playlistError}</p>
+          <Button onClick={loadPlaylist}>Tentar novamente</Button>
         </div>
       </div>
     );
@@ -129,12 +183,8 @@ export default function PlaylistPage() {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
-          <div className="text-gray-400 text-2xl mb-4">🎵</div>
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">Playlist não encontrada</h2>
-          <p className="text-gray-600 mb-4">A playlist que você está procurando não existe ou foi removida.</p>
-          <Button onClick={() => router.push('/dashboard')}>
-            Voltar ao Dashboard
-          </Button>
+          <p className="text-gray-600 mb-4">Playlist não encontrada</p>
+          <Button onClick={() => router.push('/dashboard')}>Voltar ao Dashboard</Button>
         </div>
       </div>
     );
@@ -142,9 +192,9 @@ export default function PlaylistPage() {
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
       year: 'numeric',
+      month: 'long',
+      day: 'numeric'
     });
   };
 
@@ -167,27 +217,28 @@ export default function PlaylistPage() {
             {/* Playlist Info */}
             <div className="text-white flex-1 min-w-0 text-center md:text-left">
               <p className="text-sm font-medium mb-2 opacity-90">Playlist</p>
-              <h1 className="text-2xl md:text-5xl font-bold mb-3 md:mb-4 leading-tight">
+              <h1 className="text-2xl md:text-5xl font-bold mb-3 md:mb-4 leading-tight break-words">
                 {playlist.title}
               </h1>
               <div className="mb-4 md:mb-6">
-                <p className="text-red-300 font-semibold text-base md:text-lg mb-2">
+                <p className="text-red-300 font-semibold text-base md:text-lg mb-2 break-words">
                   {playlist.creator}
                 </p>
                 {playlist.description && (
                   <div className="text-sm opacity-90 max-w-2xl">
-                    <p className="line-clamp-3">
+                    <p className="line-clamp-3 break-words">
                       {playlist.description}
                     </p>
                   </div>
                 )}
                 {playlist.prompt && (
                   <div className="mt-2 text-xs opacity-75 max-w-2xl">
-                    <span className="font-medium">Prompt original:</span> {playlist.prompt}
+                    <span className="font-medium">Prompt original:</span> 
+                    <span className="break-words"> {playlist.prompt}</span>
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-1 text-sm opacity-90 justify-center md:justify-start">
+              <div className="flex items-center gap-1 text-sm opacity-90 justify-center md:justify-start flex-wrap">
                 <span>{playlist.total_tracks} músicas</span>
                 <span>•</span>
                 <span>{playlist.duration}</span>
@@ -198,66 +249,28 @@ export default function PlaylistPage() {
           </div>
         </div>
 
-        {/* Action Buttons */}
-        <div className="px-4 md:px-8 py-4 md:py-6 bg-white border-b border-gray-100">
-          <div className="flex flex-col sm:flex-row items-center gap-3 md:gap-4">
-            <div className="flex gap-2 md:gap-4 w-full sm:w-auto">
+        {/* Spotify Action Button */}
+        <div className="px-4 md:px-8 py-6 bg-white border-b border-gray-100">
+          <div className="flex justify-center">
+            {isAddedToSpotify ? (
               <Button 
                 size="lg" 
-                className="bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 rounded-full font-semibold flex-1 sm:flex-none"
-                onClick={() => console.log("Play playlist:", playlist.id)}
+                className="bg-green-500 hover:bg-green-600 text-black px-8 md:px-12 py-4 rounded-full font-semibold text-lg flex items-center gap-3"
+                onClick={handleOpenSpotify}
               >
-                <Play className="w-4 h-4 md:w-5 md:h-5 mr-2 ml-0.5" />
-                Reproduzir
+                <ExternalLink className="w-5 h-5" />
+                Ouvir no Spotify
               </Button>
-              
+            ) : (
               <Button 
-                variant="outline" 
                 size="lg" 
-                className="px-6 md:px-8 py-3 rounded-full font-semibold border-gray-300 flex-1 sm:flex-none"
-                onClick={() => console.log("Shuffle playlist:", playlist.id)}
+                className="bg-green-500 hover:bg-green-600 text-black px-8 md:px-12 py-4 rounded-full font-semibold text-lg flex items-center gap-3"
+                onClick={handleAddToSpotify}
               >
-                <Shuffle className="w-4 h-4 md:w-5 md:h-5 mr-2" />
-                Aleatório
+                <Music className="w-5 h-5" />
+                Adicionar ao Spotify
               </Button>
-            </div>
-
-            <div className="flex items-center gap-1 md:gap-2 ml-auto">
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full p-2"
-                onClick={() => console.log("Like playlist:", playlist.id)}
-              >
-                <Heart className="w-4 h-4 md:w-5 md:h-5" />
-              </Button>
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full p-2"
-                onClick={() => console.log("Download playlist:", playlist.id)}
-              >
-                <Download className="w-4 h-4 md:w-5 md:h-5" />
-              </Button>
-              {playlist.spotify_playlist_id && (
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="rounded-full p-2"
-                  onClick={() => window.open(`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`, '_blank')}
-                >
-                  <Music className="w-4 h-4 md:w-5 md:h-5" />
-                </Button>
-              )}
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="rounded-full p-2"
-                onClick={() => console.log("More options:", playlist.id)}
-              >
-                <MoreHorizontal className="w-4 h-4 md:w-5 md:h-5" />
-              </Button>
-            </div>
+            )}
           </div>
         </div>
 
@@ -274,7 +287,7 @@ export default function PlaylistPage() {
             </div>
           </div>
 
-                    {/* Tracks */}
+          {/* Tracks */}
           <div className="space-y-1">
             {playlist.tracks.length === 0 ? (
               <div className="text-center py-8">
@@ -289,30 +302,40 @@ export default function PlaylistPage() {
                     <div 
                       key={track.id}
                       className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
-                      onClick={() => console.log("Play track:", track.id)}
                     >
                       {/* Track Number / Play Button */}
                       <div className="w-8 flex items-center justify-center">
                         <span className="text-sm text-gray-500 group-hover:hidden">
                           {index + 1}
                         </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="w-6 h-6 p-0 hidden group-hover:flex opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log("Play track:", track.id);
-                          }}
-                        >
-                          <Play className="w-3 h-3" />
-                        </Button>
+                        {track.preview_url && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-6 h-6 p-0 hidden group-hover:flex opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPreview(track);
+                            }}
+                          >
+                            {playingTrack === track.id ? (
+                              <Pause className="w-3 h-3" />
+                            ) : (
+                              <Play className="w-3 h-3" />
+                            )}
+                          </Button>
+                        )}
                       </div>
 
                       {/* Track Info */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0">
+                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0 relative">
                           <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
+                          {track.preview_url && playingTrack === track.id && (
+                            <div className="absolute inset-0 bg-black/50 rounded flex items-center justify-center">
+                              <Pause className="w-4 h-4 text-white" />
+                            </div>
+                          )}
                         </div>
                         <div className="min-w-0">
                           <p className="font-medium text-gray-900 truncate">
@@ -373,13 +396,31 @@ export default function PlaylistPage() {
                     <div 
                       key={track.id}
                       className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      onClick={() => console.log("Play track:", track.id)}
+                      onClick={() => track.preview_url && handlePlayPreview(track)}
                     >
-                      {/* Track Number */}
+                      {/* Track Number / Play Button */}
                       <div className="w-8 flex items-center justify-center">
-                        <span className="text-sm text-gray-500 font-medium">
-                          {index + 1}
-                        </span>
+                        {track.preview_url ? (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-6 h-6 p-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handlePlayPreview(track);
+                            }}
+                          >
+                            {playingTrack === track.id ? (
+                              <Pause className="w-3 h-3" />
+                            ) : (
+                              <Play className="w-3 h-3" />
+                            )}
+                          </Button>
+                        ) : (
+                          <span className="text-sm text-gray-500 font-medium">
+                            {index + 1}
+                          </span>
+                        )}
                       </div>
 
                       {/* Track Info */}

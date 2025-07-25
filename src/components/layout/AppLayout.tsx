@@ -2,7 +2,6 @@
 
 import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
-import { MiniPlayer } from './MiniPlayer';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 
@@ -69,8 +68,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </main>
       </div>
       
-      {/* Mini Player */}
-      <MiniPlayer />
+
     </div>
   );
 } 
