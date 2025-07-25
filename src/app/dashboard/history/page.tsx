@@ -14,7 +14,8 @@ import {
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Play
+  Play,
+  Heart
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -28,6 +29,7 @@ interface Playlist {
   created_at: string;
   spotify_playlist_id?: string;
   status: string;
+  is_favorite?: boolean;
 }
 
 interface PaginationInfo {
@@ -60,6 +62,7 @@ export default function HistoryPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [sortBy, setSortBy] = useState("created_at");
   const [sortOrder, setSortOrder] = useState("desc");
+  const [togglingFavorites, setTogglingFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function getUser() {
@@ -136,6 +139,42 @@ export default function HistoryPage() {
       month: '2-digit',
       year: 'numeric',
     });
+  };
+
+  const handleToggleFavorite = async (playlistId: string, currentFavorite: boolean) => {
+    if (togglingFavorites.has(playlistId)) return;
+
+    try {
+      setTogglingFavorites(prev => new Set(prev).add(playlistId));
+      const newFavoriteStatus = !currentFavorite;
+
+      const response = await fetch(`/api/playlists/${playlistId}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: newFavoriteStatus }),
+      });
+
+      if (response.ok) {
+        // Update the playlist in the local state
+        setPlaylists(prev => prev.map(playlist => 
+          playlist.id === playlistId 
+            ? { ...playlist, is_favorite: newFavoriteStatus }
+            : playlist
+        ));
+      } else {
+        console.error('Failed to toggle favorite');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setTogglingFavorites(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playlistId);
+        return newSet;
+      });
+    }
   };
 
   if (loading) {
@@ -308,7 +347,7 @@ export default function HistoryPage() {
                         </div>
                         
                         {/* Status badge */}
-                        <div className="absolute top-2 right-2">
+                        <div className="absolute top-2 left-2">
                           <div className={`text-xs px-2 py-1 rounded-full ${
                             playlist.status === 'published' 
                               ? 'bg-green-100 text-green-800' 
@@ -316,6 +355,29 @@ export default function HistoryPage() {
                           }`}>
                             {playlist.status === 'published' ? 'Publicada' : 'Rascunho'}
                           </div>
+                        </div>
+                        
+                        {/* Favorite badge */}
+                        <div className="absolute top-2 right-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 hover:bg-white/20 transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleToggleFavorite(playlist.id, playlist.is_favorite || false);
+                            }}
+                            disabled={togglingFavorites.has(playlist.id)}
+                          >
+                            <Heart 
+                              className={`w-4 h-4 transition-colors ${
+                                playlist.is_favorite 
+                                  ? 'text-red-500 fill-current' 
+                                  : 'text-white/70 hover:text-red-400'
+                              }`} 
+                            />
+                          </Button>
                         </div>
                       </div>
                       

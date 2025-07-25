@@ -24,6 +24,7 @@ interface Playlist {
   duration: string;
   created_at: string;
   spotify_playlist_id?: string;
+  is_favorite?: boolean;
 }
 
 export default function DashboardPage() {

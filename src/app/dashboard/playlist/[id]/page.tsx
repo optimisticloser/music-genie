@@ -30,6 +30,7 @@ interface Playlist {
   total_tracks: number;
   duration: string;
   spotify_playlist_id?: string;
+  is_favorite?: boolean;
   created_at: string;
   tracks: PlaylistTrack[];
 }
@@ -45,6 +46,8 @@ export default function PlaylistPage() {
   const [playingTrack, setPlayingTrack] = useState<string | null>(null);
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [isAddedToSpotify, setIsAddedToSpotify] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -86,6 +89,7 @@ export default function PlaylistPage() {
       const data = await response.json();
       setPlaylist(data.playlist);
       setIsAddedToSpotify(!!data.playlist.spotify_playlist_id);
+      setIsFavorite(data.playlist.is_favorite || false);
     } catch (error) {
       console.error('Error loading playlist:', error);
       setPlaylistError(error instanceof Error ? error.message : 'Erro ao carregar playlist');
@@ -157,6 +161,33 @@ export default function PlaylistPage() {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!playlist || isTogglingFavorite) return;
+
+    try {
+      setIsTogglingFavorite(true);
+      const newFavoriteStatus = !isFavorite;
+
+      const response = await fetch(`/api/playlists/${playlist.id}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: newFavoriteStatus }),
+      });
+
+      if (response.ok) {
+        setIsFavorite(newFavoriteStatus);
+      } else {
+        console.error('Failed to toggle favorite');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setIsTogglingFavorite(false);
+    }
+  };
+
   if (loading || loadingPlaylist) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -217,9 +248,26 @@ export default function PlaylistPage() {
             {/* Playlist Info */}
             <div className="text-white flex-1 min-w-0 text-center md:text-left">
               <p className="text-sm font-medium mb-2 opacity-90">Playlist</p>
-              <h1 className="text-2xl md:text-5xl font-bold mb-3 md:mb-4 leading-tight break-words">
-                {playlist.title}
-              </h1>
+              <div className="flex items-center gap-4 mb-3 md:mb-4">
+                <h1 className="text-2xl md:text-5xl font-bold leading-tight break-words">
+                  {playlist.title}
+                </h1>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="p-2 hover:bg-red-50 transition-colors"
+                  onClick={handleToggleFavorite}
+                  disabled={isTogglingFavorite}
+                >
+                  <Heart 
+                    className={`w-6 h-6 md:w-8 md:h-8 transition-colors ${
+                      isFavorite 
+                        ? 'text-red-500 fill-current' 
+                        : 'text-gray-400 hover:text-red-400'
+                    }`} 
+                  />
+                </Button>
+              </div>
               <div className="mb-4 md:mb-6">
                 <p className="text-red-300 font-semibold text-base md:text-lg mb-2 break-words">
                   {playlist.creator}
