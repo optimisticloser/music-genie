@@ -144,6 +144,9 @@ export async function POST(req: NextRequest) {
       console.log("🎵 Spotify not connected or no songs to enrich");
     }
 
+    console.log("🎵 Final response - Spotify connected:", isSpotifyConnected);
+    console.log("🎵 Final response - Songs found on Spotify:", output.songs?.filter((s: any) => s.found_on_spotify).length || 0);
+    
     return NextResponse.json({ 
       playlist: output, 
       metrics: data,

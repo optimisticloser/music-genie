@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
       console.log("🎵 Creating Spotify playlist for user:", user.id);
       console.log("🎵 Playlist name:", playlist.name);
       console.log("🎵 Number of songs:", playlist.songs.length);
+      console.log("🎵 Songs with Spotify ID:", playlist.songs.filter((s: Song) => s.spotify_id).length);
       
       try {
         const accessToken = await SpotifyService.getValidAccessToken(user.id);
@@ -103,6 +104,7 @@ export async function POST(req: NextRequest) {
       console.log("🎵 Spotify not connected or no songs available");
       console.log("🎵 Spotify connected:", isSpotifyConnected);
       console.log("🎵 Songs available:", playlist.songs?.length || 0);
+      console.log("🎵 Will NOT attempt Spotify integration");
     }
 
     // Calculate total duration
