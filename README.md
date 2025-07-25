@@ -163,3 +163,4 @@ Se você encontrar algum problema ou tiver dúvidas:
 ---
 
 Feito com ❤️ usando Next.js, Supabase e Spotify API
+# Force new deployment
