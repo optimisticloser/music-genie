@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
@@ -66,7 +66,7 @@ export default function PlaylistPage() {
     getUser();
   }, [router, params.id]);
 
-  const loadPlaylist = async () => {
+  const loadPlaylist = useCallback(async () => {
     try {
       setLoadingPlaylist(true);
       setPlaylistError(null);
@@ -88,7 +88,7 @@ export default function PlaylistPage() {
     } finally {
       setLoadingPlaylist(false);
     }
-  };
+  }, [params.id]);
 
   if (loading || loadingPlaylist) {
     return (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,12 @@ import { Input } from "@/components/ui/input";
 import Link from "next/link";
 import { 
   Search, 
-  Filter,
   Music,
   Clock,
   Calendar,
   ChevronLeft,
   ChevronRight,
-  Play,
-  MoreHorizontal
+  Play
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -86,7 +84,7 @@ export default function HistoryPage() {
     getUser();
   }, [router]);
 
-  const loadPlaylists = async (page: number = pagination.page) => {
+  const loadPlaylists = useCallback(async (page: number = pagination.page) => {
     try {
       setLoadingPlaylists(true);
       setPlaylistsError(null);
@@ -115,7 +113,7 @@ export default function HistoryPage() {
     } finally {
       setLoadingPlaylists(false);
     }
-  };
+  }, [pagination.page, pagination.limit, searchQuery, statusFilter, sortBy, sortOrder]);
 
   const handleSearch = () => {
     loadPlaylists(1);

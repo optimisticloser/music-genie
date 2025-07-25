@@ -56,7 +56,7 @@ export async function GET(req: NextRequest) {
     // Apply pagination
     query = query.range(offset, offset + limit - 1);
 
-    const { data: playlists, error, count } = await query;
+    const { data: playlists, error } = await query;
 
     if (error) {
       console.error("Error fetching user playlists:", error);
