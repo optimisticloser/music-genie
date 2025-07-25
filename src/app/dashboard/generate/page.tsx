@@ -29,7 +29,6 @@ interface GeneratedPlaylist {
 
 export default function GeneratePage() {
   // Estados principais
-  const [mode, setMode] = useState<'initial' | 'building'>('initial');
   const [promptParts, setPromptParts] = useState<string[]>([]);
   const [customInput, setCustomInput] = useState('');
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
@@ -39,7 +38,7 @@ export default function GeneratePage() {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [generatedPlaylist, setGeneratedPlaylist] = useState<GeneratedPlaylist | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [generationStep, setGenerationStep] = useState<'idle' | 'prompt' | 'generating' | 'complete' | 'error'>('idle');
+  const [generationStep, setGenerationStep] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
 
@@ -94,10 +93,12 @@ export default function GeneratePage() {
       if (!response.ok) throw new Error('Failed to generate prompt');
 
       const { prompt } = await response.json();
-      setCurrentPrompt(prompt || parts.join(' '));
+      // Usar só o prompt gerado pelo WorkflowAI, não concatenar
+      setCurrentPrompt(prompt || '');
     } catch (error) {
       console.error('Error generating prompt:', error);
-      setCurrentPrompt(parts.join(' '));
+      // Se falhar, não mostrar nada no prompt colorido
+      setCurrentPrompt('');
     } finally {
       setIsGeneratingPrompt(false);
     }
@@ -108,10 +109,6 @@ export default function GeneratePage() {
     const newPromptParts = [...promptParts, suggestion];
     setPromptParts(newPromptParts);
     
-    if (mode === 'initial') {
-      setMode('building');
-    }
-
     // Gera novo prompt e carrega sugestões
     await generatePromptFromParts(newPromptParts);
     loadSuggestions('enhancement', newPromptParts.join(' '));
@@ -125,10 +122,6 @@ export default function GeneratePage() {
     setPromptParts(newPromptParts);
     setCustomInput('');
 
-    if (mode === 'initial') {
-      setMode('building');
-    }
-
     // Gera novo prompt e carrega sugestões
     await generatePromptFromParts(newPromptParts);
     loadSuggestions('enhancement', newPromptParts.join(' '));
@@ -140,7 +133,6 @@ export default function GeneratePage() {
     setPromptParts(newPromptParts);
 
     if (newPromptParts.length === 0) {
-      setMode('initial');
       setCurrentPrompt('');
       loadSuggestions('initial');
     } else {
@@ -245,6 +237,9 @@ export default function GeneratePage() {
     }
   };
 
+  // Determina se estamos no estado vazio (sem seleções)
+  const isEmpty = promptParts.length === 0;
+
   return (
     <div className="bg-gray-50 min-h-screen">
       {/* Header */}
@@ -262,7 +257,6 @@ export default function GeneratePage() {
               variant="outline" 
               className="px-6 py-2 rounded-full"
               onClick={() => {
-                setMode('initial');
                 setPromptParts([]);
                 setCurrentPrompt('');
                 setGeneratedPlaylist(null);
@@ -317,21 +311,45 @@ export default function GeneratePage() {
               </div>
             )}
 
-            {/* Initial State */}
-            {mode === 'initial' && (
+            {/* Initial State - Só quando não tem seleções */}
+            {isEmpty && (
               <div className="text-center py-12">
                 <Music className="w-16 h-16 text-gray-400 mx-auto mb-4" />
                 <h2 className="text-2xl font-medium text-gray-800 mb-2">
                   Let's build your perfect playlist
                 </h2>
                 <p className="text-gray-600 mb-8">
-                  Start by choosing one of the suggestions below, or type what you have in mind
+                  Start by choosing one of the options below, or type what you have in mind
                 </p>
+                
+                {/* Carrossel só aparece quando vazio */}
+                {suggestions.length > 0 && (
+                  <div className="mt-8">
+                    {isLoadingSuggestions ? (
+                      <div className="flex justify-center py-8">
+                        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap gap-3 justify-center max-w-3xl mx-auto">
+                        {suggestions.map((suggestion, index) => (
+                          <button
+                            key={index}
+                            onClick={() => handleAddSuggestion(suggestion)}
+                            className="px-4 py-3 bg-white hover:bg-gray-50 rounded-xl text-sm text-gray-700 transition-colors border border-gray-200 shadow-sm hover:shadow-md flex items-center gap-2"
+                          >
+                            <span>{suggestion}</span>
+                            <span className="text-blue-500">+</span>
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
-            {/* Selected Prompt Parts */}
-            {promptParts.length > 0 && (
+            {/* Selected Prompt Parts - Só quando tem seleções */}
+            {!isEmpty && (
               <div className="space-y-4">
                 {/* Tags */}
                 <div className="flex flex-wrap gap-2">
@@ -351,29 +369,31 @@ export default function GeneratePage() {
                   ))}
                 </div>
 
-                {/* AI Generated Prompt */}
-                <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
-                  <div className="flex items-start gap-3">
-                    <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
-                      <Music className="w-4 h-4 text-white" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="text-sm text-gray-600 mb-2">AI Generated Prompt:</div>
-                      {isGeneratingPrompt ? (
-                        <div className="flex items-center gap-2 text-gray-500">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          <span>Generating prompt...</span>
-                        </div>
-                      ) : (
-                        <div className="text-lg leading-relaxed">
-                          <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent font-medium">
-                            {currentPrompt || 'Building your prompt...'}
-                          </span>
-                        </div>
-                      )}
+                {/* AI Generated Prompt - Só o texto do WorkflowAI */}
+                {(currentPrompt || isGeneratingPrompt) && (
+                  <div className="bg-white rounded-2xl p-6 border border-gray-200 shadow-sm">
+                    <div className="flex items-start gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full flex items-center justify-center flex-shrink-0 mt-1">
+                        <Music className="w-4 h-4 text-white" />
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm text-gray-600 mb-2">AI Generated Prompt:</div>
+                        {isGeneratingPrompt ? (
+                          <div className="flex items-center gap-2 text-gray-500">
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            <span>Generating prompt...</span>
+                          </div>
+                        ) : currentPrompt ? (
+                          <div className="text-lg leading-relaxed">
+                            <span className="bg-gradient-to-r from-purple-600 via-pink-600 to-orange-600 bg-clip-text text-transparent font-medium">
+                              {currentPrompt}
+                            </span>
+                          </div>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -451,11 +471,11 @@ export default function GeneratePage() {
             )}
           </div>
 
-          {/* Input Area - Fixed at bottom */}
+          {/* Input Area - Só aparece quando tem seleções OU no estado inicial */}
           <div className="border-t border-gray-200 bg-white p-6">
             
-            {/* Suggestions */}
-            {suggestions.length > 0 && (
+            {/* Sugestões - Só aparecem quando não está vazio (modo enhancement) */}
+            {!isEmpty && suggestions.length > 0 && (
               <div className="mb-4">
                 {isLoadingSuggestions ? (
                   <div className="flex justify-center py-4">
@@ -481,7 +501,7 @@ export default function GeneratePage() {
             {/* Chat Input */}
             <div className="relative">
               <Input
-                placeholder={mode === 'initial' 
+                placeholder={isEmpty 
                   ? "Type anything you want your playlist to be like..." 
                   : "Add more details to your playlist..."
                 }
