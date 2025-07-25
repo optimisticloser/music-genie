@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Sidebar } from './Sidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
+import { siteConfig } from '@/lib/config';
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -28,7 +29,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
             <span className="text-white text-sm font-bold">MG</span>
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">Music Genie</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
         <Button
           variant="ghost"

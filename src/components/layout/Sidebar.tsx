@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
+import { siteConfig } from '@/lib/config';
 
 interface SidebarProps {
   onClose?: () => void;
@@ -67,7 +68,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
             <Music className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-xl font-semibold text-gray-900">Music Genie</h1>
+          <h1 className="text-xl font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
       </div>
 
@@ -77,7 +78,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
             <Music className="w-5 h-5 text-white" />
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">Music Genie</h1>
+          <h1 className="text-lg font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
         <Button
           variant="ghost"

@@ -1,6 +1,8 @@
 # Music Genie 🎵
 
-Uma aplicação web que usa IA para gerar playlists personalizadas e salvá-las diretamente no Spotify.
+**Gerador de Playlists com Inteligência Artificial**
+
+Uma aplicação web moderna que utiliza IA avançada para criar playlists personalizadas baseadas no seu gosto musical e salvá-las diretamente no Spotify. Descubra novas músicas e artistas através de prompts naturais ou seleções guiadas.
 
 ## 🚀 Funcionalidades
 
@@ -15,7 +17,7 @@ Uma aplicação web que usa IA para gerar playlists personalizadas e salvá-las 
 ### 1. Clone o repositório
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/optimisticloser/music-genie.git
 cd music-genie
 npm install
 ```
@@ -70,22 +72,43 @@ Acesse [http://localhost:3000](http://localhost:3000)
 
 ## 📱 Como usar
 
-1. **Faça login** com sua conta
-2. **Conecte o Spotify** clicando no botão "Conectar Spotify"
-3. **Gere uma playlist**:
-   - Selecione categorias (Gênero, Humor, Época, etc.)
-   - Adicione texto livre
+### 🎯 Passo a Passo
+
+1. **Crie sua conta** ou faça login
+2. **Conecte o Spotify** para acessar sua biblioteca
+3. **Gere playlists personalizadas**:
+   - Escolha categorias (Gênero, Humor, Época, Ocasião)
+   - Adicione descrições em texto livre
+   - Combine seleções predefinidas com suas preferências
    - Clique em "Gerar com IA"
-4. **Salve no Spotify** clicando em "Save to Spotify"
+4. **Salve no Spotify** com um clique
+5. **Explore suas playlists** no histórico
+6. **Marque como favoritas** suas criações preferidas
+
+### 🎨 Recursos Avançados
+
+- **Preview de áudio** das músicas antes de salvar
+- **Capas dos álbuns** para identificação visual
+- **Atualização automática** de imagens e previews
+- **Interface responsiva** para desktop e mobile
 
 ## 🏗️ Arquitetura
 
-- **Frontend**: Next.js 14 com App Router
+### 🛠️ Stack Tecnológica
+
+- **Frontend**: Next.js 14 com App Router e TypeScript
 - **Backend**: API Routes do Next.js
 - **Banco de Dados**: Supabase (PostgreSQL)
 - **Autenticação**: Supabase Auth
-- **IA**: WorkflowAI (alternativa ao OpenAI)
-- **UI**: Tailwind CSS + shadcn/ui
+- **IA**: WorkflowAI (integração avançada com IA)
+- **UI/UX**: Tailwind CSS + shadcn/ui
+- **Deploy**: Vercel (otimizado para Next.js)
+
+### 🔧 Integrações
+
+- **Spotify Web API**: Para busca de músicas e criação de playlists
+- **Supabase**: Banco de dados, autenticação e armazenamento
+- **WorkflowAI**: Processamento de linguagem natural para geração de playlists
 
 ## 📁 Estrutura do Projeto
 
@@ -131,21 +154,37 @@ npx shadcn-ui@latest add [component-name]
 
 ### Vercel (Recomendado)
 
-1. Conecte seu repositório ao Vercel
-2. Configure as variáveis de ambiente
-3. Deploy automático a cada push
+1. **Conecte seu repositório** ao Vercel
+2. **Configure as variáveis de ambiente** (veja seção de configuração)
+3. **Deploy automático** a cada push para a branch main
+4. **Domínio personalizado** (opcional)
 
 ### Outras plataformas
 
-O projeto pode ser deployado em qualquer plataforma que suporte Next.js.
+O projeto pode ser deployado em qualquer plataforma que suporte Next.js:
+- Netlify
+- Railway
+- DigitalOcean App Platform
+- AWS Amplify
 
 ## 🤝 Contribuindo
 
-1. Fork o projeto
-2. Crie uma branch para sua feature
-3. Commit suas mudanças
-4. Push para a branch
-5. Abra um Pull Request
+Agradecemos seu interesse em contribuir com o Music Genie! 
+
+### Como contribuir
+
+1. **Fork o projeto** no GitHub
+2. **Crie uma branch** para sua feature (`git checkout -b feature/AmazingFeature`)
+3. **Commit suas mudanças** (`git commit -m 'Add some AmazingFeature'`)
+4. **Push para a branch** (`git push origin feature/AmazingFeature`)
+5. **Abra um Pull Request** com descrição detalhada
+
+### Diretrizes
+
+- Mantenha o código limpo e bem documentado
+- Siga os padrões de TypeScript e ESLint
+- Teste suas mudanças antes de submeter
+- Adicione testes quando apropriado
 
 ## 📄 Licença
 
@@ -153,14 +192,34 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 🆘 Suporte
 
+### Problemas Comuns
+
 Se você encontrar algum problema ou tiver dúvidas:
 
-1. Verifique se todas as variáveis de ambiente estão configuradas
-2. Confirme se o Spotify OAuth está configurado corretamente
-3. Verifique os logs do console para erros
-4. Abra uma issue no GitHub
+1. **Verifique as variáveis de ambiente** estão configuradas corretamente
+2. **Confirme a configuração do Spotify OAuth** no Developer Dashboard
+3. **Verifique os logs do console** para identificar erros específicos
+4. **Teste a conexão com Supabase** e Spotify separadamente
+
+### Como obter ajuda
+
+- 📧 **Email**: support@musicgenie.app
+- 🐛 **Issues**: [GitHub Issues](https://github.com/optimisticloser/music-genie/issues)
+- 📖 **Documentação**: [Wiki do projeto](https://github.com/optimisticloser/music-genie/wiki)
+- 💬 **Discord**: [Servidor da comunidade](https://discord.gg/musicgenie)
 
 ---
 
-Feito com ❤️ usando Next.js, Supabase e Spotify API
-# Force new deployment
+## 🌟 Agradecimentos
+
+- **Spotify** pela API incrível
+- **Supabase** pela infraestrutura robusta
+- **WorkflowAI** pela tecnologia de IA
+- **Vercel** pela plataforma de deploy
+- **Comunidade open source** por todas as contribuições
+
+---
+
+**Feito com ❤️ pela equipe Music Genie**
+
+*Transformando a forma como você descobre música através da inteligência artificial*

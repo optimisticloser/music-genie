@@ -7,6 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Heart, MoreHorizontal, Clock, Music, ExternalLink } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
+import { PageTitle } from '@/components/shared/PageTitle';
 
 interface PlaylistTrack {
   id: string;
@@ -290,7 +291,9 @@ export default function PlaylistPage() {
   };
 
   return (
-    <ScrollArea className="h-full">
+    <>
+      <PageTitle title="playlist" playlistTitle={playlist?.title} />
+      <ScrollArea className="h-full">
       <div className="relative">
         {/* Header with Artwork and Info */}
         <div className={`bg-gradient-to-br ${playlist.gradient} relative`}>
@@ -591,5 +594,6 @@ export default function PlaylistPage() {
         </div>
       </div>
     </ScrollArea>
+    </>
   );
 } 
