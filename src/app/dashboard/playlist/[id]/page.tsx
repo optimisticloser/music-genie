@@ -4,34 +4,44 @@ import { useState, useEffect } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
-import { Play, Shuffle, Heart, MoreHorizontal, Download, Clock } from 'lucide-react';
+import { Play, Shuffle, Heart, MoreHorizontal, Download, Clock, Music } from 'lucide-react';
 import { supabase } from '@/lib/supabase/client';
 
-// Interface for future use when implementing real track data
-// interface PlaylistTrack {
-//   id: string;
-//   title: string;
-//   artist: string;
-//   album: string;
-//   duration: string;
-//   artwork?: string;
-// }
+interface PlaylistTrack {
+  id: string;
+  title: string;
+  artist: string;
+  album: string;
+  duration: string;
+  artwork?: string;
+  preview_url?: string;
+  spotify_id: string;
+  found_on_spotify: boolean;
+  position: number;
+}
 
-// Interface for future use when implementing real playlist data
-// interface Playlist {
-//   id: string;
-//   title: string;
-//   creator: string;
-//   description: string;
-//   artwork?: string;
-//   tracks: PlaylistTrack[];
-// }
+interface Playlist {
+  id: string;
+  title: string;
+  creator: string;
+  description?: string;
+  prompt?: string;
+  gradient: string;
+  total_tracks: number;
+  duration: string;
+  spotify_playlist_id?: string;
+  created_at: string;
+  tracks: PlaylistTrack[];
+}
 
 export default function PlaylistPage() {
   const router = useRouter();
   const params = useParams();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [playlist, setPlaylist] = useState<Playlist | null>(null);
+  const [loadingPlaylist, setLoadingPlaylist] = useState(true);
+  const [playlistError, setPlaylistError] = useState<string | null>(null);
 
   useEffect(() => {
     async function getUser() {
@@ -44,6 +54,7 @@ export default function PlaylistPage() {
         }
 
         setUser(user);
+        await loadPlaylist();
       } catch (error) {
         console.error("Error fetching user:", error);
         router.push("/login");
@@ -53,9 +64,33 @@ export default function PlaylistPage() {
     }
 
     getUser();
-  }, [router]);
+  }, [router, params.id]);
 
-  if (loading) {
+  const loadPlaylist = async () => {
+    try {
+      setLoadingPlaylist(true);
+      setPlaylistError(null);
+
+      const response = await fetch(`/api/playlists/${params.id}`);
+      
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new Error('Playlist não encontrada');
+        }
+        throw new Error('Erro ao carregar playlist');
+      }
+
+      const data = await response.json();
+      setPlaylist(data.playlist);
+    } catch (error) {
+      console.error('Error loading playlist:', error);
+      setPlaylistError(error instanceof Error ? error.message : 'Erro ao carregar playlist');
+    } finally {
+      setLoadingPlaylist(false);
+    }
+  };
+
+  if (loading || loadingPlaylist) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
@@ -70,65 +105,61 @@ export default function PlaylistPage() {
     return null;
   }
 
-  // Mock playlist data - will be replaced with real data later
-  const mockPlaylist = {
-    id: params.id,
-    name: "Jazzercise: The Ad Rhythm",
-    creator: "Sergio Fernandes",
-    description: "Get ready to sweat with \"Jazzercise: The Ad Rhythm\"! This playlist fuses vibrant jazz grooves with electrifying beats, perfect for HIIT workouts. Let the energizing melodies and pulsating rhythms motivate you through every rep, every set, and every drop of sweat. Whether you're crushing cardio or powering through strength training, this collection delivers the perfect soundtrack to keep your energy high and your body moving. Jazz it up, get your heart pumping, and turn your workout into a rhythmic celebration!",
-    gradient: "from-gray-400 to-gray-700",
-    trackCount: 12,
-    duration: "47 min",
-    tracks: [
-      {
-        id: 1,
-        title: "Pick Up the Pieces",
-        artist: "Average White Band",
-        album: "Average White Band",
-        duration: "3:54",
-        artwork: "/api/placeholder/40/40"
-      },
-      {
-        id: 2,
-        title: "Chameleon",
-        artist: "Herbie Hancock",
-        album: "Head Hunters",
-        duration: "15:44",
-        artwork: "/api/placeholder/40/40"
-      },
-      {
-        id: 3,
-        title: "Smooth Operator (Single Version)",
-        artist: "Sade",
-        album: "The Best of Sade",
-        duration: "4:18",
-        artwork: "/api/placeholder/40/40"
-      },
-      {
-        id: 4,
-        title: "Ain't Nobody",
-        artist: "Chaka Khan",
-        album: "The Best Hits of the 80s",
-        duration: "4:40",
-        artwork: "/api/placeholder/40/40"
-      }
-    ]
-  };
+  if (playlistError) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-red-500 text-2xl mb-4">⚠️</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Erro ao carregar playlist</h2>
+          <p className="text-gray-600 mb-4">{playlistError}</p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={loadPlaylist} variant="outline">
+              Tentar novamente
+            </Button>
+            <Button onClick={() => router.push('/dashboard')}>
+              Voltar ao Dashboard
+            </Button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-  const formatTime = (duration: string) => duration;
+  if (!playlist) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-gray-400 text-2xl mb-4">🎵</div>
+          <h2 className="text-xl font-semibold text-gray-900 mb-2">Playlist não encontrada</h2>
+          <p className="text-gray-600 mb-4">A playlist que você está procurando não existe ou foi removida.</p>
+          <Button onClick={() => router.push('/dashboard')}>
+            Voltar ao Dashboard
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    });
+  };
 
   return (
     <ScrollArea className="h-full">
       <div className="relative">
         {/* Header with Artwork and Info */}
-        <div className={`bg-gradient-to-br ${mockPlaylist.gradient} relative`}>
+        <div className={`bg-gradient-to-br ${playlist.gradient} relative`}>
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="relative px-8 py-12 flex items-end gap-8">
             {/* Large Artwork */}
             <div className="w-64 h-64 bg-black/20 rounded-2xl shadow-2xl flex-shrink-0 overflow-hidden">
-              <div className={`w-full h-full bg-gradient-to-br ${mockPlaylist.gradient} flex items-center justify-center`}>
+              <div className={`w-full h-full bg-gradient-to-br ${playlist.gradient} flex items-center justify-center`}>
                 <div className="text-white/30 text-6xl font-bold">
-                  {mockPlaylist.name.charAt(0)}
+                  {playlist.title.charAt(0)}
                 </div>
               </div>
             </div>
@@ -137,25 +168,31 @@ export default function PlaylistPage() {
             <div className="text-white flex-1 min-w-0">
               <p className="text-sm font-medium mb-2 opacity-90">Playlist</p>
               <h1 className="text-5xl font-bold mb-4 leading-tight">
-                {mockPlaylist.name}
+                {playlist.title}
               </h1>
               <div className="mb-6">
                 <p className="text-red-300 font-semibold text-lg mb-2">
-                  {mockPlaylist.creator}
+                  {playlist.creator}
                 </p>
-                <div className="text-sm opacity-90 max-w-2xl">
-                  <p className="line-clamp-3">
-                    {mockPlaylist.description}
-                  </p>
-                  <button className="text-white font-semibold hover:underline mt-1">
-                    MAIS
-                  </button>
-                </div>
+                {playlist.description && (
+                  <div className="text-sm opacity-90 max-w-2xl">
+                    <p className="line-clamp-3">
+                      {playlist.description}
+                    </p>
+                  </div>
+                )}
+                {playlist.prompt && (
+                  <div className="mt-2 text-xs opacity-75 max-w-2xl">
+                    <span className="font-medium">Prompt original:</span> {playlist.prompt}
+                  </div>
+                )}
               </div>
               <div className="flex items-center gap-1 text-sm opacity-90">
-                <span>{mockPlaylist.trackCount} músicas</span>
+                <span>{playlist.total_tracks} músicas</span>
                 <span>•</span>
-                <span>{mockPlaylist.duration}</span>
+                <span>{playlist.duration}</span>
+                <span>•</span>
+                <span>{formatDate(playlist.created_at)}</span>
               </div>
             </div>
           </div>
@@ -167,7 +204,7 @@ export default function PlaylistPage() {
             <Button 
               size="lg" 
               className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 rounded-full font-semibold"
-              onClick={() => console.log("Play playlist:", mockPlaylist.id)}
+              onClick={() => console.log("Play playlist:", playlist.id)}
             >
               <Play className="w-5 h-5 mr-2 ml-0.5" />
               Reproduzir
@@ -177,7 +214,7 @@ export default function PlaylistPage() {
               variant="outline" 
               size="lg" 
               className="px-8 py-3 rounded-full font-semibold border-gray-300"
-              onClick={() => console.log("Shuffle playlist:", mockPlaylist.id)}
+              onClick={() => console.log("Shuffle playlist:", playlist.id)}
             >
               <Shuffle className="w-5 h-5 mr-2" />
               Aleatório
@@ -188,7 +225,7 @@ export default function PlaylistPage() {
                 variant="ghost" 
                 size="sm" 
                 className="rounded-full"
-                onClick={() => console.log("Like playlist:", mockPlaylist.id)}
+                onClick={() => console.log("Like playlist:", playlist.id)}
               >
                 <Heart className="w-5 h-5" />
               </Button>
@@ -196,15 +233,25 @@ export default function PlaylistPage() {
                 variant="ghost" 
                 size="sm" 
                 className="rounded-full"
-                onClick={() => console.log("Download playlist:", mockPlaylist.id)}
+                onClick={() => console.log("Download playlist:", playlist.id)}
               >
                 <Download className="w-5 h-5" />
               </Button>
+              {playlist.spotify_playlist_id && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="rounded-full"
+                  onClick={() => window.open(`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`, '_blank')}
+                >
+                  <Music className="w-5 h-5" />
+                </Button>
+              )}
               <Button 
                 variant="ghost" 
                 size="sm" 
                 className="rounded-full"
-                onClick={() => console.log("More options:", mockPlaylist.id)}
+                onClick={() => console.log("More options:", playlist.id)}
               >
                 <MoreHorizontal className="w-5 h-5" />
               </Button>
@@ -227,12 +274,18 @@ export default function PlaylistPage() {
 
           {/* Tracks */}
           <div className="space-y-1">
-            {mockPlaylist.tracks.map((track, index) => (
-              <div 
-                key={track.id}
-                className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
-                onClick={() => console.log("Play track:", track.id)}
-              >
+            {playlist.tracks.length === 0 ? (
+              <div className="text-center py-8">
+                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Esta playlist não possui músicas</p>
+              </div>
+            ) : (
+              playlist.tracks.map((track: PlaylistTrack, index: number) => (
+                <div 
+                  key={track.id}
+                  className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
+                  onClick={() => console.log("Play track:", track.id)}
+                >
                 {/* Track Number / Play Button */}
                 <div className="w-8 flex items-center justify-center">
                   <span className="text-sm text-gray-500 group-hover:hidden">
@@ -291,7 +344,7 @@ export default function PlaylistPage() {
                     <Heart className="w-4 h-4" />
                   </Button>
                   <span className="text-sm text-gray-500 min-w-[35px] text-center">
-                    {formatTime(track.duration)}
+                    {track.duration}
                   </span>
                   <Button 
                     variant="ghost" 
@@ -305,8 +358,9 @@ export default function PlaylistPage() {
                     <MoreHorizontal className="w-4 h-4" />
                   </Button>
                 </div>
-              </div>
-            ))}
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

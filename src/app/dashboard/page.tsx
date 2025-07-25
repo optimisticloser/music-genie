@@ -17,39 +17,14 @@ import { supabase } from "@/lib/supabase/client";
 
 interface Playlist {
   id: string;
-  name: string;
-  creator: string;
+  title: string;
+  description?: string;
   gradient: string;
-  trackCount: number;
+  total_tracks: number;
   duration: string;
+  created_at: string;
+  spotify_playlist_id?: string;
 }
-
-const mockPlaylists: Playlist[] = [
-  {
-    id: '1',
-    name: 'Good Vibes Mix',
-    creator: 'Music Genie AI',
-    gradient: 'from-blue-400 to-purple-600',
-    trackCount: 45,
-    duration: '2h 34m',
-  },
-  {
-    id: '2',
-    name: 'Chill Evening',
-    creator: 'Music Genie AI',
-    gradient: 'from-green-400 to-blue-600',
-    trackCount: 32,
-    duration: '1h 48m',
-  },
-  {
-    id: '3',
-    name: 'Workout Beats',
-    creator: 'Music Genie AI',
-    gradient: 'from-red-400 to-orange-600',
-    trackCount: 28,
-    duration: '1h 12m',
-  },
-];
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -57,6 +32,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [connectingSpotify, setConnectingSpotify] = useState(false);
+  const [playlists, setPlaylists] = useState<Playlist[]>([]);
+  const [loadingPlaylists, setLoadingPlaylists] = useState(true);
+  const [playlistsError, setPlaylistsError] = useState<string | null>(null);
 
   useEffect(() => {
     async function getUser() {
@@ -80,6 +58,9 @@ export default function DashboardPage() {
           
           setSpotifyConnected(!!userData?.spotify_user_id);
         }
+
+        // Load user playlists
+        await loadPlaylists();
       } catch (error) {
         console.error("Error fetching user:", error);
         router.push("/login");
@@ -90,6 +71,27 @@ export default function DashboardPage() {
 
     getUser();
   }, [router]);
+
+  const loadPlaylists = async () => {
+    try {
+      setLoadingPlaylists(true);
+      setPlaylistsError(null);
+      
+      const response = await fetch('/api/playlists/user?limit=8'); // Get first 8 playlists for dashboard
+      
+      if (!response.ok) {
+        throw new Error('Failed to load playlists');
+      }
+      
+      const data = await response.json();
+      setPlaylists(data.playlists || []);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setPlaylistsError('Failed to load playlists');
+    } finally {
+      setLoadingPlaylists(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -195,44 +197,83 @@ export default function DashboardPage() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {mockPlaylists.map((playlist) => (
-              <Link key={playlist.id} href={`/dashboard/playlist/${playlist.id}`}>
-                <Card className="group cursor-pointer hover:shadow-lg transition-all">
+            {loadingPlaylists ? (
+              // Loading state
+              Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
                   <CardContent className="p-0">
-                    {/* Playlist Artwork */}
-                    <div className={`aspect-square bg-gradient-to-br ${playlist.gradient} rounded-t-lg relative overflow-hidden`}>
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                        <Button 
-                          size="sm" 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white text-black rounded-full w-12 h-12"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // Handle play action here
-                            console.log("Play playlist:", playlist.id);
-                          }}
-                        >
-                          <Play className="w-5 h-5 ml-0.5" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Playlist Info */}
-                    <div className="p-4">
-                      <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm">
-                        {playlist.name}
-                      </h4>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {playlist.creator}
-                      </p>
-                      <div className="flex items-center gap-2 text-xs text-gray-400">
-                        <Clock className="w-3 h-3" />
-                        <span>{playlist.trackCount} músicas • {playlist.duration}</span>
-                      </div>
+                    <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
+                    <div className="p-4 space-y-2">
+                      <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-3 bg-gray-200 rounded w-1/2"></div>
+                      <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+              ))
+            ) : playlistsError ? (
+              // Error state
+              <div className="col-span-full text-center py-8">
+                <div className="text-red-500 mb-2">Erro ao carregar playlists</div>
+                <Button onClick={loadPlaylists} variant="outline" size="sm">
+                  Tentar novamente
+                </Button>
+              </div>
+            ) : playlists.length === 0 ? (
+              // Empty state
+              <div className="col-span-full text-center py-12">
+                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">
+                  Nenhuma playlist ainda
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Crie sua primeira playlist com IA!
+                </p>
+                <Button onClick={() => router.push("/dashboard/generate")}>
+                  <Sparkles className="w-4 h-4 mr-2" />
+                  Gerar Playlist
+                </Button>
+              </div>
+            ) : (
+              playlists.map((playlist: Playlist) => (
+                <Link key={playlist.id} href={`/dashboard/playlist/${playlist.id}`}>
+                  <Card className="group cursor-pointer hover:shadow-lg transition-all">
+                    <CardContent className="p-0">
+                      {/* Playlist Artwork */}
+                      <div className={`aspect-square bg-gradient-to-br ${playlist.gradient} rounded-t-lg relative overflow-hidden`}>
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                          <Button 
+                            size="sm" 
+                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white text-black rounded-full w-12 h-12"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              // Handle play action here
+                              console.log("Play playlist:", playlist.id);
+                            }}
+                          >
+                            <Play className="w-5 h-5 ml-0.5" />
+                          </Button>
+                        </div>
+                      </div>
+                      
+                      {/* Playlist Info */}
+                      <div className="p-4">
+                        <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm">
+                          {playlist.title}
+                        </h4>
+                        <p className="text-xs text-gray-500 mb-2">
+                          Music Genie AI
+                        </p>
+                        <div className="flex items-center gap-2 text-xs text-gray-400">
+                          <Clock className="w-3 h-3" />
+                          <span>{playlist.total_tracks} músicas • {playlist.duration}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
         </div>
 
@@ -246,37 +287,58 @@ export default function DashboardPage() {
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {mockPlaylists.slice(0, 3).map((playlist) => (
-              <Link key={`recent-${playlist.id}`} href={`/dashboard/playlist/${playlist.id}`}>
-                <Card className="group cursor-pointer hover:shadow-md transition-all">
+            {loadingPlaylists ? (
+              // Loading state for recent playlists
+              Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i} className="animate-pulse">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-4">
-                      <div className={`w-16 h-16 bg-gradient-to-br ${playlist.gradient} rounded-lg flex-shrink-0`}></div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-semibold text-gray-900 mb-1 truncate">
-                          {playlist.name}
-                        </h4>
-                        <p className="text-sm text-gray-500 truncate">
-                          {playlist.creator}
-                        </p>
+                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                       </div>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          // Handle more options here
-                          console.log("More options for:", playlist.id);
-                        }}
-                      >
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
                     </div>
                   </CardContent>
                 </Card>
-              </Link>
-            ))}
+              ))
+            ) : playlists.length === 0 ? (
+              <div className="col-span-full text-center py-8">
+                <p className="text-gray-500">Nenhuma playlist recente</p>
+              </div>
+            ) : (
+              playlists.slice(0, 3).map((playlist: Playlist) => (
+                <Link key={`recent-${playlist.id}`} href={`/dashboard/playlist/${playlist.id}`}>
+                  <Card className="group cursor-pointer hover:shadow-md transition-all">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-4">
+                        <div className={`w-16 h-16 bg-gradient-to-br ${playlist.gradient} rounded-lg flex-shrink-0`}></div>
+                        <div className="flex-1 min-w-0">
+                          <h4 className="font-semibold text-gray-900 mb-1 truncate">
+                            {playlist.title}
+                          </h4>
+                          <p className="text-sm text-gray-500 truncate">
+                            Music Genie AI
+                          </p>
+                        </div>
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            // Handle more options here
+                            console.log("More options for:", playlist.id);
+                          }}
+                        >
+                          <MoreHorizontal className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </Link>
+              ))
+            )}
           </div>
         </div>
       </div>
