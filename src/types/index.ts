@@ -127,6 +127,24 @@ export interface SpotifySearchResponse {
   };
 }
 
+// Spotify OAuth types
+export interface SpotifyTokens {
+  access_token: string;
+  refresh_token: string;
+  expires_in: number;
+  token_type: string;
+  scope: string;
+}
+
+export interface SpotifyUser {
+  id: string;
+  display_name: string;
+  email: string;
+  images?: Array<{ url: string; height: number; width: number }>;
+  country?: string;
+  product?: string;
+}
+
 // API Response types
 export interface ApiResponse<T = unknown> {
   success: boolean;

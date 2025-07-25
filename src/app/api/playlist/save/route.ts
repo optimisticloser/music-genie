@@ -1,22 +1,35 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import createClient from "@/lib/supabase/server";
+import { SpotifyService } from "@/lib/services/spotify";
+import { createPlaylist, addTracksToPlaylist, getCurrentUser } from "@/lib/spotify/api";
 
 interface Song {
   title?: string;
   artist?: string;
+  spotify_id?: string;
+  album_name?: string;
+  album_art_url?: string;
+  duration_ms?: number;
+  preview_url?: string;
+  external_url?: string;
+  found_on_spotify?: boolean;
 }
 
-export async function POST(req: Request) {
+export async function POST(req: NextRequest) {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
 
     if (!user) {
-      return new NextResponse("Unauthorized", { status: 401 });
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
     const { playlist, prompt } = body;
+
+    if (!playlist || !playlist.name) {
+      return NextResponse.json({ error: "Playlist data is required" }, { status: 400 });
+    }
 
     // Create playlist lineage
     const { data: lineage, error: lineageError } = await supabase
@@ -33,20 +46,61 @@ export async function POST(req: Request) {
       return new NextResponse("Failed to create playlist lineage", { status: 500 });
     }
 
-    // Create playlist
+    // Check if user has Spotify connected
+    const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
+    let spotifyPlaylistId: string | null = null;
+    let spotifyPlaylistUrl: string | null = null;
+
+    // Create playlist on Spotify if connected
+    if (isSpotifyConnected && playlist.songs && playlist.songs.length > 0) {
+      try {
+        const accessToken = await SpotifyService.getValidAccessToken(user.id);
+        if (accessToken) {
+          const spotifyUser = await getCurrentUser(accessToken);
+          const spotifyPlaylist = await createPlaylist(
+            spotifyUser.id,
+            playlist.name,
+            playlist.essay || `Playlist gerada por IA: ${playlist.name}`,
+            accessToken,
+            false // private playlist
+          );
+          
+          spotifyPlaylistId = spotifyPlaylist.id;
+          spotifyPlaylistUrl = spotifyPlaylist.external_url;
+
+          // Add tracks to Spotify playlist
+          const tracksWithSpotifyId = playlist.songs.filter((song: Song) => song.spotify_id);
+          if (tracksWithSpotifyId.length > 0) {
+            const trackUris = tracksWithSpotifyId.map((song: Song) => `spotify:track:${song.spotify_id}`);
+            await addTracksToPlaylist(spotifyPlaylistId, trackUris, accessToken);
+          }
+        }
+      } catch (error) {
+        console.error("Error creating Spotify playlist:", error);
+        // Continue without Spotify integration
+      }
+    }
+
+    // Calculate total duration
+    const totalDurationMs = playlist.songs?.reduce((total: number, song: Song) => {
+      return total + (song.duration_ms || 0);
+    }, 0) || 0;
+
+    // Create playlist in database
     const { data: savedPlaylist, error: playlistError } = await supabase
       .from("playlists")
       .insert({
         lineage_id: lineage.id,
         user_id: user.id,
-        title: playlist.name || "Generated Playlist",
+        title: playlist.name,
         description: playlist.essay,
         prompt: prompt,
         version: 1,
         status: "draft",
         sharing_permission: "private",
+        spotify_playlist_id: spotifyPlaylistId,
         total_tracks: playlist.songs?.length || 0,
-        total_duration_ms: 0, // TODO: Calculate from Spotify API
+        total_duration_ms: totalDurationMs,
       })
       .select()
       .single();
@@ -60,12 +114,15 @@ export async function POST(req: Request) {
     if (playlist.songs && playlist.songs.length > 0) {
       const tracks = playlist.songs.map((song: Song, index: number) => ({
         playlist_id: savedPlaylist.id,
-        title: song.title || "Unknown",
-        artist: song.artist || "Unknown",
-        album: "Generated",
-        duration_ms: 0, // TODO: Get from Spotify API
-        track_number: index + 1,
-        spotify_track_id: null, // TODO: Search and match
+        spotify_track_id: song.spotify_id || null,
+        track_name: song.title || "Unknown",
+        artist_name: song.artist || "Unknown",
+        album_name: song.album_name || "Generated",
+        album_art_url: song.album_art_url || null,
+        duration_ms: song.duration_ms || 0,
+        preview_url: song.preview_url || null,
+        position: index + 1,
+        found_on_spotify: song.found_on_spotify || false,
       }));
 
       const { error: tracksError } = await supabase
@@ -80,6 +137,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ 
       playlist: savedPlaylist,
+      spotify_playlist_url: spotifyPlaylistUrl,
       message: "Playlist saved successfully" 
     });
 

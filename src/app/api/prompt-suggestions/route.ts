@@ -5,6 +5,7 @@ import createClient from "@/lib/supabase/server";
 interface PromptSuggestionsRequest {
   current_prompt?: string;
   mode: 'initial' | 'enhancement';
+  category_selections?: { category: string; selection: string }[];
 }
 
 export async function POST(req: Request) {
@@ -42,7 +43,7 @@ export async function POST(req: Request) {
       try {
         const { output } = await playlistPromptAgent({
           custom_text: body.current_prompt || "",
-          category_selections: []
+          category_selections: body.category_selections || []
         });
 
         if (output?.prompt_suggestions && output.prompt_suggestions.length > 0) {

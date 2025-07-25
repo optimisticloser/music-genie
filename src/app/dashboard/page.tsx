@@ -10,7 +10,8 @@ import {
   Sparkles, 
   Play, 
   MoreHorizontal,
-  Clock
+  Clock,
+  Music
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -54,6 +55,8 @@ export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [connectingSpotify, setConnectingSpotify] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -67,7 +70,16 @@ export default function DashboardPage() {
 
         setUser(user);
 
-        // Profile data can be fetched here if needed in the future
+        // Check if user has Spotify connected
+        if (user) {
+          const { data: userData } = await supabase
+            .from('users')
+            .select('spotify_user_id')
+            .eq('id', user.id)
+            .single();
+          
+          setSpotifyConnected(!!userData?.spotify_user_id);
+        }
       } catch (error) {
         console.error("Error fetching user:", error);
         router.push("/login");
@@ -89,6 +101,17 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const handleConnectSpotify = async () => {
+    setConnectingSpotify(true);
+    try {
+      window.location.href = '/api/auth/spotify';
+    } catch (error) {
+      console.error('Error connecting Spotify:', error);
+    } finally {
+      setConnectingSpotify(false);
+    }
+  };
 
   if (!user) {
     return null;
@@ -114,14 +137,29 @@ export default function DashboardPage() {
                 com as melhores músicas para o momento.
               </p>
               
-              <Button 
-                size="lg" 
-                className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
-                onClick={() => router.push("/dashboard/generate")}
-              >
-                <Sparkles className="w-5 h-5 mr-2" />
-                Gerar com IA
-              </Button>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button 
+                  size="lg" 
+                  className="bg-red-600 hover:bg-red-700 text-white px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  onClick={() => router.push("/dashboard/generate")}
+                >
+                  <Sparkles className="w-5 h-5 mr-2" />
+                  Gerar com IA
+                </Button>
+                
+                {!spotifyConnected && (
+                  <Button 
+                    size="lg" 
+                    variant="outline"
+                    className="border-green-600 text-green-600 hover:bg-green-50 px-8 py-3 text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    onClick={handleConnectSpotify}
+                    disabled={connectingSpotify}
+                  >
+                    <Music className="w-5 h-5 mr-2" />
+                    {connectingSpotify ? 'Conectando...' : 'Conectar Spotify'}
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -134,6 +172,17 @@ export default function DashboardPage() {
           <p className="text-gray-600">
             Suas playlists criadas e descobertas musicais
           </p>
+          
+          {spotifyConnected && (
+            <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center gap-2">
+                <Music className="w-5 h-5 text-green-600" />
+                <span className="text-green-800 font-medium">
+                  Spotify conectado! Você pode salvar playlists diretamente na sua conta.
+                </span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Playlists Grid */}

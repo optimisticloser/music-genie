@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
@@ -14,7 +14,17 @@ interface Tag {
 interface GeneratedPlaylist {
   name?: string;
   essay?: string;
-  songs?: { title?: string; artist?: string }[];
+  songs?: { 
+    title?: string; 
+    artist?: string;
+    spotify_id?: string;
+    album_name?: string;
+    album_art_url?: string;
+    duration_ms?: number;
+    preview_url?: string;
+    external_url?: string;
+    found_on_spotify?: boolean;
+  }[];
   album_art?: {
     style_preferences?: string;
     color_preferences?: string;
@@ -93,6 +103,8 @@ export default function GeneratePage() {
   const [generationStep, setGenerationStep] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
+  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyPlaylistUrl, setSpotifyPlaylistUrl] = useState<string | null>(null);
 
   // Carrega sugestões iniciais
   useEffect(() => {
@@ -100,7 +112,11 @@ export default function GeneratePage() {
   }, []);
 
   // Carrega sugestões baseadas no modo
-  const loadSuggestions = async (requestMode: 'initial' | 'enhancement', currentPromptText?: string) => {
+  const loadSuggestions = async (
+    requestMode: 'initial' | 'enhancement',
+    currentPromptText?: string,
+    categorySelections: Tag[] = []
+  ) => {
     setIsLoadingSuggestions(true);
     try {
       const response = await fetch('/api/prompt-suggestions', {
@@ -108,10 +124,14 @@ export default function GeneratePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           current_prompt: currentPromptText || getAllSelections(),
-          mode: requestMode
-        })
+          mode: requestMode,
+          category_selections: categorySelections.map((t) => ({
+            category: t.category,
+            selection: t.label,
+          })),
+        }),
       });
-
+       
       if (!response.ok) throw new Error('Failed to load suggestions');
 
       const { suggestions: newSuggestions } = await response.json();
@@ -131,32 +151,44 @@ export default function GeneratePage() {
     return allSelections.join(' ');
   };
 
-  // Gera prompt usando WorkflowAI
-  const generatePromptFromParts = async () => {
-    const allSelections = getAllSelections();
+  // Atualiza o prompt baseado em seleções
+  const generatePromptFromParts = async (
+    overrideTags: Tag[] = selectedTags,
+    overrideParts: string[] = promptParts
+  ) => {
+    const requestId = Math.random().toString(36).substr(2, 9);
+    console.log(`🚀 STARTING generatePromptFromParts [${requestId}]`);
+    
+    const allSelections = (
+      [...overrideTags.map(t => `${t.category}: ${t.label}`), ...overrideParts].join(' ')
+    ).trim();
     if (!allSelections.trim()) {
+      console.log(`⚠️ EMPTY SELECTION, skipping [${requestId}]`);
       setCurrentPrompt('');
       return;
     }
 
     setIsGeneratingPrompt(true);
     try {
-      // Separar category_selections e custom_text
-      const categorySelections = selectedTags.map(tag => `${tag.category}: ${tag.label}`);
-      const customText = promptParts.join(' + ');
+      // Separar category_selections e custom_text usando overrides (estado mais recente)
+      const categorySelections = overrideTags.map(tag => ({
+        category: tag.category,
+        selection: tag.label,
+      }));
+      const customText = overrideParts.join(' ');
 
       // Debug logs
-      console.log('🔍 DEBUG - selectedTags:', selectedTags);
-      console.log('🔍 DEBUG - promptParts:', promptParts);
-      console.log('🔍 DEBUG - categorySelections:', categorySelections);
-      console.log('🔍 DEBUG - customText:', customText);
+      console.log(`🔍 DEBUG [${requestId}] - selectedTags:`, overrideTags);
+      console.log(`🔍 DEBUG [${requestId}] - promptParts:`, overrideParts);
+      console.log(`🔍 DEBUG [${requestId}] - categorySelections:`, categorySelections);
+      console.log(`🔍 DEBUG [${requestId}] - customText:`, customText);
 
       const requestBody = {
         category_selections: categorySelections,
-        custom_text: customText
+        custom_text: customText,
       };
 
-      console.log('🔍 DEBUG - Request body:', requestBody);
+      console.log(`🔍 DEBUG [${requestId}] - Request body:`, requestBody);
 
       const response = await fetch('/api/playlist/prompt', {
         method: 'POST',
@@ -166,11 +198,15 @@ export default function GeneratePage() {
 
       if (!response.ok) throw new Error('Failed to generate prompt');
 
-      const { prompt } = await response.json();
+      const { prompt, suggestions: newSuggestions } = await response.json();
       // Usar só o prompt gerado pelo WorkflowAI, não concatenar
       setCurrentPrompt(prompt || '');
+      if (Array.isArray(newSuggestions) && newSuggestions.length > 0) {
+        setSuggestions(newSuggestions);
+      }
+      console.log(`✅ COMPLETED generatePromptFromParts [${requestId}]`);
     } catch (error) {
-      console.error('Error generating prompt:', error);
+      console.error(`❌ ERROR generatePromptFromParts [${requestId}]:`, error);
       // Se falhar, não mostrar nada no prompt colorido
       setCurrentPrompt('');
     } finally {
@@ -178,14 +214,20 @@ export default function GeneratePage() {
     }
   };
 
+  // Função centralizada que sempre envia o estado mais atual
+  const updatePrompt = async (tagsToUse: Tag[] = selectedTags, partsToUse: string[] = promptParts) => {
+    console.log('📍 updatePrompt called with:', { tagsToUse, partsToUse });
+    await generatePromptFromParts(tagsToUse, partsToUse);
+  };
+
   // Adiciona sugestão ao prompt
   const handleAddSuggestion = async (suggestion: string) => {
+    // Agora somamos a nova sugestão às partes existentes
     const newPromptParts = [...promptParts, suggestion];
     setPromptParts(newPromptParts);
-    
-    // Gera novo prompt e carrega sugestões
-    await generatePromptFromParts();
-    loadSuggestions('enhancement');
+
+    // Usa função centralizada
+    await updatePrompt(selectedTags, newPromptParts);
   };
 
   // Adiciona input customizado
@@ -196,27 +238,25 @@ export default function GeneratePage() {
     setPromptParts(newPromptParts);
     setCustomInput('');
 
-    // Gera novo prompt e carrega sugestões
-    await generatePromptFromParts();
-    loadSuggestions('enhancement');
+    // Usa função centralizada
+    await updatePrompt(selectedTags, newPromptParts);
   };
 
   // Toggle tag das categorias predefinidas
   const toggleTag = async (tag: Tag) => {
-    const exists = selectedTags.find(t => t.id === tag.id);
+    const exists = selectedTags.find((t) => t.id === tag.id);
     let newSelectedTags: Tag[];
-    
+
     if (exists) {
-      newSelectedTags = selectedTags.filter(t => t.id !== tag.id);
+      newSelectedTags = selectedTags.filter((t) => t.id !== tag.id);
     } else {
       newSelectedTags = [...selectedTags, tag];
     }
-    
+
     setSelectedTags(newSelectedTags);
-    
-    // Gera novo prompt e carrega sugestões
-    await generatePromptFromParts();
-    loadSuggestions('enhancement');
+
+    // Agora geramos o prompt imediatamente sempre que as tags mudam
+    await updatePrompt(newSelectedTags, promptParts);
   };
 
   // Remove parte do prompt
@@ -229,8 +269,8 @@ export default function GeneratePage() {
       setActiveCategory(null);
       loadSuggestions('initial');
     } else {
-      await generatePromptFromParts();
-      loadSuggestions('enhancement');
+      // Usa função centralizada
+      await updatePrompt(selectedTags, newPromptParts);
     }
   };
 
@@ -244,8 +284,8 @@ export default function GeneratePage() {
       setActiveCategory(null);
       loadSuggestions('initial');
     } else {
-      await generatePromptFromParts();
-      loadSuggestions('enhancement');
+      // Usa função centralizada
+      await updatePrompt(newSelectedTags, promptParts);
     }
   };
 
@@ -283,8 +323,9 @@ export default function GeneratePage() {
         throw new Error('Failed to generate playlist');
       }
 
-      const { playlist } = await playlistResponse.json();
+      const { playlist, spotify_connected } = await playlistResponse.json();
       setGeneratedPlaylist(playlist);
+      setSpotifyConnected(spotify_connected);
       setGenerationStep('complete');
 
     } catch (err) {
@@ -317,8 +358,9 @@ export default function GeneratePage() {
         throw new Error('Failed to save playlist');
       }
 
-      const { playlist } = await response.json();
+      const { playlist, spotify_playlist_url } = await response.json();
       setSavedPlaylistId(playlist.id);
+      setSpotifyPlaylistUrl(spotify_playlist_url);
       setError(null);
       
     } catch (err) {
@@ -569,11 +611,30 @@ export default function GeneratePage() {
                     <div className="space-y-2 max-h-96 overflow-y-auto">
                       {generatedPlaylist.songs.map((song, index) => (
                         <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div>
-                            <div className="font-medium text-gray-900">{song.title}</div>
-                            <div className="text-sm text-gray-600">{song.artist}</div>
+                          <div className="flex items-center gap-3 flex-1">
+                            {song.album_art_url && (
+                              <img 
+                                src={song.album_art_url} 
+                                alt={`${song.title} album art`}
+                                className="w-10 h-10 rounded object-cover"
+                              />
+                            )}
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{song.title}</div>
+                              <div className="text-sm text-gray-600">{song.artist}</div>
+                              {song.album_name && (
+                                <div className="text-xs text-gray-500">{song.album_name}</div>
+                              )}
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-500">#{index + 1}</div>
+                          <div className="flex items-center gap-2">
+                            {song.found_on_spotify ? (
+                              <div className="w-2 h-2 bg-green-500 rounded-full" title="Available on Spotify" />
+                            ) : (
+                              <div className="w-2 h-2 bg-gray-300 rounded-full" title="Not found on Spotify" />
+                            )}
+                            <div className="text-sm text-gray-500">#{index + 1}</div>
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -581,29 +642,48 @@ export default function GeneratePage() {
                 )}
 
                 <div className="flex gap-4">
-                  <Button className="bg-green-600 hover:bg-green-700">
-                    Save to Spotify
-                  </Button>
-                  <Button 
-                    variant="outline" 
-                    onClick={handleSaveToLibrary}
-                    disabled={isSaving || !!savedPlaylistId}
-                    className="flex items-center gap-2"
-                  >
-                    {isSaving ? (
-                      <>
-                        <Loader2 className="w-4 h-4 animate-spin" />
-                        Saving...
-                      </>
-                    ) : savedPlaylistId ? (
-                      <>
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                        Saved to Library
-                      </>
-                    ) : (
-                      'Save to Library'
-                    )}
-                  </Button>
+                  {spotifyConnected ? (
+                    <Button 
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={handleSaveToLibrary}
+                      disabled={isSaving || !!savedPlaylistId}
+                    >
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          Saving to Spotify...
+                        </>
+                      ) : savedPlaylistId ? (
+                        <>
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                          {spotifyPlaylistUrl ? 'Saved to Spotify' : 'Saved to Library'}
+                        </>
+                      ) : (
+                        <>
+                          <Music className="w-4 h-4 mr-2" />
+                          Save to Spotify
+                        </>
+                      )}
+                    </Button>
+                  ) : (
+                    <Button 
+                      variant="outline" 
+                      onClick={() => window.location.href = '/api/auth/spotify'}
+                      className="border-green-600 text-green-600 hover:bg-green-50"
+                    >
+                      <Music className="w-4 h-4 mr-2" />
+                      Connect Spotify to Save
+                    </Button>
+                  )}
+                  
+                  {spotifyPlaylistUrl && (
+                    <Button 
+                      variant="outline"
+                      onClick={() => window.open(spotifyPlaylistUrl, '_blank')}
+                    >
+                      Open in Spotify
+                    </Button>
+                  )}
                 </div>
               </div>
             )}
