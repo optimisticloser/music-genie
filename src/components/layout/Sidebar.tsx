@@ -34,15 +34,7 @@ const navigationItems = [
 
 const libraryItems = [
   { name: 'Adições recentes', href: '/dashboard/history', icon: Clock },
-  { name: 'Artistas', href: '/dashboard/search', icon: Mic2 },
-  { name: 'Álbuns', href: '/dashboard/search', icon: Disc3 },
-  { name: 'Músicas', href: '/dashboard/search', icon: Music },
-  { name: 'Feito para você', href: '/dashboard/discover', icon: Heart },
-];
-
-const playlistItems = [
-  { name: 'Todas as playlists', href: '/dashboard/history', icon: ListMusic },
-  { name: 'Músicas favoritas', href: '/dashboard/search', icon: Heart },
+  { name: 'Favoritos', href: '/dashboard/favorites', icon: Heart },
 ];
 
 export function Sidebar({ onClose }: SidebarProps) {
@@ -181,42 +173,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           </div>
         </div>
 
-        <Separator className="my-4" />
 
-        {/* Playlists */}
-        <div className="mb-6">
-          <div className="flex items-center justify-between px-3 mb-2">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
-              Playlists
-            </h3>
-            <button className="p-1 hover:bg-gray-200 rounded">
-              <Plus className="w-4 h-4 text-gray-500" />
-            </button>
-          </div>
-          <div className="space-y-1">
-            {playlistItems.map((item) => {
-              const isActive = pathname === item.href;
-              return (
-                <button
-                  key={item.name}
-                  onClick={() => handleNavigation(item.href)}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
-                    isActive 
-                      ? "bg-red-100 text-red-700" 
-                      : "text-gray-700 hover:bg-gray-100"
-                  )}
-                >
-                  <item.icon className={cn(
-                    "w-5 h-5",
-                    isActive ? "text-red-600" : "text-gray-500"
-                  )} />
-                  {item.name}
-                </button>
-              );
-            })}
-          </div>
-        </div>
       </ScrollArea>
     </div>
   );

@@ -15,6 +15,7 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '12');
     const search = searchParams.get('search') || '';
     const statusParam = searchParams.get('status') || 'all';
+    const favoritesOnly = searchParams.get('favorites') === 'true';
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
 
@@ -49,6 +50,11 @@ export async function GET(req: NextRequest) {
     if (status !== 'all') {
       query = query.eq('status', status);
     }
+
+    // TODO: Add favorites filter after migration is applied
+    // if (favoritesOnly) {
+    //   query = query.eq('is_favorite', true);
+    // }
 
     // Apply sorting
     query = query.order(sortBy, { ascending: sortOrder === 'asc' });
