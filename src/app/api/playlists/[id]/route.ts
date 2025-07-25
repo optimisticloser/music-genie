@@ -81,18 +81,30 @@ export async function GET(
       gradient: generateGradient(playlist.id),
       created_at: playlist.created_at,
       updated_at: playlist.updated_at,
-      tracks: tracks?.map(track => ({
-        id: track.id,
-        title: track.track_name,
-        artist: track.artist_name,
-        album: track.album_name,
-        artwork: track.album_art_url,
-        duration: formatTrackDuration(track.duration_ms || 0),
-        preview_url: track.preview_url,
-        spotify_id: track.spotify_track_id,
-        found_on_spotify: track.found_on_spotify,
-        position: track.position
-      })) || []
+      tracks: tracks?.map(track => {
+        console.log('🎵 Track data:', {
+          id: track.id,
+          title: track.track_name,
+          artist: track.artist_name,
+          album: track.album_name,
+          artwork: track.album_art_url,
+          preview_url: track.preview_url,
+          found_on_spotify: track.found_on_spotify
+        });
+        
+        return {
+          id: track.id,
+          title: track.track_name,
+          artist: track.artist_name,
+          album: track.album_name,
+          artwork: track.album_art_url,
+          duration: formatTrackDuration(track.duration_ms || 0),
+          preview_url: track.preview_url,
+          spotify_id: track.spotify_track_id,
+          found_on_spotify: track.found_on_spotify,
+          position: track.position
+        };
+      }) || []
     };
 
     return NextResponse.json({ playlist: formattedPlaylist });

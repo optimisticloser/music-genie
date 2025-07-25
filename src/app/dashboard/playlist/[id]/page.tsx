@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter, useParams } from 'next/navigation';
+import Image from 'next/image';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Play, Pause, Heart, MoreHorizontal, Clock, Music, ExternalLink } from 'lucide-react';
@@ -97,10 +98,17 @@ export default function PlaylistPage() {
   }, [params.id]);
 
   const handlePlayPreview = async (track: PlaylistTrack) => {
-    if (!track.preview_url) return;
+    console.log('🎵 Attempting to play preview for track:', track.title);
+    console.log('🎵 Preview URL:', track.preview_url);
+    
+    if (!track.preview_url) {
+      console.log('❌ No preview URL available for track:', track.title);
+      return;
+    }
 
     if (playingTrack === track.id) {
       // Pausar
+      console.log('⏸️ Pausing track:', track.title);
       if (audio) {
         audio.pause();
         setAudio(null);
@@ -109,20 +117,37 @@ export default function PlaylistPage() {
     } else {
       // Parar áudio anterior
       if (audio) {
+        console.log('🛑 Stopping previous audio');
         audio.pause();
         audio.currentTime = 0;
       }
 
       // Tocar nova música
+      console.log('▶️ Playing new track:', track.title);
       const newAudio = new Audio(track.preview_url);
+      
       newAudio.addEventListener('ended', () => {
+        console.log('🔚 Track ended:', track.title);
         setPlayingTrack(null);
         setAudio(null);
       });
       
-      newAudio.play();
-      setAudio(newAudio);
-      setPlayingTrack(track.id);
+      newAudio.addEventListener('error', (e) => {
+        console.error('❌ Audio error:', e);
+        setPlayingTrack(null);
+        setAudio(null);
+      });
+      
+      try {
+        await newAudio.play();
+        setAudio(newAudio);
+        setPlayingTrack(track.id);
+        console.log('✅ Track started playing:', track.title);
+      } catch (error) {
+        console.error('❌ Failed to play track:', error);
+        setPlayingTrack(null);
+        setAudio(null);
+      }
     }
   };
 
@@ -375,8 +400,22 @@ export default function PlaylistPage() {
 
                       {/* Track Info */}
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0 relative">
-                          <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
+                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0 relative overflow-hidden">
+                          {track.artwork ? (
+                            <Image 
+                              src={track.artwork} 
+                              alt={`${track.title} album art`}
+                              width={40}
+                              height={40}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                console.log('❌ Failed to load image for track:', track.title);
+                                e.currentTarget.style.display = 'none';
+                              }}
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
+                          )}
                           {track.preview_url && playingTrack === track.id && (
                             <div className="absolute inset-0 bg-black/50 rounded flex items-center justify-center">
                               <Pause className="w-4 h-4 text-white" />
