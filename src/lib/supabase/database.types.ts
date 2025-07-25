@@ -7,62 +7,83 @@ export type Json =
   | Json[]
 
 export type Database = {
+  // Allows to automatically instanciate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "12.2.12 (cd3cf9e)"
+  }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          operationName?: string
+          query?: string
+          variables?: Json
+          extensions?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
-      users: {
+      demo_prompts: {
         Row: {
-          id: string
-          email: string
-          full_name: string | null
-          avatar_url: string | null
-          spotify_user_id: string | null
-          spotify_access_token: string | null
-          spotify_refresh_token: string | null
+          category: string | null
           created_at: string
-          updated_at: string
+          id: string
+          is_active: boolean | null
+          popularity_score: number | null
+          prompt: string
         }
         Insert: {
-          id: string
-          email: string
-          full_name?: string | null
-          avatar_url?: string | null
-          spotify_user_id?: string | null
-          spotify_access_token?: string | null
-          spotify_refresh_token?: string | null
+          category?: string | null
           created_at?: string
-          updated_at?: string
+          id?: string
+          is_active?: boolean | null
+          popularity_score?: number | null
+          prompt: string
         }
         Update: {
-          id?: string
-          email?: string
-          full_name?: string | null
-          avatar_url?: string | null
-          spotify_user_id?: string | null
-          spotify_access_token?: string | null
-          spotify_refresh_token?: string | null
+          category?: string | null
           created_at?: string
-          updated_at?: string
+          id?: string
+          is_active?: boolean | null
+          popularity_score?: number | null
+          prompt?: string
         }
         Relationships: []
       }
       playlist_lineage: {
         Row: {
-          id: string
-          user_id: string
-          original_prompt: string | null
           created_at: string
+          id: string
+          original_prompt: string | null
+          user_id: string
         }
         Insert: {
-          id?: string
-          user_id: string
-          original_prompt?: string | null
           created_at?: string
+          id?: string
+          original_prompt?: string | null
+          user_id: string
         }
         Update: {
-          id?: string
-          user_id?: string
-          original_prompt?: string | null
           created_at?: string
+          id?: string
+          original_prompt?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -71,158 +92,36 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
-        ]
-      }
-      playlists: {
-        Row: {
-          id: string
-          lineage_id: string
-          user_id: string
-          title: string
-          description: string | null
-          prompt: string | null
-          version: number
-          status: Database["public"]["Enums"]["playlist_status"]
-          sharing_permission: Database["public"]["Enums"]["sharing_permission"]
-          spotify_playlist_id: string | null
-          cover_image_url: string | null
-          total_tracks: number
-          total_duration_ms: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          lineage_id: string
-          user_id: string
-          title: string
-          description?: string | null
-          prompt?: string | null
-          version?: number
-          status?: Database["public"]["Enums"]["playlist_status"]
-          sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
-          spotify_playlist_id?: string | null
-          cover_image_url?: string | null
-          total_tracks?: number
-          total_duration_ms?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          lineage_id?: string
-          user_id?: string
-          title?: string
-          description?: string | null
-          prompt?: string | null
-          version?: number
-          status?: Database["public"]["Enums"]["playlist_status"]
-          sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
-          spotify_playlist_id?: string | null
-          cover_image_url?: string | null
-          total_tracks?: number
-          total_duration_ms?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "playlists_lineage_id_fkey"
-            columns: ["lineage_id"]
-            isOneToOne: false
-            referencedRelation: "playlist_lineage"
-            referencedColumns: ["id"]
           },
-          {
-            foreignKeyName: "playlists_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          }
-        ]
-      }
-      playlist_tracks: {
-        Row: {
-          id: string
-          playlist_id: string
-          spotify_track_id: string
-          track_name: string
-          artist_name: string
-          album_name: string | null
-          album_art_url: string | null
-          duration_ms: number | null
-          preview_url: string | null
-          position: number
-          found_on_spotify: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          playlist_id: string
-          spotify_track_id: string
-          track_name: string
-          artist_name: string
-          album_name?: string | null
-          album_art_url?: string | null
-          duration_ms?: number | null
-          preview_url?: string | null
-          position: number
-          found_on_spotify?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          playlist_id?: string
-          spotify_track_id?: string
-          track_name?: string
-          artist_name?: string
-          album_name?: string | null
-          album_art_url?: string | null
-          duration_ms?: number | null
-          preview_url?: string | null
-          position?: number
-          found_on_spotify?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "playlist_tracks_playlist_id_fkey"
-            columns: ["playlist_id"]
-            isOneToOne: false
-            referencedRelation: "playlists"
-            referencedColumns: ["id"]
-          }
         ]
       }
       playlist_shares: {
         Row: {
+          created_at: string
+          expires_at: string | null
           id: string
           playlist_id: string
-          shared_by_user_id: string
           share_token: string
-          expires_at: string | null
-          view_count: number
-          created_at: string
+          shared_by_user_id: string
+          view_count: number | null
         }
         Insert: {
+          created_at?: string
+          expires_at?: string | null
           id?: string
           playlist_id: string
-          shared_by_user_id: string
           share_token?: string
-          expires_at?: string | null
-          view_count?: number
-          created_at?: string
+          shared_by_user_id: string
+          view_count?: number | null
         }
         Update: {
+          created_at?: string
+          expires_at?: string | null
           id?: string
           playlist_id?: string
-          shared_by_user_id?: string
           share_token?: string
-          expires_at?: string | null
-          view_count?: number
-          created_at?: string
+          shared_by_user_id?: string
+          view_count?: number | null
         }
         Relationships: [
           {
@@ -238,60 +137,164 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
       }
-      demo_prompts: {
+      playlist_tracks: {
         Row: {
-          id: string
-          prompt: string
-          category: string
-          popularity_score: number
-          is_active: boolean
+          album_art_url: string | null
+          album_name: string | null
+          artist_name: string
           created_at: string
+          duration_ms: number | null
+          found_on_spotify: boolean
+          id: string
+          playlist_id: string
+          position: number
+          preview_url: string | null
+          spotify_track_id: string
+          track_name: string
         }
         Insert: {
-          id?: string
-          prompt: string
-          category?: string
-          popularity_score?: number
-          is_active?: boolean
+          album_art_url?: string | null
+          album_name?: string | null
+          artist_name: string
           created_at?: string
+          duration_ms?: number | null
+          found_on_spotify?: boolean
+          id?: string
+          playlist_id: string
+          position: number
+          preview_url?: string | null
+          spotify_track_id: string
+          track_name: string
         }
         Update: {
-          id?: string
-          prompt?: string
-          category?: string
-          popularity_score?: number
-          is_active?: boolean
+          album_art_url?: string | null
+          album_name?: string | null
+          artist_name?: string
           created_at?: string
+          duration_ms?: number | null
+          found_on_spotify?: boolean
+          id?: string
+          playlist_id?: string
+          position?: number
+          preview_url?: string | null
+          spotify_track_id?: string
+          track_name?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "playlist_tracks_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: false
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      playlists: {
+        Row: {
+          cover_image_url: string | null
+          created_at: string
+          description: string | null
+          id: string
+          is_favorite: boolean
+          lineage_id: string
+          prompt: string | null
+          sharing_permission: Database["public"]["Enums"]["sharing_permission"]
+          spotify_playlist_id: string | null
+          status: Database["public"]["Enums"]["playlist_status"]
+          title: string
+          total_duration_ms: number | null
+          total_tracks: number | null
+          updated_at: string
+          user_id: string
+          version: number
+        }
+        Insert: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean
+          lineage_id: string
+          prompt?: string | null
+          sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
+          spotify_playlist_id?: string | null
+          status?: Database["public"]["Enums"]["playlist_status"]
+          title: string
+          total_duration_ms?: number | null
+          total_tracks?: number | null
+          updated_at?: string
+          user_id: string
+          version?: number
+        }
+        Update: {
+          cover_image_url?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          is_favorite?: boolean
+          lineage_id?: string
+          prompt?: string | null
+          sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
+          spotify_playlist_id?: string | null
+          status?: Database["public"]["Enums"]["playlist_status"]
+          title?: string
+          total_duration_ms?: number | null
+          total_tracks?: number | null
+          updated_at?: string
+          user_id?: string
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlists_lineage_id_fkey"
+            columns: ["lineage_id"]
+            isOneToOne: false
+            referencedRelation: "playlist_lineage"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "playlists_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_preferences: {
         Row: {
-          user_id: string
-          default_sharing_permission: Database["public"]["Enums"]["sharing_permission"]
-          email_notifications: boolean
-          theme: string
           created_at: string
+          default_sharing_permission:
+            | Database["public"]["Enums"]["sharing_permission"]
+            | null
+          email_notifications: boolean | null
+          theme: string | null
           updated_at: string
+          user_id: string
         }
         Insert: {
-          user_id: string
-          default_sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
-          email_notifications?: boolean
-          theme?: string
           created_at?: string
+          default_sharing_permission?:
+            | Database["public"]["Enums"]["sharing_permission"]
+            | null
+          email_notifications?: boolean | null
+          theme?: string | null
           updated_at?: string
+          user_id: string
         }
         Update: {
-          user_id?: string
-          default_sharing_permission?: Database["public"]["Enums"]["sharing_permission"]
-          email_notifications?: boolean
-          theme?: string
           created_at?: string
+          default_sharing_permission?:
+            | Database["public"]["Enums"]["sharing_permission"]
+            | null
+          email_notifications?: boolean | null
+          theme?: string | null
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
           {
@@ -300,8 +303,44 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
-          }
+          },
         ]
+      }
+      users: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          email: string
+          full_name: string | null
+          id: string
+          spotify_access_token: string | null
+          spotify_refresh_token: string | null
+          spotify_user_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          email: string
+          full_name?: string | null
+          id: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
+          spotify_user_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          email?: string
+          full_name?: string | null
+          id?: string
+          spotify_access_token?: string | null
+          spotify_refresh_token?: string | null
+          spotify_user_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
     }
     Views: {
@@ -318,4 +357,133 @@ export type Database = {
       [_ in never]: never
     }
   }
-} 
+}
+
+type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+
+export type Tables<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+      Row: infer R
+    }
+    ? R
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])
+    ? (DefaultSchema["Tables"] &
+        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+        Row: infer R
+      }
+      ? R
+      : never
+    : never
+
+export type TablesInsert<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Insert: infer I
+    }
+    ? I
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Insert: infer I
+      }
+      ? I
+      : never
+    : never
+
+export type TablesUpdate<
+  DefaultSchemaTableNameOrOptions extends
+    | keyof DefaultSchema["Tables"]
+    | { schema: keyof DatabaseWithoutInternals },
+  TableName extends DefaultSchemaTableNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    : never = never,
+> = DefaultSchemaTableNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+      Update: infer U
+    }
+    ? U
+    : never
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
+    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+        Update: infer U
+      }
+      ? U
+      : never
+    : never
+
+export type Enums<
+  DefaultSchemaEnumNameOrOptions extends
+    | keyof DefaultSchema["Enums"]
+    | { schema: keyof DatabaseWithoutInternals },
+  EnumName extends DefaultSchemaEnumNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    : never = never,
+> = DefaultSchemaEnumNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
+    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+    : never
+
+export type CompositeTypes<
+  PublicCompositeTypeNameOrOptions extends
+    | keyof DefaultSchema["CompositeTypes"]
+    | { schema: keyof DatabaseWithoutInternals },
+  CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
+    schema: keyof DatabaseWithoutInternals
+  }
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    : never = never,
+> = PublicCompositeTypeNameOrOptions extends {
+  schema: keyof DatabaseWithoutInternals
+}
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
+    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+    : never
+
+export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
+  public: {
+    Enums: {
+      playlist_status: ["draft", "published", "private"],
+      sharing_permission: ["public", "link_only", "private"],
+    },
+  },
+} as const

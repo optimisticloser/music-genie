@@ -11,7 +11,8 @@ import {
   Play, 
   MoreHorizontal,
   Clock,
-  Music
+  Music,
+  Heart
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 
@@ -36,6 +37,7 @@ export default function DashboardPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
+  const [togglingFavorites, setTogglingFavorites] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     async function getUser() {
@@ -113,6 +115,39 @@ export default function DashboardPage() {
       console.error('Error connecting Spotify:', error);
     } finally {
       setConnectingSpotify(false);
+    }
+  };
+
+  const handleToggleFavorite = async (playlistId: string, currentFavorite: boolean) => {
+    setTogglingFavorites(prev => new Set(prev).add(playlistId));
+    
+    try {
+      const response = await fetch(`/api/playlists/${playlistId}/favorite`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ isFavorite: !currentFavorite }),
+      });
+
+      if (response.ok) {
+        // Update local state
+        setPlaylists(prev => prev.map(playlist => 
+          playlist.id === playlistId 
+            ? { ...playlist, is_favorite: !currentFavorite }
+            : playlist
+        ));
+      } else {
+        console.error('Failed to toggle favorite');
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+    } finally {
+      setTogglingFavorites(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(playlistId);
+        return newSet;
+      });
     }
   };
 
@@ -253,6 +288,29 @@ export default function DashboardPage() {
                             }}
                           >
                             <Play className="w-5 h-5 ml-0.5" />
+                          </Button>
+                        </div>
+                        
+                        {/* Favorite badge */}
+                        <div className="absolute top-2 right-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="p-1 hover:bg-white/20 transition-colors"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              handleToggleFavorite(playlist.id, playlist.is_favorite || false);
+                            }}
+                            disabled={togglingFavorites.has(playlist.id)}
+                          >
+                            <Heart
+                              className={`w-4 h-4 transition-colors ${
+                                playlist.is_favorite
+                                  ? 'text-red-500 fill-current'
+                                  : 'text-white/70 hover:text-red-400'
+                              }`}
+                            />
                           </Button>
                         </div>
                       </div>

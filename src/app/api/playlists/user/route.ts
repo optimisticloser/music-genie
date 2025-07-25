@@ -37,6 +37,7 @@ export async function GET(req: NextRequest) {
         total_tracks,
         total_duration_ms,
         spotify_playlist_id,
+        is_favorite,
         created_at,
         updated_at
       `)
@@ -51,10 +52,9 @@ export async function GET(req: NextRequest) {
       query = query.eq('status', status);
     }
 
-    // TODO: Add favorites filter after migration is applied
-    // if (favoritesOnly) {
-    //   query = query.eq('is_favorite', true);
-    // }
+    if (favoritesOnly) {
+      query = query.eq('is_favorite', true);
+    }
 
     // Apply sorting
     query = query.order(sortBy, { ascending: sortOrder === 'asc' });
@@ -78,7 +78,7 @@ export async function GET(req: NextRequest) {
     // Format duration for each playlist
     const formattedPlaylists = playlists?.map(playlist => ({
       ...playlist,
-      duration: formatDuration(playlist.total_duration_ms),
+      duration: formatDuration(playlist.total_duration_ms || 0),
       gradient: generateGradient(playlist.id), // Generate consistent gradient based on ID
     })) || [];
 

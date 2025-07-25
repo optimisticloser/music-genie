@@ -32,20 +32,16 @@ export async function POST(
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
     }
 
-    // TODO: Implement favorite functionality after migration is applied
-    // For now, return success without actually updating
-    console.log(`Would update playlist ${id} favorite status to: ${isFavorite}`);
-    
     // Update the favorite status
-    // const { error: updateError } = await supabase
-    //   .from('playlists')
-    //   .update({ is_favorite: isFavorite })
-    //   .eq('id', id);
+    const { error: updateError } = await supabase
+      .from('playlists')
+      .update({ is_favorite: isFavorite })
+      .eq('id', id);
 
-    // if (updateError) {
-    //   console.error("Error updating favorite status:", updateError);
-    //   return NextResponse.json({ error: "Failed to update favorite status" }, { status: 500 });
-    // }
+    if (updateError) {
+      console.error("Error updating favorite status:", updateError);
+      return NextResponse.json({ error: "Failed to update favorite status" }, { status: 500 });
+    }
 
     return NextResponse.json({ 
       success: true, 
