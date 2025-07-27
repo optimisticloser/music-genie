@@ -12,31 +12,6 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "12.2.12 (cd3cf9e)"
   }
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          operationName?: string
-          query?: string
-          variables?: Json
-          extensions?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
-  }
   public: {
     Tables: {
       demo_prompts: {
@@ -211,6 +186,7 @@ export type Database = {
           updated_at: string
           user_id: string
           version: number
+          viewed_at: string | null
         }
         Insert: {
           cover_image_url?: string | null
@@ -229,6 +205,7 @@ export type Database = {
           updated_at?: string
           user_id: string
           version?: number
+          viewed_at?: string | null
         }
         Update: {
           cover_image_url?: string | null
@@ -247,6 +224,7 @@ export type Database = {
           updated_at?: string
           user_id?: string
           version?: number
+          viewed_at?: string | null
         }
         Relationships: [
           {
@@ -477,9 +455,6 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {
       playlist_status: ["draft", "published", "private"],
