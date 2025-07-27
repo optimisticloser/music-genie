@@ -1,3 +1,5 @@
+"use client";
+
 import { CoverArtGenerator } from "@/components/playlist/CoverArtGenerator";
 import { PageTitle } from "@/components/shared/PageTitle";
 
