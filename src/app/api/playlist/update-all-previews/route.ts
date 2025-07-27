@@ -3,7 +3,7 @@ import createClient from "@/lib/supabase/server";
 import { SpotifyService } from "@/lib/services/spotify";
 import { searchTracks } from "@/lib/spotify/api";
 
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const supabase = await createClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -106,7 +106,7 @@ export async function POST(req: NextRequest) {
         const spotifyTrack = await response.json();
         
         // Update track with new data
-        const updateData: any = {};
+        const updateData: Record<string, unknown> = {};
         
         if (!track.album_art_url && spotifyTrack.album?.images?.[0]?.url) {
           updateData.album_art_url = spotifyTrack.album.images[0].url;

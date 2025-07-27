@@ -8,13 +8,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { 
   Sparkles, 
-  Play, 
-  MoreHorizontal,
-  Clock,
   Music,
-  Heart,
   Wrench,
-  RefreshCw,
   Loader2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
@@ -45,7 +40,6 @@ export default function DashboardPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
-  const [togglingFavorites, setTogglingFavorites] = useState<Set<string>>(new Set());
   const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
 
   useEffect(() => {
@@ -140,38 +134,7 @@ export default function DashboardPage() {
     }
   };
 
-  const handleToggleFavorite = async (playlistId: string, currentFavorite: boolean) => {
-    setTogglingFavorites(prev => new Set(prev).add(playlistId));
-    
-    try {
-      const response = await fetch(`/api/playlists/${playlistId}/favorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isFavorite: !currentFavorite }),
-      });
 
-      if (response.ok) {
-        // Update local state
-        setPlaylists(prev => prev.map(playlist => 
-          playlist.id === playlistId 
-            ? { ...playlist, is_favorite: !currentFavorite }
-            : playlist
-        ));
-      } else {
-        console.error('Failed to toggle favorite');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    } finally {
-      setTogglingFavorites(prev => {
-        const newSet = new Set(prev);
-        newSet.delete(playlistId);
-        return newSet;
-      });
-    }
-  };
 
   const handleFixTrackCounts = async () => {
     setFixingTrackCounts(true);
@@ -399,7 +362,6 @@ export default function DashboardPage() {
                     key={playlist.id}
                     playlist={playlist}
                     variant="compact"
-                    onToggleFavorite={handleToggleFavorite}
                     onPlay={(playlistId) => {
                       console.log("Play playlist:", playlistId);
                     }}
@@ -454,18 +416,7 @@ export default function DashboardPage() {
                             Music Genie AI
                           </p>
                         </div>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            // Handle more options here
-                            console.log("More options for:", playlist.id);
-                          }}
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
+
                       </div>
                     </CardContent>
                   </Card>

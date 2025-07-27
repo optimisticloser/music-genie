@@ -101,10 +101,10 @@ export default function GeneratePage() {
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [generatedPlaylist, setGeneratedPlaylist] = useState<GeneratedPlaylist | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [generationStep, setGenerationStep] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle');
+  const [generationStep] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle');
   const [isSaving, setIsSaving] = useState(false);
   const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
-  const [spotifyConnected, setSpotifyConnected] = useState(false);
+  const [spotifyConnected] = useState(false);
   const [spotifyPlaylistUrl, setSpotifyPlaylistUrl] = useState<string | null>(null);
 
   // Carrega sugestões iniciais

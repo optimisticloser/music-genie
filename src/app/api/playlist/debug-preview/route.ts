@@ -40,7 +40,7 @@ export async function GET(req: NextRequest) {
     // Test preview URLs
     const tracksWithPreviewTest = await Promise.all(
       tracks?.map(async (track) => {
-        let previewTest = {
+        const previewTest = {
           hasPreviewUrl: !!track.preview_url,
           urlValid: false,
           status: null as number | null,

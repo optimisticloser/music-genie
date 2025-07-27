@@ -8,7 +8,6 @@ import { Badge } from "@/components/ui/badge";
 import { 
   Play, 
   Heart, 
-  MoreHorizontal, 
   Clock, 
   Music, 
   Sparkles,
@@ -45,9 +44,7 @@ export function PlaylistCard({
   onToggleFavorite,
   onPlay 
 }: PlaylistCardProps) {
-  const [isHovered, setIsHovered] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const handleToggleFavorite = async (e: React.MouseEvent) => {
     e.preventDefault();
@@ -245,8 +242,6 @@ export function PlaylistCard({
             ? 'hover:shadow-xl hover:scale-105' 
             : 'hover:shadow-lg hover:scale-[1.02]'
         } ${variant === 'compact' ? 'max-w-[200px]' : ''}`}
-        onMouseEnter={() => setIsHovered(true)}
-        onMouseLeave={() => setIsHovered(false)}
       >
         <CardContent className="p-0">
           {renderCover()}

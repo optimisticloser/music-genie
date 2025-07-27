@@ -19,7 +19,7 @@ export function NewPlaylistsCounter({ className }: NewPlaylistsCounterProps) {
         
         if (response.ok) {
           const data = await response.json();
-          const newPlaylists = data.playlists?.filter((playlist: any) => 
+          const newPlaylists = data.playlists?.filter((playlist: { status: string; viewed_at?: string }) => 
             playlist.status === 'published' && !playlist.viewed_at
           ) || [];
           

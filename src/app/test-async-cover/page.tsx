@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,7 +13,7 @@ import { Loader2, Music, CheckCircle } from "lucide-react";
 export default function TestAsyncCoverPage() {
   const [prompt, setPrompt] = useState("Contemporary indie party anthems with energetic vibes");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [generatedPlaylist, setGeneratedPlaylist] = useState<any>(null);
+  const [generatedPlaylist, setGeneratedPlaylist] = useState<{ id: string; title: string; total_tracks?: number } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const generatePlaylist = async () => {

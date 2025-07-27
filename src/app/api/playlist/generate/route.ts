@@ -140,7 +140,17 @@ export async function POST(req: NextRequest) {
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       
       if (accessToken) {
-        const enrichedSongs = [];
+        const enrichedSongs: Array<{
+          title?: string;
+          artist?: string;
+          spotify_id?: string;
+          album_name?: string;
+          album_art_url?: string;
+          duration_ms?: number;
+          preview_url?: string;
+          external_url?: string;
+          found_on_spotify: boolean;
+        }> = [];
         let foundCount = 0;
         
         for (const song of output.songs) {
