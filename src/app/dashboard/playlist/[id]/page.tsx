@@ -28,12 +28,13 @@ interface Playlist {
   creator: string;
   description?: string;
   prompt?: string;
-  gradient: string;
+  gradient?: string;
   total_tracks: number;
   duration: string;
   spotify_playlist_id?: string;
   is_favorite?: boolean;
   created_at: string;
+  viewed_at?: string;
   tracks: PlaylistTrack[];
 }
 
@@ -91,6 +92,21 @@ export default function PlaylistPage() {
       setPlaylist(data.playlist);
       setIsAddedToSpotify(!!data.playlist.spotify_playlist_id);
       setIsFavorite(data.playlist.is_favorite || false);
+      
+      // Mark playlist as viewed if it hasn't been viewed yet
+      if (data.playlist && !data.playlist.viewed_at) {
+        try {
+          await fetch(`/api/playlists/${params.id}/mark-viewed`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          });
+          console.log('✅ Playlist marked as viewed');
+        } catch (error) {
+          console.error('Error marking playlist as viewed:', error);
+        }
+      }
     } catch (error) {
       console.error('Error loading playlist:', error);
       setPlaylistError(error instanceof Error ? error.message : 'Erro ao carregar playlist');
@@ -128,6 +144,19 @@ export default function PlaylistPage() {
       console.log('▶️ Playing new track:', track.title);
       const newAudio = new Audio(track.preview_url);
       
+      // Adicionar mais event listeners para debug
+      newAudio.addEventListener('loadstart', () => {
+        console.log('🔄 Audio load started:', track.title);
+      });
+      
+      newAudio.addEventListener('canplay', () => {
+        console.log('🎵 Audio can play:', track.title);
+      });
+      
+      newAudio.addEventListener('canplaythrough', () => {
+        console.log('✅ Audio can play through:', track.title);
+      });
+      
       newAudio.addEventListener('ended', () => {
         console.log('🔚 Track ended:', track.title);
         setPlayingTrack(null);
@@ -136,15 +165,37 @@ export default function PlaylistPage() {
       
       newAudio.addEventListener('error', (e) => {
         console.error('❌ Audio error:', e);
+        console.error('❌ Audio error details:', {
+          error: newAudio.error,
+          networkState: newAudio.networkState,
+          readyState: newAudio.readyState
+        });
         setPlayingTrack(null);
         setAudio(null);
       });
       
       try {
-        await newAudio.play();
-        setAudio(newAudio);
-        setPlayingTrack(track.id);
-        console.log('✅ Track started playing:', track.title);
+        // Tentar reproduzir com user interaction
+        const playPromise = newAudio.play();
+        
+        if (playPromise !== undefined) {
+          playPromise
+            .then(() => {
+              console.log('✅ Track started playing successfully:', track.title);
+              setAudio(newAudio);
+              setPlayingTrack(track.id);
+            })
+            .catch((error) => {
+              console.error('❌ Failed to play track:', error);
+              console.error('❌ Error details:', {
+                name: error.name,
+                message: error.message,
+                code: error.code
+              });
+              setPlayingTrack(null);
+              setAudio(null);
+            });
+        }
       } catch (error) {
         console.error('❌ Failed to play track:', error);
         setPlayingTrack(null);
@@ -296,12 +347,12 @@ export default function PlaylistPage() {
       <ScrollArea className="h-full">
       <div className="relative">
         {/* Header with Artwork and Info */}
-        <div className={`bg-gradient-to-br ${playlist.gradient} relative`}>
+        <div className={`bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} relative`}>
           <div className="absolute inset-0 bg-black/20"></div>
           <div className="relative px-4 md:px-8 py-6 md:py-12 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
             {/* Large Artwork */}
             <div className="w-32 h-32 md:w-64 md:h-64 bg-black/20 rounded-xl md:rounded-2xl shadow-2xl flex-shrink-0 overflow-hidden mx-auto md:mx-0">
-              <div className={`w-full h-full bg-gradient-to-br ${playlist.gradient} flex items-center justify-center`}>
+              <div className={`w-full h-full bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} flex items-center justify-center`}>
                 <div className="text-white/30 text-3xl md:text-6xl font-bold">
                   {playlist.title.charAt(0)}
                 </div>

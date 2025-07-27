@@ -1,4 +1,5 @@
 import { workflowAI } from "./client";
+import { Image } from "@workflowai/workflowai";
 
 // === Playlist Prompt Generation ===
 export interface PlaylistPromptGenerationInput {
@@ -61,7 +62,7 @@ export const playlistGeneratorAgent = workflowAI.agent<
   useCache: "auto",
 });
 
-// === Playlist Cover Art Generation (opcional) ===
+// === Playlist Cover Art Generation ===
 export interface PlaylistCoverArtGenerationInput {
   playlist_name?: string;
   playlist_description?: string;
@@ -71,14 +72,11 @@ export interface PlaylistCoverArtGenerationInput {
 }
 
 export interface PlaylistCoverArtGenerationOutput {
-  cover_art?: {
-    url?: string;
-    description?: string;
-  };
+  cover_art?: Image;
   design_description?: string;
 }
 
-export const playlistCoverArtAgent = workflowAI.agent<
+export const playlistCoverArtGeneration = workflowAI.agent<
   PlaylistCoverArtGenerationInput,
   PlaylistCoverArtGenerationOutput
 >({

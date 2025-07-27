@@ -30,6 +30,7 @@ export async function GET(
         spotify_playlist_id,
         created_at,
         updated_at,
+        viewed_at,
         users!inner (
           id,
           full_name,

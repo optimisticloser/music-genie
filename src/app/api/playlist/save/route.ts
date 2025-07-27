@@ -140,7 +140,7 @@ export async function POST(req: NextRequest) {
     if (playlist.songs && playlist.songs.length > 0) {
       const tracks = playlist.songs.map((song: Song, index: number) => ({
         playlist_id: savedPlaylist.id,
-        spotify_track_id: song.spotify_id || "not_found", // Use a placeholder instead of null
+        spotify_track_id: song.spotify_id || `not_found_${index}`, // Use a unique placeholder instead of null
         track_name: song.title || "Unknown",
         artist_name: song.artist || "Unknown",
         album_name: song.album_name || "Generated",

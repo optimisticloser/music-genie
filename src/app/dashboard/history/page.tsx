@@ -23,7 +23,7 @@ interface Playlist {
   id: string;
   title: string;
   description?: string;
-  gradient: string;
+  gradient?: string;
   total_tracks: number;
   duration: string;
   created_at: string;
@@ -332,7 +332,7 @@ export default function HistoryPage() {
                   <Card className="group cursor-pointer hover:shadow-lg transition-all">
                     <CardContent className="p-0">
                       {/* Playlist Artwork */}
-                      <div className={`aspect-square bg-gradient-to-br ${playlist.gradient} rounded-t-lg relative overflow-hidden`}>
+                      <div className={`aspect-square bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} rounded-t-lg relative overflow-hidden`}>
                         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                           <Button 
                             size="sm" 

@@ -39,7 +39,8 @@ export async function GET(req: NextRequest) {
         spotify_playlist_id,
         is_favorite,
         created_at,
-        updated_at
+        updated_at,
+        viewed_at
       `)
       .eq('user_id', user.id);
 

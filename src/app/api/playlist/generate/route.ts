@@ -4,11 +4,78 @@ import { cookies } from "next/headers";
 import {
   playlistGeneratorAgent,
   PlaylistGeneratorInput,
+  playlistCoverArtGeneration,
+  PlaylistCoverArtGenerationInput,
 } from "@/lib/workflowai/agents";
-import { searchTracks } from "@/lib/spotify/api";
+import { searchTracks, createPlaylist, addTracksToPlaylist, getCurrentUser } from "@/lib/spotify/api";
 import { SpotifyService } from "@/lib/services/spotify";
 
+// Função para gerar capa de playlist de forma assíncrona
+async function generatePlaylistCover(
+  playlistName: string,
+  playlistDescription: string,
+  songList: string,
+  supabase: any,
+  playlistId: string
+) {
+  try {
+    console.log("🎨 Starting async cover art generation for playlist:", playlistId);
+    
+    const input: PlaylistCoverArtGenerationInput = {
+      playlist_name: playlistName,
+      playlist_description: playlistDescription,
+      song_list: songList,
+      style_preferences: "Bright, energetic, vibrant",
+      color_preferences: "Vibrant yellows, energetic oranges, and bright magentas",
+    };
+
+    const {
+      output,
+      data: { duration_seconds, cost_usd, version },
+    } = await playlistCoverArtGeneration(input);
+
+    if (output?.cover_art) {
+      console.log("✅ Cover art generated successfully:", {
+        playlistId,
+        coverArtUrl: output.cover_art.url,
+        model: version?.properties?.model,
+        cost: cost_usd,
+        latency: duration_seconds?.toFixed(2),
+      });
+
+      // Atualizar a playlist com a URL da capa gerada
+      const { error: updateError } = await supabase
+        .from("playlists")
+        .update({
+          cover_art_url: output.cover_art.url,
+          cover_art_description: output.design_description,
+          cover_art_metadata: {
+            model: version?.properties?.model,
+            cost_usd: cost_usd,
+            duration_seconds: duration_seconds,
+            generated_at: new Date().toISOString(),
+          },
+        })
+        .eq("id", playlistId);
+
+      if (updateError) {
+        console.error("❌ Error updating playlist with cover art:", updateError);
+      } else {
+        console.log("✅ Playlist updated with cover art URL");
+      }
+    }
+  } catch (error) {
+    console.error("❌ Error generating cover art:", error);
+    // Não falha a geração da playlist se a capa falhar
+  }
+}
+
 export async function POST(req: NextRequest) {
+  console.log("🚀 Starting playlist generation...");
+  console.log("📋 Request method:", req.method);
+  console.log("📋 Request headers:", Object.fromEntries(req.headers.entries()));
+  console.log("📋 Request URL:", req.url);
+  
   try {
     // Get user session
     const cookieStore = await cookies();
@@ -39,12 +106,23 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const body = await req.json();
-    const { prompt } = body;
+    let body;
+    try {
+      body = await req.json();
+      console.log("📦 Request body received:", body);
+    } catch (error) {
+      console.error("Error parsing request body:", error);
+      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
+    }
+
+    const { prompt, playlist_id } = body;
 
     if (!prompt) {
+      console.error("❌ No prompt provided");
       return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
     }
+
+    console.log("🎯 Processing playlist_id:", playlist_id);
 
     // Generate playlist with WorkflowAI
     const input: PlaylistGeneratorInput = {
@@ -98,8 +176,9 @@ export async function POST(req: NextRequest) {
                 console.log(`🎵 Best match found: ${bestTrack.name} by ${bestTrack.artists[0].name} (score: ${bestScore})`);
                 console.log(`🎵 Original: ${song.title} by ${song.artist}`);
                 
-                // Only accept matches with a minimum score (artist match is most important)
-                if (bestScore >= 2) {
+                // Accept matches with a lower threshold to get more preview URLs
+                if (bestScore >= 1) { // Reduced from 2 to 1 to be less restrictive
+                  console.log(`🎵 Accepting match with score ${bestScore} for preview URL`);
                   enrichedSongs.push({
                     ...song,
                     spotify_id: bestTrack.id,
@@ -147,10 +226,174 @@ export async function POST(req: NextRequest) {
     console.log("🎵 Final response - Spotify connected:", isSpotifyConnected);
     console.log("🎵 Final response - Total songs:", output.songs?.length || 0);
     
+    // Calculate total duration from enriched songs
+    const totalDurationMs = output.songs?.reduce((total, song: any) => 
+      total + (song.duration_ms || 0), 0) || 0;
+    
+    // Create Spotify playlist if connected and songs found
+    let spotifyPlaylistId = null;
+    if (isSpotifyConnected && output.songs && output.songs.length > 0) {
+      const accessToken = await SpotifyService.getValidAccessToken(user.id);
+      if (accessToken) {
+        try {
+          const foundSongs = output.songs.filter((song: any) => song.found_on_spotify);
+          if (foundSongs.length > 0) {
+            // Get current user to get Spotify user ID
+            const currentUser = await getCurrentUser(accessToken);
+            if (currentUser) {
+              spotifyPlaylistId = await createPlaylist(
+                currentUser.id,
+                output.name || 'Generated Playlist',
+                output.essay || 'AI-generated playlist',
+                accessToken,
+                false
+              );
+              
+              // Add tracks to the playlist
+              const trackUris = foundSongs.map((song: any) => `spotify:track:${song.spotify_id}`);
+              await addTracksToPlaylist(spotifyPlaylistId.id, trackUris, accessToken);
+            }
+          }
+        } catch (error) {
+          console.error("Error creating Spotify playlist:", error);
+        }
+      }
+    }
+    
+    let savedPlaylist;
+    if (playlist_id) {
+      // update existing draft
+      const { data: updated, error: updErr } = await supabase
+        .from('playlists')
+        .update({
+          title: output.name,
+          description: output.essay,
+          status: 'published',
+          total_tracks: output.songs?.length || 0,
+          total_duration_ms: totalDurationMs,
+          spotify_playlist_id: spotifyPlaylistId,
+        })
+        .eq('id', playlist_id)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+      if (updErr) {
+        console.error('Update playlist error', updErr);
+      }
+      savedPlaylist = updated;
+
+      // Save tracks to playlist_tracks table
+      if (output.songs && output.songs.length > 0) {
+        const tracksToInsert = output.songs.map((song: any, index: number) => ({
+          playlist_id: playlist_id,
+          spotify_track_id: song.spotify_id || `not_found_${index}`,
+          track_name: song.title || '',
+          artist_name: song.artist || '',
+          album_name: song.album_name || '',
+          album_art_url: song.album_art_url || null,
+          duration_ms: song.duration_ms || 0,
+          preview_url: song.preview_url || null,
+          position: index + 1,
+          found_on_spotify: song.found_on_spotify || false,
+        }));
+
+        const { error: tracksError } = await supabase
+          .from('playlist_tracks')
+          .insert(tracksToInsert);
+
+        if (tracksError) {
+          console.error('Error saving tracks:', tracksError);
+        } else {
+          console.log(`✅ Saved ${tracksToInsert.length} tracks to playlist_tracks`);
+        }
+      }
+    } else {
+      // Create playlist lineage first
+      const { data: lineage, error: lineageError } = await supabase
+        .from("playlist_lineage")
+        .insert({
+          original_prompt: prompt,
+          user_id: user.id,
+        })
+        .select()
+        .single();
+
+      if (lineageError) {
+        console.error("Error creating lineage:", lineageError);
+        return NextResponse.json({ error: "Failed to create playlist lineage" }, { status: 500 });
+      }
+
+      // Create playlist in database (legacy path)
+      const { data: created, error: playlistError } = await supabase
+        .from("playlists")
+        .insert({
+          lineage_id: lineage.id,
+          user_id: user.id,
+          title: output.name,
+          description: output.essay,
+          prompt: prompt,
+          version: 1,
+          status: "published",
+          sharing_permission: "private",
+          spotify_playlist_id: spotifyPlaylistId,
+          total_tracks: output.songs?.length || 0,
+          total_duration_ms: totalDurationMs,
+        })
+        .select()
+        .single();
+      savedPlaylist = created;
+      if (playlistError) {
+        console.error("Playlist creation error:", playlistError);
+      }
+
+      // Save tracks to playlist_tracks table (legacy path)
+      if (output.songs && output.songs.length > 0 && created) {
+        const tracksToInsert = output.songs.map((song: any, index: number) => ({
+          playlist_id: created.id,
+          spotify_track_id: song.spotify_id || `not_found_${index}`,
+          track_name: song.title || '',
+          artist_name: song.artist || '',
+          album_name: song.album_name || '',
+          album_art_url: song.album_art_url || null,
+          duration_ms: song.duration_ms || 0,
+          preview_url: song.preview_url || null,
+          position: index + 1,
+          found_on_spotify: song.found_on_spotify || false,
+        }));
+
+        const { error: tracksError } = await supabase
+          .from('playlist_tracks')
+          .insert(tracksToInsert);
+
+        if (tracksError) {
+          console.error('Error saving tracks:', tracksError);
+        } else {
+          console.log(`✅ Saved ${tracksToInsert.length} tracks to playlist_tracks`);
+        }
+      }
+    }
+
+    // Gerar capa de playlist de forma assíncrona após a playlist ser criada
+    if (savedPlaylist) {
+      const songList = output.songs?.map(song => `${song.artist} - ${song.title}`).join('; ') || '';
+      
+      // Iniciar geração da capa de forma assíncrona (não aguardar)
+      generatePlaylistCover(
+        savedPlaylist.title || output.name || '',
+        savedPlaylist.description || output.essay || '',
+        songList,
+        supabase,
+        savedPlaylist.id
+      ).catch(error => {
+        console.error("❌ Async cover generation failed:", error);
+      });
+    }
+
     return NextResponse.json({ 
-      playlist: output, 
+      playlist: savedPlaylist || output, 
       metrics: data,
-      spotify_connected: isSpotifyConnected 
+      spotify_connected: isSpotifyConnected,
+      cover_generation_started: !!savedPlaylist
     });
   } catch (error) {
     console.error("Playlist generation error", error);

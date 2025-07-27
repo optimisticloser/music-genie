@@ -310,30 +310,39 @@ export default function GeneratePage() {
 
     setIsGenerating(true);
     setError(null);
-    setGeneratedPlaylist(null);
-    setGenerationStep('generating');
 
     try {
-      // Generate playlist directly from the current prompt
-      const playlistResponse = await fetch('/api/playlist/generate', {
+      // 1) Cria rascunho
+      const draftRes = await fetch('/api/playlist/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt: currentPrompt })
+        body: JSON.stringify({ prompt: currentPrompt }),
       });
 
-      if (!playlistResponse.ok) {
-        throw new Error('Failed to generate playlist');
+      if (!draftRes.ok) throw new Error('Failed to create draft');
+      const { playlistId } = await draftRes.json();
+
+      // 2) Dispara geração usando sendBeacon para garantir envio antes do redirecionamento
+      const generateData = JSON.stringify({ prompt: currentPrompt, playlist_id: playlistId });
+      const success = navigator.sendBeacon('/api/playlist/generate', generateData);
+      
+      if (!success) {
+        console.warn('sendBeacon failed, trying fetch...');
+        // Fallback para fetch se sendBeacon falhar
+        fetch('/api/playlist/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: generateData,
+        }).catch((error) => {
+          console.error('Background generation error:', error);
+        });
       }
-
-      const { playlist, spotify_connected } = await playlistResponse.json();
-      setGeneratedPlaylist(playlist);
-      setSpotifyConnected(spotify_connected);
-      setGenerationStep('complete');
-
+      
+      // 3) Redireciona para dashboard
+      window.location.href = '/dashboard';
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate playlist');
-      setGenerationStep('error');
     } finally {
       setIsGenerating(false);
     }
@@ -450,7 +459,7 @@ export default function GeneratePage() {
           <div className="flex items-center gap-3">
             <Button 
               variant="outline" 
-              className="px-6 py-2 rounded-full"
+              className="px-4 py-2 rounded-full"
               onClick={() => {
                 setPromptParts([]);
                 setSelectedTags([]);
@@ -461,8 +470,11 @@ export default function GeneratePage() {
                 loadSuggestions('initial');
               }}
             >
-              Clear
+              Cancelar
             </Button>
+          </div>
+
+          <div className="flex items-center gap-3">
             <Button 
               onClick={handleGenerate}
               disabled={isGenerating || !currentPrompt.trim()}
@@ -474,7 +486,7 @@ export default function GeneratePage() {
                   {getStepText()}
                 </>
               ) : (
-                'Generate'
+                'Gerar'
               )}
             </Button>
           </div>

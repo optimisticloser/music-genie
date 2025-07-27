@@ -48,6 +48,7 @@ export interface Playlist {
   total_duration_ms: number;
   created_at: string;
   updated_at: string;
+  viewed_at?: string;
 }
 
 export interface PlaylistTrack {

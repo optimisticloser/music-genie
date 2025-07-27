@@ -12,20 +12,28 @@ import {
   MoreHorizontal,
   Clock,
   Music,
-  Heart
+  Heart,
+  Wrench,
+  RefreshCw,
+  Loader2
 } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
+import LoadingPlaylistCard from '@/components/LoadingPlaylistCard';
+import { PlaylistCard } from '@/components/playlist/PlaylistCard';
+import { NewPlaylistsCounter } from '@/components/playlist/NewPlaylistsCounter';
 
 interface Playlist {
   id: string;
   title: string;
   description?: string;
-  gradient: string;
+  gradient?: string;
   total_tracks: number;
   duration: string;
   created_at: string;
   spotify_playlist_id?: string;
   is_favorite?: boolean;
+  status: 'published' | 'draft';
+  viewed_at?: string;
 }
 
 export default function DashboardPage() {
@@ -38,6 +46,7 @@ export default function DashboardPage() {
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
   const [togglingFavorites, setTogglingFavorites] = useState<Set<string>>(new Set());
+  const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
 
   useEffect(() => {
     async function getUser() {
@@ -96,6 +105,19 @@ export default function DashboardPage() {
     }
   };
 
+  // Polling para atualizar playlists em draft
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Só faz polling se há playlists em draft
+      const hasDrafts = playlists.some(p => p.status === 'draft');
+      if (hasDrafts) {
+        loadPlaylists();
+      }
+    }, 5000); // Verifica a cada 5 segundos
+
+    return () => clearInterval(interval);
+  }, [playlists]);
+
   if (loading) {
     return (
       <div className="h-full flex items-center justify-center">
@@ -148,6 +170,37 @@ export default function DashboardPage() {
         newSet.delete(playlistId);
         return newSet;
       });
+    }
+  };
+
+  const handleFixTrackCounts = async () => {
+    setFixingTrackCounts(true);
+    
+    try {
+      const response = await fetch('/api/playlist/fix-track-counts', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('Track counts fixed:', result);
+        
+        // Reload playlists to show corrected counts
+        await loadPlaylists();
+        
+        // Show success message
+        alert(`✅ ${result.fixed_count} playlists corrigidas!`);
+      } else {
+        throw new Error('Failed to fix track counts');
+      }
+    } catch (error) {
+      console.error('Error fixing track counts:', error);
+      alert('❌ Erro ao corrigir contagens de músicas');
+    } finally {
+      setFixingTrackCounts(false);
     }
   };
 
@@ -226,10 +279,77 @@ export default function DashboardPage() {
         {/* Playlists Grid */}
         <div className="mb-8 md:mb-12">
           <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900">Playlists</h3>
-            <Button variant="ghost" size="sm" className="text-gray-500">
-              Ver todas
-            </Button>
+            <div className="flex items-center gap-3">
+              <h3 className="text-lg md:text-xl font-semibold text-gray-900">Playlists</h3>
+              <NewPlaylistsCounter />
+            </div>
+            <div className="flex gap-2">
+              <Button
+                onClick={handleFixTrackCounts}
+                disabled={fixingTrackCounts}
+                variant="outline"
+                size="sm"
+                className="text-orange-600 border-orange-600 hover:bg-orange-50"
+              >
+                {fixingTrackCounts ? (
+                  <>
+                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    Corrigindo...
+                  </>
+                ) : (
+                  <>
+                    <Wrench className="w-3 h-3 mr-1" />
+                    Corrigir Contagens
+                  </>
+                )}
+              </Button>
+              <button 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/playlist/test-generate', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({}),
+                    });
+                    if (response.ok) {
+                      window.location.reload();
+                    }
+                  } catch (error) {
+                    console.error('Test generation error:', error);
+                  }
+                }}
+                className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+              >
+                Testar Geração
+              </button>
+              <button 
+                onClick={async () => {
+                  try {
+                    const response = await fetch('/api/playlist/update-all-previews', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                    });
+                    if (response.ok) {
+                      const data = await response.json();
+                      alert(`✅ ${data.message}`);
+                      window.location.reload();
+                    } else {
+                      const error = await response.json();
+                      alert(`❌ Erro: ${error.error}`);
+                    }
+                  } catch (error) {
+                    console.error('Update previews error:', error);
+                    alert('❌ Erro ao atualizar preview URLs');
+                  }
+                }}
+                className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+              >
+                Atualizar Previews
+              </button>
+              <Button variant="ghost" size="sm" className="text-gray-500">
+                Ver todas
+              </Button>
+            </div>
           </div>
           
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
@@ -272,65 +392,19 @@ export default function DashboardPage() {
               </div>
             ) : (
               playlists.map((playlist: Playlist) => (
-                <Link key={playlist.id} href={`/dashboard/playlist/${playlist.id}`}>
-                  <Card className="group cursor-pointer hover:shadow-lg transition-all">
-                    <CardContent className="p-0">
-                      {/* Playlist Artwork */}
-                      <div className={`aspect-square bg-gradient-to-br ${playlist.gradient} rounded-t-lg relative overflow-hidden`}>
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                          <Button 
-                            size="sm" 
-                            className="opacity-0 group-hover:opacity-100 transition-opacity bg-white/90 hover:bg-white text-black rounded-full w-12 h-12"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              // Handle play action here
-                              console.log("Play playlist:", playlist.id);
-                            }}
-                          >
-                            <Play className="w-5 h-5 ml-0.5" />
-                          </Button>
-                        </div>
-                        
-                        {/* Favorite badge */}
-                        <div className="absolute top-2 right-2">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            className="p-1 hover:bg-white/20 transition-colors"
-                            onClick={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              handleToggleFavorite(playlist.id, playlist.is_favorite || false);
-                            }}
-                            disabled={togglingFavorites.has(playlist.id)}
-                          >
-                            <Heart
-                              className={`w-4 h-4 transition-colors ${
-                                playlist.is_favorite
-                                  ? 'text-red-500 fill-current'
-                                  : 'text-white/70 hover:text-red-400'
-                              }`}
-                            />
-                          </Button>
-                        </div>
-                      </div>
-                      
-                      {/* Playlist Info */}
-                      <div className="p-4">
-                        <h4 className="font-semibold text-gray-900 mb-1 line-clamp-2 text-sm">
-                          {playlist.title}
-                        </h4>
-                        <p className="text-xs text-gray-500 mb-2">
-                          Music Genie AI
-                        </p>
-                        <div className="flex items-center gap-2 text-xs text-gray-400">
-                          <Clock className="w-3 h-3" />
-                          <span>{playlist.total_tracks} músicas • {playlist.duration}</span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </Link>
+                playlist.status !== 'published' ? (
+                  <LoadingPlaylistCard key={playlist.id} />
+                ) : (
+                  <PlaylistCard
+                    key={playlist.id}
+                    playlist={playlist}
+                    variant="compact"
+                    onToggleFavorite={handleToggleFavorite}
+                    onPlay={(playlistId) => {
+                      console.log("Play playlist:", playlistId);
+                    }}
+                  />
+                )
               ))
             )}
           </div>
@@ -371,7 +445,7 @@ export default function DashboardPage() {
                   <Card className="group cursor-pointer hover:shadow-md transition-all">
                     <CardContent className="p-4">
                       <div className="flex items-center gap-4">
-                        <div className={`w-16 h-16 bg-gradient-to-br ${playlist.gradient} rounded-lg flex-shrink-0`}></div>
+                        <div className={`w-16 h-16 bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} rounded-lg flex-shrink-0`}></div>
                         <div className="flex-1 min-w-0">
                           <h4 className="font-semibold text-gray-900 mb-1 truncate">
                             {playlist.title}

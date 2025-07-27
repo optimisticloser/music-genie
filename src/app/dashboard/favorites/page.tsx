@@ -13,7 +13,7 @@ interface Playlist {
   description?: string;
   total_tracks: number;
   duration: string;
-  gradient: string;
+  gradient?: string;
   created_at: string;
   spotify_playlist_id?: string;
 }
@@ -146,7 +146,7 @@ export default function FavoritesPage() {
             >
               <CardContent className="p-0">
                 {/* Playlist Cover */}
-                <div className={`h-48 bg-gradient-to-br ${playlist.gradient} rounded-t-lg relative overflow-hidden`}>
+                <div className={`h-48 bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} rounded-t-lg relative overflow-hidden`}>
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                     <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                       <Heart className="w-8 h-8 text-white" />
