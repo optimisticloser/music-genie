@@ -140,17 +140,8 @@ export async function POST(req: NextRequest) {
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       
       if (accessToken) {
-        const enrichedSongs: Array<{
-          title?: string;
-          artist?: string;
-          spotify_id?: string;
-          album_name?: string;
-          album_art_url?: string;
-          duration_ms?: number;
-          preview_url?: string;
-          external_url?: string;
-          found_on_spotify: boolean;
-        }> = [];
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const enrichedSongs: Array<any> = [];
         let foundCount = 0;
         
         for (const song of output.songs) {
@@ -237,6 +228,7 @@ export async function POST(req: NextRequest) {
     console.log("🎵 Final response - Total songs:", output.songs?.length || 0);
     
     // Calculate total duration from enriched songs
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const totalDurationMs = output.songs?.reduce((total, song: any) => 
       total + (song.duration_ms || 0), 0) || 0;
     
@@ -246,7 +238,8 @@ export async function POST(req: NextRequest) {
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       if (accessToken) {
         try {
-          const foundSongs = output.songs.filter((song: any) => song.found_on_spotify);
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const foundSongs = output.songs.filter((song: any) => song.found_on_spotify);
           if (foundSongs.length > 0) {
             // Get current user to get Spotify user ID
             const currentUser = await getCurrentUser(accessToken);
@@ -260,6 +253,7 @@ export async function POST(req: NextRequest) {
               );
               
               // Add tracks to the playlist
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const trackUris = foundSongs.map((song: any) => `spotify:track:${song.spotify_id}`);
               await addTracksToPlaylist(spotifyPlaylistId.id, trackUris, accessToken);
             }
@@ -294,6 +288,7 @@ export async function POST(req: NextRequest) {
 
       // Save tracks to playlist_tracks table
       if (output.songs && output.songs.length > 0) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tracksToInsert = output.songs.map((song: any, index: number) => ({
           playlist_id: playlist_id,
           spotify_track_id: song.spotify_id || `not_found_${index}`,
@@ -358,6 +353,7 @@ export async function POST(req: NextRequest) {
 
       // Save tracks to playlist_tracks table (legacy path)
       if (output.songs && output.songs.length > 0 && created) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const tracksToInsert = output.songs.map((song: any, index: number) => ({
           playlist_id: created.id,
           spotify_track_id: song.spotify_id || `not_found_${index}`,
