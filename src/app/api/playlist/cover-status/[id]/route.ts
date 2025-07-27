@@ -4,9 +4,10 @@ import { cookies } from "next/headers";
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  console.log("🎨 Checking cover art status for playlist:", params.id);
+  const { id } = await params;
+  console.log("🎨 Checking cover art status for playlist:", id);
   
   try {
     // Get user session
@@ -49,7 +50,7 @@ export async function GET(
         cover_art_metadata,
         created_at
       `)
-      .eq("id", params.id)
+      .eq("id", id)
       .eq("user_id", user.id)
       .single();
 
