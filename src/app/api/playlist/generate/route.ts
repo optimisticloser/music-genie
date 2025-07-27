@@ -11,11 +11,11 @@ import { searchTracks, createPlaylist, addTracksToPlaylist, getCurrentUser } fro
 import { SpotifyService } from "@/lib/services/spotify";
 
 // Função para gerar capa de playlist de forma assíncrona
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function generatePlaylistCover(
   playlistName: string,
   playlistDescription: string,
   songList: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
   playlistId: string
 ) {
