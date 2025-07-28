@@ -24,23 +24,23 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="h-screen flex flex-col bg-white">
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-sm font-bold">MG</span>
+      <div className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 bg-white">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+            <span className="text-white text-xs font-bold">MG</span>
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">{siteConfig.name}</h1>
+          <h1 className="text-base font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={toggleSidebar}
-          className="p-2"
+          className="p-1.5"
         >
           {sidebarOpen ? (
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           ) : (
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4 h-4" />
           )}
         </Button>
       </div>
@@ -68,8 +68,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           {children}
         </main>
       </div>
-      
-
     </div>
   );
 } 

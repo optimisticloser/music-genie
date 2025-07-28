@@ -16,6 +16,7 @@ import { supabase } from "@/lib/supabase/client";
 import LoadingPlaylistCard from '@/components/LoadingPlaylistCard';
 import { PlaylistCard } from '@/components/playlist/PlaylistCard';
 import { NewPlaylistsCounter } from '@/components/playlist/NewPlaylistsCounter';
+import { useFavoriteToggle } from '@/hooks/useFavoriteToggle';
 
 interface Playlist {
   id: string;
@@ -41,6 +42,7 @@ export default function DashboardPage() {
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
   const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
+  const { toggleFavorite } = useFavoriteToggle();
 
   useEffect(() => {
     async function getUser() {
@@ -99,34 +101,15 @@ export default function DashboardPage() {
     }
   };
 
-  // Polling para atualizar playlists em draft
-  useEffect(() => {
-    const interval = setInterval(() => {
-      // Só faz polling se há playlists em draft
-      const hasDrafts = playlists.some(p => p.status === 'draft');
-      if (hasDrafts) {
-        loadPlaylists();
-      }
-    }, 5000); // Verifica a cada 5 segundos
-
-    return () => clearInterval(interval);
-  }, [playlists]);
-
-  if (loading) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
-        </div>
-      </div>
-    );
-  }
-
   const handleConnectSpotify = async () => {
     setConnectingSpotify(true);
     try {
-      window.location.href = '/api/auth/spotify';
+      const response = await fetch('/api/auth/spotify');
+      const data = await response.json();
+      
+      if (data.url) {
+        window.location.href = data.url;
+      }
     } catch (error) {
       console.error('Error connecting Spotify:', error);
     } finally {
@@ -134,19 +117,14 @@ export default function DashboardPage() {
     }
   };
 
-
-
   const handleFixTrackCounts = async () => {
     setFixingTrackCounts(true);
-    
     try {
       const response = await fetch('/api/playlist/fix-track-counts', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
       });
-
+      
       if (response.ok) {
         const result = await response.json();
         console.log('Track counts fixed:', result);
@@ -167,37 +145,51 @@ export default function DashboardPage() {
     }
   };
 
+  const handleToggleFavorite = async (playlistId: string, currentFavorite: boolean) => {
+    const success = await toggleFavorite(playlistId, currentFavorite);
+    if (success) {
+      // Update local state
+      setPlaylists(prevPlaylists =>
+        prevPlaylists.map(playlist =>
+          playlist.id === playlistId
+            ? { ...playlist, is_favorite: !currentFavorite }
+            : playlist
+        )
+      );
+    }
+  };
+
   if (!user) {
     return null;
   }
 
   return (
     <ScrollArea className="h-full">
-      <div className="p-4 md:p-8">
+      <div className="p-4 md:p-6 lg:p-8 max-w-7xl mx-auto">
         {/* Hero Section */}
-        <div className="mb-8 md:mb-12">
-          <div className="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 rounded-2xl md:rounded-3xl p-6 md:p-12 text-center border border-red-100">
-            <div className="max-w-2xl mx-auto">
-              <div className="w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl md:rounded-2xl flex items-center justify-center mx-auto mb-4 md:mb-6">
-                <Sparkles className="w-8 h-8 md:w-10 md:h-10 text-white" />
+        <div className="mb-8 md:mb-10 lg:mb-12">
+          <div className="bg-gradient-to-br from-red-50 via-pink-50 to-orange-50 rounded-xl md:rounded-2xl p-6 md:p-8 lg:p-12 text-center border border-red-100">
+            <div className="max-w-3xl mx-auto">
+              <div className="w-16 h-16 md:w-20 md:h-20 lg:w-24 lg:h-24 bg-gradient-to-br from-red-500 to-pink-600 rounded-xl md:rounded-2xl lg:rounded-3xl flex items-center justify-center mx-auto mb-4 md:mb-6 lg:mb-8">
+                <Sparkles className="w-8 h-8 md:w-10 md:h-10 lg:w-12 lg:h-12 text-white" />
               </div>
               
-              <h1 className="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">
+              <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-gray-900 mb-3 md:mb-4 lg:mb-6">
                 Crie sua playlist perfeita
               </h1>
               
-              <p className="text-base md:text-lg text-gray-600 mb-6 md:mb-8 leading-relaxed">
+              <p className="text-base md:text-lg lg:text-xl text-gray-600 mb-6 md:mb-8 lg:mb-10 leading-relaxed max-w-2xl mx-auto">
                 Descreva o que você quer ouvir e nossa IA criará uma playlist personalizada 
                 com as melhores músicas para o momento.
               </p>
               
-              <div className="flex flex-col sm:flex-row gap-3 md:gap-4 justify-center">
+              <div className="flex flex-col sm:flex-row gap-4 md:gap-6 justify-center">
                 <Button 
                   size="lg" 
-                  className="bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 py-3 text-base md:text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                  className="bg-red-600 hover:bg-red-700 text-white px-6 md:px-8 lg:px-10 py-3 md:py-4 text-base md:text-lg lg:text-xl font-semibold rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all"
                   onClick={() => router.push("/dashboard/generate")}
                 >
-                  <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                  <Sparkles className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                   Gerar com IA
                 </Button>
                 
@@ -205,11 +197,11 @@ export default function DashboardPage() {
                   <Button 
                     size="lg" 
                     variant="outline"
-                    className="border-green-600 text-green-600 hover:bg-green-50 px-6 md:px-8 py-3 text-base md:text-lg font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                    className="border-green-600 text-green-600 hover:bg-green-50 px-6 md:px-8 lg:px-10 py-3 md:py-4 text-base md:text-lg lg:text-xl font-semibold rounded-xl md:rounded-2xl shadow-lg hover:shadow-xl transition-all"
                     onClick={handleConnectSpotify}
                     disabled={connectingSpotify}
                   >
-                    <Music className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+                    <Music className="w-5 h-5 md:w-6 md:h-6 mr-2" />
                     {connectingSpotify ? 'Conectando...' : 'Conectar Spotify'}
                   </Button>
                 )}
@@ -219,19 +211,19 @@ export default function DashboardPage() {
         </div>
 
         {/* Welcome Back */}
-        <div className="mb-6 md:mb-8">
-          <h2 className="text-xl md:text-2xl font-bold text-gray-900 mb-2">
+        <div className="mb-6 md:mb-8 lg:mb-10">
+          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold text-gray-900 mb-2 md:mb-3">
             Bem-vindo de volta, {user.email}
           </h2>
-          <p className="text-gray-600 text-sm md:text-base">
+          <p className="text-gray-600 text-sm md:text-base lg:text-lg">
             Suas playlists criadas e descobertas musicais
           </p>
           
           {spotifyConnected && (
-            <div className="mt-4 p-3 md:p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 md:w-5 md:h-5 text-green-600" />
-                <span className="text-green-800 font-medium text-sm md:text-base">
+            <div className="mt-4 md:mt-6 p-4 md:p-5 lg:p-6 bg-green-50 border border-green-200 rounded-xl">
+              <div className="flex items-center gap-3">
+                <Music className="w-5 h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 text-green-600" />
+                <span className="text-green-800 font-medium text-sm md:text-base lg:text-lg">
                   Spotify conectado! Você pode salvar playlists diretamente na sua conta.
                 </span>
               </div>
@@ -240,28 +232,28 @@ export default function DashboardPage() {
         </div>
 
         {/* Playlists Grid */}
-        <div className="mb-8 md:mb-12">
-          <div className="flex items-center justify-between mb-4 md:mb-6">
+        <div className="mb-8 md:mb-10 lg:mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
             <div className="flex items-center gap-3">
-              <h3 className="text-lg md:text-xl font-semibold text-gray-900">Playlists</h3>
+              <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">Playlists</h3>
               <NewPlaylistsCounter />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-3">
               <Button
                 onClick={handleFixTrackCounts}
                 disabled={fixingTrackCounts}
                 variant="outline"
                 size="sm"
-                className="text-orange-600 border-orange-600 hover:bg-orange-50"
+                className="text-orange-600 border-orange-600 hover:bg-orange-50 text-sm md:text-base"
               >
                 {fixingTrackCounts ? (
                   <>
-                    <Loader2 className="w-3 h-3 mr-1 animate-spin" />
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                     Corrigindo...
                   </>
                 ) : (
                   <>
-                    <Wrench className="w-3 h-3 mr-1" />
+                    <Wrench className="w-4 h-4 mr-2" />
                     Corrigir Contagens
                   </>
                 )}
@@ -281,7 +273,7 @@ export default function DashboardPage() {
                     console.error('Test generation error:', error);
                   }
                 }}
-                className="text-sm bg-blue-500 text-white px-3 py-1 rounded hover:bg-blue-600"
+                className="text-sm md:text-base bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition-colors"
               >
                 Testar Geração
               </button>
@@ -305,24 +297,24 @@ export default function DashboardPage() {
                     alert('❌ Erro ao atualizar preview URLs');
                   }
                 }}
-                className="text-sm bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600"
+                className="text-sm md:text-base bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors"
               >
                 Atualizar Previews
               </button>
-              <Button variant="ghost" size="sm" className="text-gray-500">
+              <Button variant="ghost" size="sm" className="text-gray-500 text-sm md:text-base">
                 Ver todas
               </Button>
             </div>
           </div>
           
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-3 md:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 md:gap-6 lg:gap-8">
             {loadingPlaylists ? (
               // Loading state
-              Array.from({ length: 4 }).map((_, i) => (
+              Array.from({ length: 6 }).map((_, i) => (
                 <Card key={i} className="animate-pulse">
                   <CardContent className="p-0">
                     <div className="aspect-square bg-gray-200 rounded-t-lg"></div>
-                    <div className="p-4 space-y-2">
+                    <div className="p-3 md:p-4 space-y-2">
                       <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                       <div className="h-3 bg-gray-200 rounded w-1/2"></div>
                       <div className="h-3 bg-gray-200 rounded w-2/3"></div>
@@ -332,24 +324,24 @@ export default function DashboardPage() {
               ))
             ) : playlistsError ? (
               // Error state
-              <div className="col-span-full text-center py-8">
-                <div className="text-red-500 mb-2">Erro ao carregar playlists</div>
-                <Button onClick={loadPlaylists} variant="outline" size="sm">
+              <div className="col-span-full text-center py-8 md:py-12">
+                <div className="text-red-500 mb-4 text-base md:text-lg">Erro ao carregar playlists</div>
+                <Button onClick={loadPlaylists} variant="outline" size="lg">
                   Tentar novamente
                 </Button>
               </div>
             ) : playlists.length === 0 ? (
               // Empty state
-              <div className="col-span-full text-center py-12">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
+              <div className="col-span-full text-center py-12 md:py-16">
+                <Music className="w-12 h-12 md:w-16 md:h-16 text-gray-400 mx-auto mb-4 md:mb-6" />
+                <h3 className="text-lg md:text-xl font-medium text-gray-900 mb-2 md:mb-3">
                   Nenhuma playlist ainda
                 </h3>
-                <p className="text-gray-600 mb-4">
+                <p className="text-gray-600 mb-4 md:mb-6 text-base md:text-lg">
                   Crie sua primeira playlist com IA!
                 </p>
-                <Button onClick={() => router.push("/dashboard/generate")}>
-                  <Sparkles className="w-4 h-4 mr-2" />
+                <Button onClick={() => router.push("/dashboard/generate")} size="lg" className="text-base md:text-lg">
+                  <Sparkles className="w-5 h-5 mr-2" />
                   Gerar Playlist
                 </Button>
               </div>
@@ -365,6 +357,9 @@ export default function DashboardPage() {
                     onPlay={(playlistId) => {
                       console.log("Play playlist:", playlistId);
                     }}
+                    onToggleFavorite={(playlistId, isFavorite) => {
+                      handleToggleFavorite(playlistId, isFavorite);
+                    }}
                   />
                 )
               ))
@@ -373,22 +368,22 @@ export default function DashboardPage() {
         </div>
 
         {/* Recently Played */}
-        <div className="mb-8 md:mb-12">
-          <div className="flex items-center justify-between mb-4 md:mb-6">
-            <h3 className="text-lg md:text-xl font-semibold text-gray-900">Tocadas recentemente</h3>
-            <Button variant="ghost" size="sm" className="text-gray-500">
+        <div className="mb-8 md:mb-10 lg:mb-12">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 md:mb-8">
+            <h3 className="text-lg md:text-xl lg:text-2xl font-semibold text-gray-900">Tocadas recentemente</h3>
+            <Button variant="ghost" size="sm" className="text-gray-500 text-sm md:text-base">
               Ver todas
             </Button>
           </div>
           
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6">
             {loadingPlaylists ? (
               // Loading state for recent playlists
-              Array.from({ length: 3 }).map((_, i) => (
+              Array.from({ length: 4 }).map((_, i) => (
                 <Card key={i} className="animate-pulse">
-                  <CardContent className="p-4">
+                  <CardContent className="p-4 md:p-6">
                     <div className="flex items-center gap-4">
-                      <div className="w-16 h-16 bg-gray-200 rounded-lg flex-shrink-0"></div>
+                      <div className="w-16 h-16 md:w-20 md:h-20 bg-gray-200 rounded-lg flex-shrink-0"></div>
                       <div className="flex-1 space-y-2">
                         <div className="h-4 bg-gray-200 rounded w-3/4"></div>
                         <div className="h-3 bg-gray-200 rounded w-1/2"></div>
@@ -398,25 +393,24 @@ export default function DashboardPage() {
                 </Card>
               ))
             ) : playlists.length === 0 ? (
-              <div className="col-span-full text-center py-8">
-                <p className="text-gray-500">Nenhuma playlist recente</p>
+              <div className="col-span-full text-center py-8 md:py-12">
+                <p className="text-gray-500 text-base md:text-lg">Nenhuma playlist recente</p>
               </div>
             ) : (
-              playlists.slice(0, 3).map((playlist: Playlist) => (
+              playlists.slice(0, 4).map((playlist: Playlist) => (
                 <Link key={`recent-${playlist.id}`} href={`/dashboard/playlist/${playlist.id}`}>
-                  <Card className="group cursor-pointer hover:shadow-md transition-all">
-                    <CardContent className="p-4">
+                  <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300">
+                    <CardContent className="p-4 md:p-6">
                       <div className="flex items-center gap-4">
-                        <div className={`w-16 h-16 bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} rounded-lg flex-shrink-0`}></div>
+                        <div className={`w-16 h-16 md:w-20 md:h-20 bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} rounded-lg flex-shrink-0`}></div>
                         <div className="flex-1 min-w-0">
-                          <h4 className="font-semibold text-gray-900 mb-1 truncate">
+                          <h4 className="font-semibold text-gray-900 mb-2 truncate text-base md:text-lg">
                             {playlist.title}
                           </h4>
-                          <p className="text-sm text-gray-500 truncate">
+                          <p className="text-sm md:text-base text-gray-500 truncate">
                             Music Genie AI
                           </p>
                         </div>
-
                       </div>
                     </CardContent>
                   </Card>

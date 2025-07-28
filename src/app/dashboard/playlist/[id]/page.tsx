@@ -1,23 +1,17 @@
-"use client";
+import { notFound } from "next/navigation";
+import { Music, Clock, Calendar } from "lucide-react";
+import createClient from "@/lib/supabase/server";
+import { FavoriteButton } from "@/components/playlist/PlaylistActionButtons";
+import { ExpandableDescription } from "@/components/playlist/ExpandableDescription";
+import { PlaylistActionButtons } from "@/components/playlist/PlaylistPageClient";
 
-import { useState, useEffect, useCallback } from 'react';
-import { useRouter, useParams } from 'next/navigation';
-import Image from 'next/image';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Button } from '@/components/ui/button';
-import { Play, Pause, Heart, MoreHorizontal, Clock, Music, ExternalLink } from 'lucide-react';
-import { supabase } from '@/lib/supabase/client';
-import { PageTitle } from '@/components/shared/PageTitle';
-
-interface PlaylistTrack {
+interface Track {
   id: string;
   title: string;
   artist: string;
-  album: string;
+  album?: string;
+  album_art_url?: string;
   duration: string;
-  artwork?: string;
-  preview_url?: string;
-  spotify_id: string;
   found_on_spotify: boolean;
   position: number;
 }
@@ -35,616 +29,495 @@ interface Playlist {
   is_favorite?: boolean;
   created_at: string;
   viewed_at?: string;
-  tracks: PlaylistTrack[];
+  cover_art_url?: string;
+  cover_art_description?: string;
+  cover_art_metadata?: any;
+  tracks: Track[];
+  metadata?: {
+    id: string;
+    primary_genre?: string;
+    subgenre?: string;
+    mood?: string;
+    years?: string[];
+    energy_level?: string;
+    tempo?: string;
+    dominant_instruments?: string[];
+    vocal_style?: string;
+    themes?: string[];
+    bpm_range?: string;
+    key_signature?: string;
+    language?: string;
+    cultural_influence?: string;
+  };
 }
 
-export default function PlaylistPage() {
-  const router = useRouter();
-  const params = useParams();
-  const [loading, setLoading] = useState(true);
-  const [playlist, setPlaylist] = useState<Playlist | null>(null);
-  const [loadingPlaylist, setLoadingPlaylist] = useState(true);
-  const [playlistError, setPlaylistError] = useState<string | null>(null);
-  const [playingTrack, setPlayingTrack] = useState<string | null>(null);
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [isAddedToSpotify, setIsAddedToSpotify] = useState(false);
-  const [isFavorite, setIsFavorite] = useState(false);
-  const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  const [isUpdatingImages, setIsUpdatingImages] = useState(false);
+async function getPlaylist(id: string): Promise<Playlist | null> {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  useEffect(() => {
-    async function getUser() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          router.push("/login");
-          return;
-        }
+  console.log('🔍 Debug getPlaylist:', { id, user: user?.id });
 
-        await loadPlaylist();
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/login");
-      } finally {
-        setLoading(false);
-      }
-    }
+  if (!user) {
+    console.log('❌ Usuário não autenticado');
+    return null;
+  }
 
-    getUser();
-  }, [router, params.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  // Buscar playlist diretamente do Supabase em vez de usar API
+  const { data: playlist, error: playlistError } = await supabase
+    .from('playlists')
+    .select(`
+      id,
+      title,
+      description,
+      prompt,
+      status,
+      total_tracks,
+      total_duration_ms,
+      spotify_playlist_id,
+      created_at,
+      updated_at,
+      viewed_at,
+      is_favorite,
+      cover_art_url,
+      cover_art_description,
+      cover_art_metadata,
+      users!inner (
+        id,
+        full_name,
+        email
+      ),
+      playlist_metadata (
+        id,
+        primary_genre,
+        subgenre,
+        mood,
+        years,
+        energy_level,
+        tempo,
+        dominant_instruments,
+        vocal_style,
+        themes,
+        bpm_range,
+        key_signature,
+        language,
+        cultural_influence
+      )
+    `)
+    .eq('id', id)
+    .eq('user_id', user.id)
+    .single();
 
-  const loadPlaylist = useCallback(async () => {
-    try {
-      setLoadingPlaylist(true);
-      setPlaylistError(null);
+  console.log('🔍 Playlist result:', { playlist: !!playlist, error: playlistError });
 
-      const response = await fetch(`/api/playlists/${params.id}`);
-      
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new Error('Playlist não encontrada');
-        }
-        throw new Error('Erro ao carregar playlist');
-      }
+  if (playlistError || !playlist) {
+    console.log('❌ Erro ao buscar playlist:', playlistError);
+    return null;
+  }
 
-      const data = await response.json();
-      setPlaylist(data.playlist);
-      setIsAddedToSpotify(!!data.playlist.spotify_playlist_id);
-      setIsFavorite(data.playlist.is_favorite || false);
-      
-      // Mark playlist as viewed if it hasn't been viewed yet
-      if (data.playlist && !data.playlist.viewed_at) {
-        try {
-          await fetch(`/api/playlists/${params.id}/mark-viewed`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-          });
-          console.log('✅ Playlist marked as viewed');
-        } catch (error) {
-          console.error('Error marking playlist as viewed:', error);
-        }
-      }
-    } catch (error) {
-      console.error('Error loading playlist:', error);
-      setPlaylistError(error instanceof Error ? error.message : 'Erro ao carregar playlist');
-    } finally {
-      setLoadingPlaylist(false);
-    }
-  }, [params.id]);
+  // Buscar tracks da playlist
+  const { data: tracks, error: tracksError } = await supabase
+    .from('playlist_tracks')
+    .select(`
+      id,
+      track_name,
+      artist_name,
+      album_name,
+      album_art_url,
+      duration_ms,
+      preview_url,
+      spotify_track_id,
+      found_on_spotify,
+      position
+    `)
+    .eq('playlist_id', id)
+    .order('position', { ascending: true });
 
-  const handlePlayPreview = async (track: PlaylistTrack) => {
-    console.log('🎵 Attempting to play preview for track:', track.title);
-    console.log('🎵 Preview URL:', track.preview_url);
-    
-    if (!track.preview_url) {
-      console.log('❌ No preview URL available for track:', track.title);
-      return;
-    }
+  if (tracksError) {
+    console.log('❌ Erro ao buscar tracks:', tracksError);
+  }
 
-    if (playingTrack === track.id) {
-      // Pausar
-      console.log('⏸️ Pausing track:', track.title);
-      if (audio) {
-        audio.pause();
-        setAudio(null);
-      }
-      setPlayingTrack(null);
-    } else {
-      // Parar áudio anterior
-      if (audio) {
-        console.log('🛑 Stopping previous audio');
-        audio.pause();
-        audio.currentTime = 0;
-      }
+  // Formatar as tracks
+  const formattedTracks: Track[] = (tracks || []).map(track => ({
+    id: track.id,
+    title: track.track_name,
+    artist: track.artist_name,
+    album: track.album_name || undefined,
+    album_art_url: track.album_art_url || undefined,
+    duration: formatDuration(track.duration_ms || 0),
+    found_on_spotify: track.found_on_spotify || false,
+    position: track.position || 0,
+  }));
 
-      // Tocar nova música
-      console.log('▶️ Playing new track:', track.title);
-      const newAudio = new Audio(track.preview_url);
-      
-      // Adicionar mais event listeners para debug
-      newAudio.addEventListener('loadstart', () => {
-        console.log('🔄 Audio load started:', track.title);
-      });
-      
-      newAudio.addEventListener('canplay', () => {
-        console.log('🎵 Audio can play:', track.title);
-      });
-      
-      newAudio.addEventListener('canplaythrough', () => {
-        console.log('✅ Audio can play through:', track.title);
-      });
-      
-      newAudio.addEventListener('ended', () => {
-        console.log('🔚 Track ended:', track.title);
-        setPlayingTrack(null);
-        setAudio(null);
-      });
-      
-      newAudio.addEventListener('error', (e) => {
-        console.error('❌ Audio error:', e);
-        console.error('❌ Audio error details:', {
-          error: newAudio.error,
-          networkState: newAudio.networkState,
-          readyState: newAudio.readyState
-        });
-        setPlayingTrack(null);
-        setAudio(null);
-      });
-      
-      try {
-        // Tentar reproduzir com user interaction
-        const playPromise = newAudio.play();
-        
-        if (playPromise !== undefined) {
-          playPromise
-            .then(() => {
-              console.log('✅ Track started playing successfully:', track.title);
-              setAudio(newAudio);
-              setPlayingTrack(track.id);
-            })
-            .catch((error) => {
-              console.error('❌ Failed to play track:', error);
-              console.error('❌ Error details:', {
-                name: error.name,
-                message: error.message,
-                code: error.code
-              });
-              setPlayingTrack(null);
-              setAudio(null);
-            });
-        }
-      } catch (error) {
-        console.error('❌ Failed to play track:', error);
-        setPlayingTrack(null);
-        setAudio(null);
-      }
-    }
+  // Formatar a playlist
+  const formattedPlaylist: Playlist = {
+    id: playlist.id,
+    title: playlist.title,
+    creator: playlist.users.full_name || playlist.users.email,
+    description: playlist.description || undefined,
+    prompt: playlist.prompt || undefined,
+    gradient: generateGradient(playlist.id),
+    total_tracks: playlist.total_tracks || 0,
+    duration: formatPlaylistDuration(playlist.total_duration_ms || 0),
+    spotify_playlist_id: playlist.spotify_playlist_id || undefined,
+    is_favorite: playlist.is_favorite || false,
+    created_at: playlist.created_at,
+    viewed_at: playlist.viewed_at || undefined,
+    cover_art_url: playlist.cover_art_url || undefined,
+    cover_art_description: playlist.cover_art_description || undefined,
+    cover_art_metadata: playlist.cover_art_metadata || undefined,
+    tracks: formattedTracks,
+    metadata: playlist.playlist_metadata ? {
+      id: playlist.playlist_metadata.id,
+      primary_genre: playlist.playlist_metadata.primary_genre || undefined,
+      subgenre: playlist.playlist_metadata.subgenre || undefined,
+      mood: playlist.playlist_metadata.mood || undefined,
+      years: playlist.playlist_metadata.years || undefined,
+      energy_level: playlist.playlist_metadata.energy_level || undefined,
+      tempo: playlist.playlist_metadata.tempo || undefined,
+      dominant_instruments: playlist.playlist_metadata.dominant_instruments || undefined,
+      vocal_style: playlist.playlist_metadata.vocal_style || undefined,
+      themes: playlist.playlist_metadata.themes || undefined,
+      bpm_range: playlist.playlist_metadata.bpm_range || undefined,
+      key_signature: playlist.playlist_metadata.key_signature || undefined,
+      language: playlist.playlist_metadata.language || undefined,
+      cultural_influence: playlist.playlist_metadata.cultural_influence || undefined,
+    } : undefined,
   };
 
-  const handleAddToSpotify = async () => {
-    if (!playlist) return;
+  return formattedPlaylist;
+}
 
-    try {
-      const response = await fetch('/api/playlist/save', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          playlistId: playlist.id,
-          saveToSpotify: true,
-        }),
-      });
+function formatDuration(ms: number): string {
+  if (ms === 0) return '0:00';
+  
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
+  
+  if (hours > 0) {
+    // For playlist duration (hours format)
+    return `${hours}h ${minutes}m`;
+  } else if (minutes > 0) {
+    // For track duration (minutes:seconds format)
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  } else {
+    // For very short tracks (seconds only)
+    return `0:${seconds.toString().padStart(2, '0')}`;
+  }
+}
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.spotify_playlist_id) {
-          setIsAddedToSpotify(true);
-          setPlaylist(prev => prev ? { ...prev, spotify_playlist_id: data.spotify_playlist_id } : null);
-        }
-      }
-    } catch (error) {
-      console.error('Error adding to Spotify:', error);
-    }
-  };
+function formatPlaylistDuration(ms: number): string {
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  
+  if (hours > 0) {
+    return `${hours}h ${minutes}m`;
+  }
+  return `${minutes}m`;
+}
 
-  const handleOpenSpotify = () => {
-    if (playlist?.spotify_playlist_id) {
-      window.open(`https://open.spotify.com/playlist/${playlist.spotify_playlist_id}`, '_blank');
-    }
-  };
+function generateGradient(id: string): string {
+  const gradients = [
+    'from-purple-500 to-pink-500',
+    'from-blue-500 to-cyan-500',
+    'from-green-500 to-emerald-500',
+    'from-orange-500 to-red-500',
+    'from-indigo-500 to-purple-500',
+    'from-teal-500 to-blue-500',
+    'from-pink-500 to-rose-500',
+    'from-yellow-500 to-orange-500',
+  ];
+  
+  const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
+  return gradients[index];
+}
 
-  const handleToggleFavorite = async () => {
-    if (!playlist || isTogglingFavorite) return;
+async function markPlaylistAsViewed(id: string) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-    try {
-      setIsTogglingFavorite(true);
-      const newFavoriteStatus = !isFavorite;
+  if (!user) {
+    return;
+  }
 
-      const response = await fetch(`/api/playlists/${playlist.id}/favorite`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ isFavorite: newFavoriteStatus }),
-      });
+  await supabase
+    .from('playlists')
+    .update({ viewed_at: new Date().toISOString() })
+    .eq('id', id)
+    .eq('user_id', user.id);
+}
 
-      if (response.ok) {
-        setIsFavorite(newFavoriteStatus);
-      } else {
-        console.error('Failed to toggle favorite');
-      }
-    } catch (error) {
-      console.error('Error toggling favorite:', error);
-    } finally {
-      setIsTogglingFavorite(false);
-    }
-  };
+export default async function PlaylistPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const handleUpdateImages = async () => {
-    if (!playlist || isUpdatingImages) return;
-
-    try {
-      setIsUpdatingImages(true);
-      console.log('🔄 Updating images for playlist:', playlist.id);
-
-      const response = await fetch(`/api/playlists/${playlist.id}/update-images`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log('✅ Images updated:', data);
-        
-        // Reload playlist to show updated images
-        await loadPlaylist();
-        
-        // Show success message
-        alert(`✅ ${data.message}`);
-      } else {
-        const error = await response.json();
-        console.error('Failed to update images:', error);
-        alert(`❌ Erro ao atualizar imagens: ${error.error}`);
-      }
-    } catch (error) {
-      console.error('Error updating images:', error);
-      alert('❌ Erro ao atualizar imagens');
-    } finally {
-      setIsUpdatingImages(false);
-    }
-  };
-
-  if (loading || loadingPlaylist) {
+  if (!user) {
+    // Redirecionar para login se não estiver autenticado
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando...</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4">Acesso Negado</h1>
+          <p className="text-gray-600 mb-6">Você precisa estar logado para acessar esta página.</p>
+          <a 
+            href="/login" 
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Fazer Login
+          </a>
         </div>
       </div>
     );
   }
 
-  if (playlistError) {
-    return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-600 mb-4">{playlistError}</p>
-          <Button onClick={loadPlaylist}>Tentar novamente</Button>
-        </div>
-      </div>
-    );
-  }
+  const playlist = await getPlaylist(id);
 
   if (!playlist) {
     return (
-      <div className="h-full flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600 mb-4">Playlist não encontrada</p>
-          <Button onClick={() => router.push('/dashboard')}>Voltar ao Dashboard</Button>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="text-center max-w-md">
+          <h1 className="text-2xl font-bold mb-4">Playlist não encontrada</h1>
+          <p className="text-gray-600 mb-6">A playlist que você está procurando não existe ou você não tem permissão para acessá-la.</p>
+          <a 
+            href="/dashboard" 
+            className="inline-block bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+          >
+            Voltar ao Dashboard
+          </a>
         </div>
       </div>
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('pt-BR', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    });
-  };
+  // Mark as viewed
+  await markPlaylistAsViewed(id);
 
   return (
-    <>
-      <PageTitle title="playlist" playlistTitle={playlist?.title} />
-      <ScrollArea className="h-full">
-      <div className="relative">
-        {/* Header with Artwork and Info */}
-        <div className={`bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} relative`}>
-          <div className="absolute inset-0 bg-black/20"></div>
-          <div className="relative px-4 md:px-8 py-6 md:py-12 flex flex-col md:flex-row items-start md:items-end gap-4 md:gap-8">
-            {/* Large Artwork */}
-            <div className="w-32 h-32 md:w-64 md:h-64 bg-black/20 rounded-xl md:rounded-2xl shadow-2xl flex-shrink-0 overflow-hidden mx-auto md:mx-0">
-              <div className={`w-full h-full bg-gradient-to-br ${playlist.gradient || 'from-purple-500 to-blue-500'} flex items-center justify-center`}>
-                <div className="text-white/30 text-3xl md:text-6xl font-bold">
-                  {playlist.title.charAt(0)}
-                </div>
-              </div>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Header - More compact */}
+      <div className={`bg-gradient-to-r ${playlist.gradient} px-4 md:px-6 lg:px-8 xl:px-12 py-4 md:py-6`}>
+        <div className="max-w-7xl mx-auto">
+          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+            {/* Artwork - Smaller size */}
+            <div className="w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-white/20 rounded-lg md:rounded-xl flex items-center justify-center shadow-2xl flex-shrink-0 overflow-hidden">
+              {playlist.cover_art_url ? (
+                <img
+                  src={playlist.cover_art_url}
+                  alt={playlist.cover_art_description || playlist.title}
+                  className="w-full h-full object-cover rounded-lg md:rounded-xl"
+                />
+              ) : playlist.spotify_playlist_id ? (
+                <img
+                  src={`https://mosaic.scdn.co/300/ab67616d00001e02/${playlist.spotify_playlist_id}`}
+                  alt={playlist.title}
+                  className="w-full h-full object-cover rounded-lg md:rounded-xl"
+                />
+              ) : (
+                <Music className="w-12 h-12 md:w-16 md:h-16 lg:w-20 lg:h-20 text-white/60" />
+              )}
             </div>
 
-            {/* Playlist Info */}
-            <div className="text-white flex-1 min-w-0 text-center md:text-left">
-              <p className="text-sm font-medium mb-2 opacity-90">Playlist</p>
-              <div className="flex items-center gap-4 mb-3 md:mb-4">
-                <h1 className="text-2xl md:text-5xl font-bold leading-tight break-words">
+            {/* Playlist Info - More compact */}
+            <div className="flex-1 min-w-0">
+              <div className="text-xs md:text-sm text-white/80 mb-1 md:mb-2">Playlist</div>
+              <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-start sm:items-center mb-2 md:mb-3">
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                   {playlist.title}
                 </h1>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="p-2 hover:bg-red-50 transition-colors"
-                  onClick={handleToggleFavorite}
-                  disabled={isTogglingFavorite}
-                >
-                  <Heart 
-                    className={`w-6 h-6 md:w-8 md:h-8 transition-colors ${
-                      isFavorite 
-                        ? 'text-red-500 fill-current' 
-                        : 'text-gray-400 hover:text-red-400'
-                    }`} 
-                  />
-                </Button>
+                <FavoriteButton
+                  playlistId={playlist.id}
+                  isFavorite={playlist.is_favorite}
+                />
               </div>
-              <div className="mb-4 md:mb-6">
-                <p className="text-red-300 font-semibold text-base md:text-lg mb-2 break-words">
-                  {playlist.creator}
-                </p>
-                {playlist.description && (
-                  <div className="text-sm opacity-90 max-w-2xl">
-                    <p className="line-clamp-3 break-words">
-                      {playlist.description}
-                    </p>
-                  </div>
-                )}
-                {playlist.prompt && (
-                  <div className="mt-2 text-xs opacity-75 max-w-2xl">
-                    <span className="font-medium">Prompt original:</span> 
-                    <span className="break-words"> {playlist.prompt}</span>
-                  </div>
-                )}
-              </div>
-              <div className="flex items-center gap-1 text-sm opacity-90 justify-center md:justify-start flex-wrap">
-                <span>{playlist.total_tracks} músicas</span>
-                <span>•</span>
-                <span>{playlist.duration}</span>
-                <span>•</span>
-                <span>{formatDate(playlist.created_at)}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Spotify Action Button */}
-        <div className="px-4 md:px-8 py-6 bg-white border-b border-gray-100">
-          <div className="flex justify-center gap-4 flex-wrap">
-            {isAddedToSpotify ? (
-              <Button 
-                size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-black px-8 md:px-12 py-4 rounded-full font-semibold text-lg flex items-center gap-3"
-                onClick={handleOpenSpotify}
-              >
-                <ExternalLink className="w-5 h-5" />
-                Ouvir no Spotify
-              </Button>
-            ) : (
-              <Button 
-                size="lg" 
-                className="bg-green-500 hover:bg-green-600 text-black px-8 md:px-12 py-4 rounded-full font-semibold text-lg flex items-center gap-3"
-                onClick={handleAddToSpotify}
-              >
-                <Music className="w-5 h-5" />
-                Adicionar ao Spotify
-              </Button>
-            )}
-            
-            {/* Update Images Button */}
-            <Button 
-              variant="outline"
-              size="lg" 
-              className="border-blue-500 text-blue-600 hover:bg-blue-50 px-6 md:px-8 py-4 rounded-full font-semibold text-base flex items-center gap-3"
-              onClick={handleUpdateImages}
-              disabled={isUpdatingImages}
-            >
-              {isUpdatingImages ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
-                  Atualizando...
-                </>
-              ) : (
-                <>
-                  <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                    <span className="text-white text-xs font-bold">🖼️</span>
-                  </div>
-                  Atualizar Imagens
-                </>
+              <p className="text-sm md:text-base lg:text-lg text-white/90 mb-2 md:mb-3">
+                Criado por {playlist.creator}
+              </p>
+              {playlist.description && (
+                <ExpandableDescription
+                  description={playlist.description}
+                  className="mb-2 md:mb-3"
+                />
               )}
-            </Button>
-          </div>
-        </div>
-
-        {/* Track List */}
-        <div className="px-4 md:px-8 py-4 md:py-6">
-          {/* Header */}
-          <div className="hidden md:grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-2 text-sm font-medium text-gray-500 border-b border-gray-200 mb-4">
-            <div className="w-8"></div>
-            <div>Música</div>
-            <div>Artista</div>
-            <div>Álbum</div>
-            <div className="w-16 text-center">
-              <Clock className="w-4 h-4 mx-auto" />
-            </div>
-          </div>
-
-          {/* Tracks */}
-          <div className="space-y-1">
-            {playlist.tracks.length === 0 ? (
-              <div className="text-center py-8">
-                <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">Esta playlist não possui músicas</p>
+              {playlist.prompt && (
+                <div className="mb-2 md:mb-3">
+                  <span className="text-xs md:text-sm font-medium text-white/70">Prompt:</span>
+                  <ExpandableDescription
+                    description={playlist.prompt}
+                    className="mt-1"
+                  />
+                </div>
+              )}
+              <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80 mb-3 md:mb-4">
+                <div className="flex items-center gap-1">
+                  <Music className="w-3 h-3 md:w-4 md:h-4" />
+                  {playlist.total_tracks} músicas
+                </div>
+                <div className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                  {playlist.duration}
+                </div>
+                <div className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 md:w-4 md:h-4" />
+                  {new Date(playlist.created_at).toLocaleDateString('pt-BR')}
+                </div>
               </div>
-            ) : (
-              <>
-                {/* Desktop Track List */}
-                <div className="hidden md:block">
-                  {playlist.tracks.map((track: PlaylistTrack, index: number) => (
-                    <div 
-                      key={track.id}
-                      className="grid grid-cols-[auto_1fr_1fr_1fr_auto] gap-4 px-4 py-3 rounded-lg hover:bg-gray-50 group cursor-pointer"
-                    >
-                      {/* Track Number / Play Button */}
-                      <div className="w-8 flex items-center justify-center">
-                        <span className="text-sm text-gray-500 group-hover:hidden">
-                          {index + 1}
-                        </span>
-                        {track.preview_url && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-6 h-6 p-0 hidden group-hover:flex opacity-0 group-hover:opacity-100 transition-opacity"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlayPreview(track);
-                            }}
-                          >
-                            {playingTrack === track.id ? (
-                              <Pause className="w-3 h-3" />
-                            ) : (
-                              <Play className="w-3 h-3" />
-                            )}
-                          </Button>
-                        )}
-                      </div>
 
-                      {/* Track Info */}
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="w-10 h-10 bg-gray-200 rounded flex-shrink-0 relative overflow-hidden">
-                          {track.artwork ? (
-                            <Image 
-                              src={track.artwork} 
-                              alt={`${track.title} album art`}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                console.log('❌ Failed to load image for track:', track.title);
-                                e.currentTarget.style.display = 'none';
-                              }}
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-400 to-blue-500 rounded"></div>
-                          )}
-                          {track.preview_url && playingTrack === track.id && (
-                            <div className="absolute inset-0 bg-black/50 rounded flex items-center justify-center">
-                              <Pause className="w-4 h-4 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-gray-900 truncate">
-                            {track.title}
-                          </p>
-                        </div>
-                      </div>
-
-                      {/* Artist */}
-                      <div className="flex items-center min-w-0">
-                        <p className="text-gray-600 truncate">
-                          {track.artist}
-                        </p>
-                      </div>
-
-                      {/* Album */}
-                      <div className="flex items-center min-w-0">
-                        <p className="text-gray-600 truncate">
-                          {track.album}
-                        </p>
-                      </div>
-
-                      {/* Duration & Actions */}
-                      <div className="flex items-center justify-center gap-2">
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log("Like track:", track.id);
-                          }}
-                        >
-                          <Heart className="w-4 h-4" />
-                        </Button>
-                        <span className="text-sm text-gray-500 min-w-[35px] text-center">
-                          {track.duration}
-                        </span>
-                        <Button 
-                          variant="ghost" 
-                          size="sm" 
-                          className="w-6 h-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            console.log("More options for track:", track.id);
-                          }}
-                        >
-                          <MoreHorizontal className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-
-                {/* Mobile Track List */}
-                <div className="md:hidden space-y-2">
-                  {playlist.tracks.map((track: PlaylistTrack, index: number) => (
-                    <div 
-                      key={track.id}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 cursor-pointer"
-                      onClick={() => track.preview_url && handlePlayPreview(track)}
-                    >
-                      {/* Track Number / Play Button */}
-                      <div className="w-8 flex items-center justify-center">
-                        {track.preview_url ? (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-6 h-6 p-0"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handlePlayPreview(track);
-                            }}
-                          >
-                            {playingTrack === track.id ? (
-                              <Pause className="w-3 h-3" />
-                            ) : (
-                              <Play className="w-3 h-3" />
-                            )}
-                          </Button>
-                        ) : (
-                          <span className="text-sm text-gray-500 font-medium">
-                            {index + 1}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Track Info */}
-                      <div className="flex-1 min-w-0">
-                        <p className="font-medium text-gray-900 truncate">
-                          {track.title}
-                        </p>
-                        <p className="text-sm text-gray-600 truncate">
-                          {track.artist} • {track.album}
-                        </p>
-                      </div>
-
-                      {/* Duration */}
-                      <div className="text-sm text-gray-500">
-                        {track.duration}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </>
-            )}
+              {/* Action Buttons - More compact */}
+              <PlaylistActionButtons
+                playlistId={playlist.id}
+                spotifyPlaylistId={playlist.spotify_playlist_id}
+                playlistName={playlist.title}
+                playlistDescription={playlist.description || ""}
+                songList={playlist.tracks.map(track => `${track.artist} - ${track.title}`).join('; ')}
+              />
+            </div>
           </div>
         </div>
       </div>
-    </ScrollArea>
-    </>
+
+      {/* Content */}
+      <div className="px-4 md:px-6 lg:px-8 xl:px-12 py-6 md:py-8">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
+            {/* Metadata Section - Hidden on smaller screens */}
+            {playlist.metadata && (
+              <div className="xl:col-span-1 hidden xl:block">
+                <div className="bg-white rounded-xl shadow-lg p-6">
+                  <h2 className="text-xl font-semibold mb-6">Metadados</h2>
+                  <div className="space-y-4">
+                    {playlist.metadata.primary_genre && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Gênero:</span>
+                        <p className="text-base text-gray-900 mt-1">{playlist.metadata.primary_genre}</p>
+                      </div>
+                    )}
+                    {playlist.metadata.mood && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Humor:</span>
+                        <p className="text-base text-gray-900 mt-1">{playlist.metadata.mood}</p>
+                      </div>
+                    )}
+                    {playlist.metadata.energy_level && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Nível de Energia:</span>
+                        <p className="text-base text-gray-900 mt-1">{playlist.metadata.energy_level}</p>
+                      </div>
+                    )}
+                    {playlist.metadata.tempo && (
+                      <div>
+                        <span className="text-sm font-medium text-gray-600">Tempo:</span>
+                        <p className="text-base text-gray-900 mt-1">{playlist.metadata.tempo}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Tracks Section */}
+            <div className={playlist.metadata ? "xl:col-span-3" : "xl:col-span-4"}>
+              {playlist.tracks.length > 0 ? (
+                <div className="bg-white rounded-xl shadow-lg overflow-hidden">
+                  {/* Desktop Table View */}
+                  <div className="hidden md:block">
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                          <tr>
+                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-600 w-16"></th>
+                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Música</th>
+                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Artista</th>
+                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-600">Álbum</th>
+                            <th className="text-left py-3 px-6 text-sm font-medium text-gray-600 text-right w-20">Duração</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {playlist.tracks.map((track, index) => (
+                            <tr key={track.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
+                              <td className="py-3 px-6">
+                                {/* Album artwork only */}
+                                <div className={`w-10 h-10 bg-gray-200 rounded flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                                  track.found_on_spotify ? 'ring-2 ring-green-500' : ''
+                                }`}>
+                                  {track.album_art_url ? (
+                                    <img
+                                      src={track.album_art_url}
+                                      alt={track.album || track.title}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <Music className="w-4 h-4 text-gray-400" />
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-3 px-6">
+                                <div className="font-medium text-gray-900">{track.title}</div>
+                              </td>
+                              <td className="py-3 px-6">
+                                <div className="text-gray-600">{track.artist}</div>
+                              </td>
+                              <td className="py-3 px-6">
+                                <div className="text-gray-600">{track.album || '-'}</div>
+                              </td>
+                              <td className="py-3 px-6 text-right">
+                                <div className="text-gray-500 text-sm">{track.duration}</div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+
+                  {/* Mobile Card View */}
+                  <div className="md:hidden p-4 space-y-3">
+                    {playlist.tracks.map((track, index) => (
+                      <div key={track.id} className="flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors">
+                        {/* Album artwork for mobile */}
+                        <div className={`w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
+                          track.found_on_spotify ? 'ring-2 ring-green-500' : ''
+                        }`}>
+                          {track.album_art_url ? (
+                            <img
+                              src={track.album_art_url}
+                              alt={track.album || track.title}
+                              className="w-full h-full object-cover rounded-lg"
+                            />
+                          ) : (
+                            <Music className="w-6 h-6 text-gray-400" />
+                          )}
+                        </div>
+                        
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-medium text-gray-900 truncate">{track.title}</h3>
+                          </div>
+                          <p className="text-sm text-gray-600 truncate">{track.artist}</p>
+                          {track.album && (
+                            <p className="text-xs text-gray-500 truncate">{track.album}</p>
+                          )}
+                        </div>
+                        
+                        <div className="text-sm text-gray-500 flex-shrink-0">
+                          {track.duration}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <div className="bg-white rounded-xl shadow-lg p-12">
+                  <div className="text-center">
+                    <Music className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                    <p className="text-gray-600">Nenhuma música encontrada nesta playlist.</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 } 

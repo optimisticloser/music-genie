@@ -70,6 +70,74 @@ export type Database = {
           },
         ]
       }
+      playlist_metadata: {
+        Row: {
+          bpm_range: string | null
+          created_at: string
+          cultural_influence: string | null
+          dominant_instruments: string[] | null
+          energy_level: string | null
+          id: string
+          key_signature: string | null
+          language: string | null
+          mood: string | null
+          playlist_id: string
+          primary_genre: string | null
+          subgenre: string | null
+          tempo: string | null
+          themes: string[] | null
+          updated_at: string
+          vocal_style: string | null
+          years: string[] | null
+        }
+        Insert: {
+          bpm_range?: string | null
+          created_at?: string
+          cultural_influence?: string | null
+          dominant_instruments?: string[] | null
+          energy_level?: string | null
+          id?: string
+          key_signature?: string | null
+          language?: string | null
+          mood?: string | null
+          playlist_id: string
+          primary_genre?: string | null
+          subgenre?: string | null
+          tempo?: string | null
+          themes?: string[] | null
+          updated_at?: string
+          vocal_style?: string | null
+          years?: string[] | null
+        }
+        Update: {
+          bpm_range?: string | null
+          created_at?: string
+          cultural_influence?: string | null
+          dominant_instruments?: string[] | null
+          energy_level?: string | null
+          id?: string
+          key_signature?: string | null
+          language?: string | null
+          mood?: string | null
+          playlist_id?: string
+          primary_genre?: string | null
+          subgenre?: string | null
+          tempo?: string | null
+          themes?: string[] | null
+          updated_at?: string
+          vocal_style?: string | null
+          years?: string[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "playlist_metadata_playlist_id_fkey"
+            columns: ["playlist_id"]
+            isOneToOne: true
+            referencedRelation: "playlists"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       playlist_shares: {
         Row: {
           created_at: string
@@ -170,6 +238,9 @@ export type Database = {
       }
       playlists: {
         Row: {
+          cover_art_description: string | null
+          cover_art_metadata: Json | null
+          cover_art_url: string | null
           cover_image_url: string | null
           created_at: string
           description: string | null
@@ -189,6 +260,9 @@ export type Database = {
           viewed_at: string | null
         }
         Insert: {
+          cover_art_description?: string | null
+          cover_art_metadata?: Json | null
+          cover_art_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -208,6 +282,9 @@ export type Database = {
           viewed_at?: string | null
         }
         Update: {
+          cover_art_description?: string | null
+          cover_art_metadata?: Json | null
+          cover_art_url?: string | null
           cover_image_url?: string | null
           created_at?: string
           description?: string | null
@@ -325,7 +402,34 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_playlist_metadata_stats: {
+        Args: { user_id_param?: string }
+        Returns: {
+          category: string
+          value: string
+          count: number
+        }[]
+      }
+      search_playlists_by_metadata: {
+        Args: {
+          search_genre?: string
+          search_mood?: string
+          search_energy?: string
+          search_instruments?: string[]
+          search_themes?: string[]
+          user_id_param?: string
+        }
+        Returns: {
+          playlist_id: string
+          title: string
+          description: string
+          primary_genre: string
+          mood: string
+          energy_level: string
+          dominant_instruments: string[]
+          themes: string[]
+        }[]
+      }
     }
     Enums: {
       playlist_status: "draft" | "published" | "private"

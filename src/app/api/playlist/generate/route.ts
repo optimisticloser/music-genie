@@ -1,74 +1,21 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
-import {
-  playlistGeneratorAgent,
-  PlaylistGeneratorInput,
-  playlistCoverArtGeneration,
-  PlaylistCoverArtGenerationInput,
-} from "@/lib/workflowai/agents";
-import { searchTracks, createPlaylist, addTracksToPlaylist, getCurrentUser } from "@/lib/spotify/api";
+import { playlistGeneratorAgent, PlaylistGeneratorInput } from "@/lib/workflowai/agents";
 import { SpotifyService } from "@/lib/services/spotify";
+import { createPlaylist, addTracksToPlaylist, getCurrentUser } from "@/lib/spotify/api";
+import { generatePlaylistCover } from "@/lib/services/workflowai";
 
-// Função para gerar capa de playlist de forma assíncrona
-async function generatePlaylistCover(
-  playlistName: string,
-  playlistDescription: string,
-  songList: string,
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  supabase: any,
-  playlistId: string
-) {
-  try {
-    console.log("🎨 Starting async cover art generation for playlist:", playlistId);
-    
-    const input: PlaylistCoverArtGenerationInput = {
-      playlist_name: playlistName,
-      playlist_description: playlistDescription,
-      song_list: songList,
-      style_preferences: "Bright, energetic, vibrant",
-      color_preferences: "Vibrant yellows, energetic oranges, and bright magentas",
-    };
-
-    const {
-      output,
-      data: { duration_seconds, cost_usd, version },
-    } = await playlistCoverArtGeneration(input);
-
-    if (output?.cover_art) {
-      console.log("✅ Cover art generated successfully:", {
-        playlistId,
-        coverArtUrl: output.cover_art.url,
-        model: version?.properties?.model,
-        cost: cost_usd,
-        latency: duration_seconds?.toFixed(2),
-      });
-
-      // Atualizar a playlist com a URL da capa gerada
-      const { error: updateError } = await supabase
-        .from("playlists")
-        .update({
-          cover_art_url: output.cover_art.url,
-          cover_art_description: output.design_description,
-          cover_art_metadata: {
-            model: version?.properties?.model,
-            cost_usd: cost_usd,
-            duration_seconds: duration_seconds,
-            generated_at: new Date().toISOString(),
-          },
-        })
-        .eq("id", playlistId);
-
-      if (updateError) {
-        console.error("❌ Error updating playlist with cover art:", updateError);
-      } else {
-        console.log("✅ Playlist updated with cover art URL");
-      }
-    }
-  } catch (error) {
-    console.error("❌ Error generating cover art:", error);
-    // Não falha a geração da playlist se a capa falhar
-  }
+interface EnrichedSong {
+  title?: string;
+  artist?: string;
+  spotify_id?: string;
+  album_name?: string;
+  album_art_url?: string;
+  duration_ms?: number;
+  preview_url?: string;
+  external_url?: string;
+  found_on_spotify?: boolean;
 }
 
 export async function POST(req: NextRequest) {
@@ -135,102 +82,78 @@ export async function POST(req: NextRequest) {
     // If user has Spotify connected, search for tracks
     const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
     console.log("🎵 Spotify connected:", isSpotifyConnected);
-    
+
     if (isSpotifyConnected && output.songs && output.songs.length > 0) {
       console.log("🎵 Enriching songs with Spotify data...");
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       
       if (accessToken) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const enrichedSongs: Array<any> = [];
-        let foundCount = 0;
-        
-        for (const song of output.songs) {
+        // Enrich songs with Spotify data
+        for (let i = 0; i < output.songs.length; i++) {
+          const song = output.songs[i];
           if (song.title && song.artist) {
             try {
-              // Use a more specific search query with quotes for exact matches
-              const searchQuery = `track:"${song.title}" artist:"${song.artist}"`;
-              console.log(`🎵 Searching for: ${searchQuery}`);
-              const tracks = await searchTracks(searchQuery, accessToken, 5); // Get more results to find better matches
+              console.log(`🎵 Searching for: ${song.artist} - ${song.title}`);
               
-              if (tracks.length > 0) {
-                // Find the best match by comparing artist names
-                let bestTrack = tracks[0];
-                let bestScore = 0;
-                
-                for (const track of tracks) {
-                  const artistMatch = track.artists.some(artist => 
-                    artist.name.toLowerCase().includes(song.artist!.toLowerCase()) ||
-                    song.artist!.toLowerCase().includes(artist.name.toLowerCase())
-                  );
-                  
-                  const titleMatch = track.name.toLowerCase().includes(song.title!.toLowerCase()) ||
-                    song.title!.toLowerCase().includes(track.name.toLowerCase());
-                  
-                  const score = (artistMatch ? 2 : 0) + (titleMatch ? 1 : 0);
-                  
-                  if (score > bestScore) {
-                    bestScore = score;
-                    bestTrack = track;
-                  }
+              const searchQuery = `${song.artist} ${song.title}`;
+              const response = await fetch(
+                `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`,
+                {
+                  headers: {
+                    'Authorization': `Bearer ${accessToken}`,
+                  },
                 }
+              );
+
+              if (response.ok) {
+                const searchData = await response.json();
+                const tracks = searchData.tracks?.items;
                 
-                console.log(`🎵 Best match found: ${bestTrack.name} by ${bestTrack.artists[0].name} (score: ${bestScore})`);
-                console.log(`🎵 Original: ${song.title} by ${song.artist}`);
-                
-                // Accept matches with a lower threshold to get more preview URLs
-                if (bestScore >= 1) { // Reduced from 2 to 1 to be less restrictive
-                  console.log(`🎵 Accepting match with score ${bestScore} for preview URL`);
-                  enrichedSongs.push({
+                if (tracks && tracks.length > 0) {
+                  const track = tracks[0];
+                  console.log(`✅ Found on Spotify: ${track.name} by ${track.artists[0].name}`);
+                  
+                  // Update song with Spotify data
+                  (output.songs[i] as EnrichedSong) = {
                     ...song,
-                    spotify_id: bestTrack.id,
-                    album_name: bestTrack.album.name,
-                    album_art_url: bestTrack.album.images[0]?.url,
-                    duration_ms: bestTrack.duration_ms,
-                    preview_url: bestTrack.preview_url,
-                    external_url: bestTrack.external_urls.spotify,
-                    found_on_spotify: true
-                  });
-                  foundCount++;
+                    spotify_id: track.id,
+                    album_name: track.album.name,
+                    album_art_url: track.album.images[0]?.url,
+                    duration_ms: track.duration_ms,
+                    preview_url: track.preview_url,
+                    external_url: track.external_urls.spotify,
+                    found_on_spotify: true,
+                  };
                 } else {
-                  console.log(`🎵 Match score too low (${bestScore}), marking as not found`);
-                  enrichedSongs.push({
+                  console.log(`❌ Not found on Spotify: ${song.artist} - ${song.title}`);
+                  (output.songs[i] as EnrichedSong) = {
                     ...song,
-                    found_on_spotify: false
-                  });
+                    found_on_spotify: false,
+                  };
                 }
               } else {
-                console.log(`🎵 Not found: ${song.title} by ${song.artist}`);
-                enrichedSongs.push({
+                console.log(`❌ Spotify search failed for: ${song.artist} - ${song.title}`);
+                (output.songs[i] as EnrichedSong) = {
                   ...song,
-                  found_on_spotify: false
-                });
+                  found_on_spotify: false,
+                };
               }
             } catch (error) {
-              console.error(`❌ Error searching for track ${song.title}:`, error);
-              enrichedSongs.push({
+              console.error(`❌ Error searching Spotify for ${song.artist} - ${song.title}:`, error);
+              (output.songs[i] as EnrichedSong) = {
                 ...song,
-                found_on_spotify: false
-              });
+                found_on_spotify: false,
+              };
             }
           }
         }
-        
-        console.log(`🎵 Spotify enrichment complete: ${foundCount}/${output.songs.length} tracks found`);
-        output.songs = enrichedSongs;
-      } else {
-        console.log("🎵 No access token available for Spotify search");
       }
-    } else {
-      console.log("🎵 Spotify not connected or no songs to enrich");
     }
 
-    console.log("🎵 Final response - Spotify connected:", isSpotifyConnected);
     console.log("🎵 Final response - Total songs:", output.songs?.length || 0);
     
     // Calculate total duration from enriched songs
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const totalDurationMs = output.songs?.reduce((total, song: any) => 
+    const totalDurationMs = (output.songs as EnrichedSong[])?.reduce((total, song) => 
       total + (song.duration_ms || 0), 0) || 0;
     
     // Create Spotify playlist if connected and songs found
@@ -239,8 +162,7 @@ export async function POST(req: NextRequest) {
       const accessToken = await SpotifyService.getValidAccessToken(user.id);
       if (accessToken) {
         try {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const foundSongs = output.songs.filter((song: any) => song.found_on_spotify);
+          const foundSongs = (output.songs as EnrichedSong[]).filter((song) => song.found_on_spotify);
           if (foundSongs.length > 0) {
             // Get current user to get Spotify user ID
             const currentUser = await getCurrentUser(accessToken);
@@ -254,8 +176,7 @@ export async function POST(req: NextRequest) {
               );
               
               // Add tracks to the playlist
-              // eslint-disable-next-line @typescript-eslint/no-explicit-any
-              const trackUris = foundSongs.map((song: any) => `spotify:track:${song.spotify_id}`);
+              const trackUris = foundSongs.map((song) => `spotify:track:${song.spotify_id}`);
               await addTracksToPlaylist(spotifyPlaylistId.id, trackUris, accessToken);
             }
           }
@@ -289,8 +210,7 @@ export async function POST(req: NextRequest) {
 
       // Save tracks to playlist_tracks table
       if (output.songs && output.songs.length > 0) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tracksToInsert = output.songs.map((song: any, index: number) => ({
+        const tracksToInsert = (output.songs as EnrichedSong[]).map((song, index: number) => ({
           playlist_id: playlist_id,
           spotify_track_id: song.spotify_id || `not_found_${index}`,
           track_name: song.title || '',
@@ -311,6 +231,35 @@ export async function POST(req: NextRequest) {
           console.error('Error saving tracks:', tracksError);
         } else {
           console.log(`✅ Saved ${tracksToInsert.length} tracks to playlist_tracks`);
+        }
+      }
+
+      // Save metadata if available
+      if (output.categorization && output.categorization.length > 0) {
+        const categorization = output.categorization[0]; // Take the first categorization
+        console.log("📊 Saving playlist metadata:", categorization);
+        
+        const { error: metadataError } = await supabase
+          .from('playlist_metadata')
+          .upsert({
+            playlist_id: playlist_id,
+            primary_genre: categorization.primary_genre,
+            subgenre: categorization.subgenre,
+            mood: categorization.mood,
+            years: categorization.years,
+            energy_level: categorization.energy_level,
+            tempo: categorization.tempo,
+            dominant_instruments: categorization.dominant_instruments,
+            vocal_style: categorization.vocal_style,
+            themes: categorization.themes,
+          }, {
+            onConflict: 'playlist_id'
+          });
+
+        if (metadataError) {
+          console.error('Error saving metadata:', metadataError);
+        } else {
+          console.log('✅ Saved playlist metadata');
         }
       }
     } else {
@@ -354,8 +303,7 @@ export async function POST(req: NextRequest) {
 
       // Save tracks to playlist_tracks table (legacy path)
       if (output.songs && output.songs.length > 0 && created) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const tracksToInsert = output.songs.map((song: any, index: number) => ({
+        const tracksToInsert = (output.songs as EnrichedSong[]).map((song, index: number) => ({
           playlist_id: created.id,
           spotify_track_id: song.spotify_id || `not_found_${index}`,
           track_name: song.title || '',
@@ -378,11 +326,38 @@ export async function POST(req: NextRequest) {
           console.log(`✅ Saved ${tracksToInsert.length} tracks to playlist_tracks`);
         }
       }
+
+      // Save metadata if available (legacy path)
+      if (output.categorization && output.categorization.length > 0 && created) {
+        const categorization = output.categorization[0]; // Take the first categorization
+        console.log("📊 Saving playlist metadata:", categorization);
+        
+        const { error: metadataError } = await supabase
+          .from('playlist_metadata')
+          .insert({
+            playlist_id: created.id,
+            primary_genre: categorization.primary_genre,
+            subgenre: categorization.subgenre,
+            mood: categorization.mood,
+            years: categorization.years,
+            energy_level: categorization.energy_level,
+            tempo: categorization.tempo,
+            dominant_instruments: categorization.dominant_instruments,
+            vocal_style: categorization.vocal_style,
+            themes: categorization.themes,
+          });
+
+        if (metadataError) {
+          console.error('Error saving metadata:', metadataError);
+        } else {
+          console.log('✅ Saved playlist metadata');
+        }
+      }
     }
 
     // Gerar capa de playlist de forma assíncrona após a playlist ser criada
     if (savedPlaylist) {
-      const songList = output.songs?.map(song => `${song.artist} - ${song.title}`).join('; ') || '';
+      const songList = (output.songs as EnrichedSong[])?.map(song => `${song.artist} - ${song.title}`).join('; ') || '';
       
       // Iniciar geração da capa de forma assíncrona (não aguardar)
       generatePlaylistCover(
@@ -391,7 +366,7 @@ export async function POST(req: NextRequest) {
         songList,
         supabase,
         savedPlaylist.id
-      ).catch(error => {
+      ).catch((error: Error) => {
         console.error("❌ Async cover generation failed:", error);
       });
     }
@@ -403,7 +378,7 @@ export async function POST(req: NextRequest) {
       cover_generation_started: !!savedPlaylist
     });
   } catch (error) {
-    console.error("Playlist generation error", error);
+    console.error("Playlist generation error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 } 

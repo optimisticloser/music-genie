@@ -14,18 +14,23 @@ export async function GET(req: NextRequest) {
     const page = parseInt(searchParams.get('page') || '1');
     const limit = parseInt(searchParams.get('limit') || '12');
     const search = searchParams.get('search') || '';
-    const statusParam = searchParams.get('status') || 'all';
-    const favoritesOnly = searchParams.get('favorites') === 'true';
+    const favoritesOnly = searchParams.get('favorites') === 'true' || searchParams.get('favoritesOnly') === 'true';
     const sortBy = searchParams.get('sortBy') || 'created_at';
     const sortOrder = searchParams.get('sortOrder') || 'desc';
-
-    // Validate status parameter
-    const validStatuses = ['draft', 'published', 'private'];
-    const status = validStatuses.includes(statusParam) ? statusParam as 'draft' | 'published' | 'private' : 'all';
+    
+    // New filter parameters
+    const genre = searchParams.get('genre');
+    const mood = searchParams.get('mood');
+    const energyLevel = searchParams.get('energy_level');
+    const instruments = searchParams.get('instruments')?.split(',').filter(Boolean);
+    const themes = searchParams.get('themes')?.split(',').filter(Boolean);
+    const years = searchParams.get('years')?.split(',').filter(Boolean);
+    const duration = searchParams.get('duration');
+    const timeRange = searchParams.get('time_range');
 
     const offset = (page - 1) * limit;
 
-    // Base query
+    // Base query with metadata join
     let query = supabase
       .from('playlists')
       .select(`
@@ -40,21 +45,67 @@ export async function GET(req: NextRequest) {
         is_favorite,
         created_at,
         updated_at,
-        viewed_at
+        viewed_at,
+        cover_art_url,
+        cover_art_description,
+        playlist_metadata (
+          primary_genre,
+          subgenre,
+          mood,
+          years,
+          energy_level,
+          tempo,
+          dominant_instruments,
+          vocal_style,
+          themes
+        )
       `)
       .eq('user_id', user.id);
 
-    // Apply filters
+    // Apply text search
     if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%`);
+      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,prompt.ilike.%${search}%`);
     }
 
-    if (status !== 'all') {
-      query = query.eq('status', status);
-    }
-
+    // Apply favorites filter
     if (favoritesOnly) {
       query = query.eq('is_favorite', true);
+    }
+
+    // Apply metadata filters
+    if (genre) {
+      query = query.eq('playlist_metadata.primary_genre', genre);
+    }
+    if (mood) {
+      query = query.eq('playlist_metadata.mood', mood);
+    }
+    if (energyLevel) {
+      query = query.eq('playlist_metadata.energy_level', energyLevel);
+    }
+    if (instruments && instruments.length > 0) {
+      query = query.overlaps('playlist_metadata.dominant_instruments', instruments);
+    }
+    if (themes && themes.length > 0) {
+      query = query.overlaps('playlist_metadata.themes', themes);
+    }
+    if (years && years.length > 0) {
+      query = query.overlaps('playlist_metadata.years', years);
+    }
+
+    // Apply duration filter
+    if (duration) {
+      const durationMs = getDurationRange(duration);
+      if (durationMs) {
+        query = query.gte('total_duration_ms', durationMs.min).lte('total_duration_ms', durationMs.max);
+      }
+    }
+
+    // Apply time range filter
+    if (timeRange) {
+      const dateRange = getTimeRange(timeRange);
+      if (dateRange) {
+        query = query.gte('created_at', dateRange.start).lte('created_at', dateRange.end);
+      }
     }
 
     // Apply sorting
@@ -66,21 +117,82 @@ export async function GET(req: NextRequest) {
     const { data: playlists, error } = await query;
 
     if (error) {
-      console.error("Error fetching user playlists:", error);
+      console.error("Error fetching playlists:", error);
       return NextResponse.json({ error: "Failed to fetch playlists" }, { status: 500 });
     }
 
     // Get total count for pagination
-    const { count: totalCount } = await supabase
+    let countQuery = supabase
       .from('playlists')
-      .select('*', { count: 'exact', head: true })
+      .select('id', { count: 'exact' })
       .eq('user_id', user.id);
 
-    // Format duration for each playlist
+    // Apply same filters to count query
+    if (search) {
+      countQuery = countQuery.or(`title.ilike.%${search}%,description.ilike.%${search}%,prompt.ilike.%${search}%`);
+    }
+    if (favoritesOnly) {
+      countQuery = countQuery.eq('is_favorite', true);
+    }
+    if (genre) {
+      countQuery = countQuery.eq('playlist_metadata.primary_genre', genre);
+    }
+    if (mood) {
+      countQuery = countQuery.eq('playlist_metadata.mood', mood);
+    }
+    if (energyLevel) {
+      countQuery = countQuery.eq('playlist_metadata.energy_level', energyLevel);
+    }
+    if (instruments && instruments.length > 0) {
+      countQuery = countQuery.overlaps('playlist_metadata.dominant_instruments', instruments);
+    }
+    if (themes && themes.length > 0) {
+      countQuery = countQuery.overlaps('playlist_metadata.themes', themes);
+    }
+    if (years && years.length > 0) {
+      countQuery = countQuery.overlaps('playlist_metadata.years', years);
+    }
+    if (duration) {
+      const durationMs = getDurationRange(duration);
+      if (durationMs) {
+        countQuery = countQuery.gte('total_duration_ms', durationMs.min).lte('total_duration_ms', durationMs.max);
+      }
+    }
+    if (timeRange) {
+      const dateRange = getTimeRange(timeRange);
+      if (dateRange) {
+        countQuery = countQuery.gte('created_at', dateRange.start).lte('created_at', dateRange.end);
+      }
+    }
+
+    const { count, error: countError } = await countQuery;
+
+    if (countError) {
+      console.error("Error counting playlists:", countError);
+      return NextResponse.json({ error: "Failed to count playlists" }, { status: 500 });
+    }
+
+    const total = count || 0;
+    const totalPages = Math.ceil(total / limit);
+
+    // Format playlists
     const formattedPlaylists = playlists?.map(playlist => ({
-      ...playlist,
+      id: playlist.id,
+      title: playlist.title,
+      description: playlist.description,
+      prompt: playlist.prompt,
+      status: playlist.status,
+      total_tracks: playlist.total_tracks,
       duration: formatDuration(playlist.total_duration_ms || 0),
-      gradient: generateGradient(playlist.id), // Generate consistent gradient based on ID
+      spotify_playlist_id: playlist.spotify_playlist_id,
+      gradient: generateGradient(playlist.id),
+      is_favorite: playlist.is_favorite,
+      created_at: playlist.created_at,
+      updated_at: playlist.updated_at,
+      viewed_at: playlist.viewed_at,
+      cover_art_url: playlist.cover_art_url,
+      cover_art_description: playlist.cover_art_description,
+      metadata: playlist.playlist_metadata,
     })) || [];
 
     return NextResponse.json({
@@ -88,57 +200,84 @@ export async function GET(req: NextRequest) {
       pagination: {
         page,
         limit,
-        total: totalCount || 0,
-        totalPages: Math.ceil((totalCount || 0) / limit),
-        hasNextPage: offset + limit < (totalCount || 0),
+        total,
+        totalPages,
+        hasNextPage: page < totalPages,
         hasPreviousPage: page > 1,
-      }
+      },
     });
 
   } catch (error) {
-    console.error("Get user playlists error:", error);
+    console.error("Playlists API error:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
 
-// Helper function to format duration from milliseconds
-function formatDuration(durationMs: number): string {
-  if (!durationMs) return '0m';
-  
-  const minutes = Math.floor(durationMs / 60000);
+// Helper functions
+function formatDuration(ms: number): string {
+  const minutes = Math.floor(ms / 60000);
   const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
   
   if (hours > 0) {
-    const remainingMinutes = minutes % 60;
     return `${hours}h ${remainingMinutes}m`;
   }
-  
   return `${minutes}m`;
 }
 
-// Helper function to generate consistent gradient based on playlist ID
-function generateGradient(playlistId: string): string {
+function generateGradient(id: string): string {
   const gradients = [
-    'from-blue-400 to-purple-600',
-    'from-green-400 to-blue-600',
-    'from-red-400 to-orange-600',
-    'from-purple-400 to-pink-600',
-    'from-yellow-400 to-red-600',
-    'from-indigo-400 to-purple-600',
-    'from-pink-400 to-rose-600',
-    'from-teal-400 to-cyan-600',
-    'from-orange-400 to-yellow-600',
-    'from-violet-400 to-purple-600',
+    'from-red-400 to-pink-500',
+    'from-blue-400 to-cyan-500',
+    'from-green-400 to-emerald-500',
+    'from-purple-400 to-pink-500',
+    'from-yellow-400 to-orange-500',
+    'from-indigo-400 to-purple-500',
+    'from-pink-400 to-rose-500',
+    'from-cyan-400 to-blue-500',
   ];
   
-  // Use playlist ID to consistently generate the same gradient
-  let hash = 0;
-  for (let i = 0; i < playlistId.length; i++) {
-    const char = playlistId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
+  // Use the ID to consistently select a gradient
+  const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
+  return gradients[index];
+}
+
+function getDurationRange(duration: string): { min: number; max: number } | null {
+  switch (duration) {
+    case 'Curta (< 30min)':
+      return { min: 0, max: 30 * 60 * 1000 };
+    case 'Média (30-60min)':
+      return { min: 30 * 60 * 1000, max: 60 * 60 * 1000 };
+    case 'Longa (> 60min)':
+      return { min: 60 * 60 * 1000, max: Number.MAX_SAFE_INTEGER };
+    default:
+      return null;
+  }
+}
+
+function getTimeRange(timeRange: string): { start: string; end: string } | null {
+  const now = new Date();
+  let start = new Date();
+  
+  switch (timeRange) {
+    case 'Últimos 7 dias':
+      start.setDate(now.getDate() - 7);
+      break;
+    case 'Últimos 30 dias':
+      start.setDate(now.getDate() - 30);
+      break;
+    case 'Últimos 3 meses':
+      start.setMonth(now.getMonth() - 3);
+      break;
+    case 'Último ano':
+      start.setFullYear(now.getFullYear() - 1);
+      break;
+    default:
+      return null;
   }
   
-  const index = Math.abs(hash) % gradients.length;
-  return gradients[index];
+  return {
+    start: start.toISOString(),
+    end: now.toISOString(),
+  };
 } 

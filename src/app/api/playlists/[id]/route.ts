@@ -16,7 +16,7 @@ export async function GET(
     const resolvedParams = await params;
     const playlistId = resolvedParams.id;
 
-    // Get playlist details
+    // Get playlist details with metadata
     const { data: playlist, error: playlistError } = await supabase
       .from('playlists')
       .select(`
@@ -31,10 +31,28 @@ export async function GET(
         created_at,
         updated_at,
         viewed_at,
+        cover_art_url,
+        cover_art_description,
         users!inner (
           id,
           full_name,
           email
+        ),
+        playlist_metadata (
+          id,
+          primary_genre,
+          subgenre,
+          mood,
+          years,
+          energy_level,
+          tempo,
+          dominant_instruments,
+          vocal_style,
+          themes,
+          bpm_range,
+          key_signature,
+          language,
+          cultural_influence
         )
       `)
       .eq('id', playlistId)
@@ -82,6 +100,10 @@ export async function GET(
       gradient: generateGradient(playlist.id),
       created_at: playlist.created_at,
       updated_at: playlist.updated_at,
+      viewed_at: playlist.viewed_at,
+      cover_art_url: playlist.cover_art_url,
+      cover_art_description: playlist.cover_art_description,
+      metadata: playlist.playlist_metadata,
       tracks: tracks?.map(track => {
         console.log('🎵 Track data:', {
           id: track.id,
@@ -116,55 +138,34 @@ export async function GET(
   }
 }
 
-// Helper function to format duration from milliseconds
-function formatDuration(durationMs: number): string {
-  if (!durationMs) return '0m';
-  
-  const minutes = Math.floor(durationMs / 60000);
-  const hours = Math.floor(minutes / 60);
+function formatDuration(ms: number): string {
+  const hours = Math.floor(ms / (1000 * 60 * 60));
+  const minutes = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
   
   if (hours > 0) {
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
+    return `${hours}h ${minutes}m`;
   }
-  
   return `${minutes}m`;
 }
 
-// Helper function to format track duration
-function formatTrackDuration(durationMs: number): string {
-  if (!durationMs) return '0:00';
-  
-  const totalSeconds = Math.floor(durationMs / 1000);
-  const minutes = Math.floor(totalSeconds / 60);
-  const seconds = totalSeconds % 60;
-  
+function formatTrackDuration(ms: number): string {
+  const minutes = Math.floor(ms / (1000 * 60));
+  const seconds = Math.floor((ms % (1000 * 60)) / 1000);
   return `${minutes}:${seconds.toString().padStart(2, '0')}`;
 }
 
-// Helper function to generate consistent gradient based on playlist ID
-function generateGradient(playlistId: string): string {
+function generateGradient(id: string): string {
   const gradients = [
-    'from-blue-400 to-purple-600',
-    'from-green-400 to-blue-600',
-    'from-red-400 to-orange-600',
-    'from-purple-400 to-pink-600',
-    'from-yellow-400 to-red-600',
-    'from-indigo-400 to-purple-600',
-    'from-pink-400 to-rose-600',
-    'from-teal-400 to-cyan-600',
-    'from-orange-400 to-yellow-600',
-    'from-violet-400 to-purple-600',
+    'from-purple-500 to-pink-500',
+    'from-blue-500 to-cyan-500',
+    'from-green-500 to-emerald-500',
+    'from-orange-500 to-red-500',
+    'from-indigo-500 to-purple-500',
+    'from-teal-500 to-blue-500',
+    'from-pink-500 to-rose-500',
+    'from-yellow-500 to-orange-500',
   ];
   
-  // Use playlist ID to consistently generate the same gradient
-  let hash = 0;
-  for (let i = 0; i < playlistId.length; i++) {
-    const char = playlistId.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  const index = Math.abs(hash) % gradients.length;
+  const index = id.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % gradients.length;
   return gradients[index];
 } 

@@ -15,7 +15,13 @@ export async function POST(
 
     const { id } = await params;
     const body = await req.json();
-    const { isFavorite } = body;
+    
+    // Accept both isFavorite and is_favorite for backward compatibility
+    const isFavorite = body.isFavorite !== undefined ? body.isFavorite : body.is_favorite;
+
+    if (isFavorite === undefined) {
+      return NextResponse.json({ error: "Missing is_favorite field" }, { status: 400 });
+    }
 
     // First, check if the playlist exists and belongs to the user
     const { data: playlist, error: fetchError } = await supabase

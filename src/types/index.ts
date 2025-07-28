@@ -32,6 +32,31 @@ export interface PlaylistLineage {
   created_at: string;
 }
 
+export interface PlaylistMetadata {
+  id: string;
+  playlist_id: string;
+  
+  // Categorization data
+  primary_genre?: string;
+  subgenre?: string;
+  mood?: string;
+  years?: string[];
+  energy_level?: string;
+  tempo?: string;
+  dominant_instruments?: string[];
+  vocal_style?: string;
+  themes?: string[];
+  
+  // Additional metadata
+  bpm_range?: string;
+  key_signature?: string;
+  language?: string;
+  cultural_influence?: string;
+  
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Playlist {
   id: string;
   lineage_id: string;
@@ -49,6 +74,9 @@ export interface Playlist {
   created_at: string;
   updated_at: string;
   viewed_at?: string;
+  
+  // Metadata (joined from playlist_metadata table)
+  metadata?: PlaylistMetadata;
 }
 
 export interface PlaylistTrack {
@@ -85,6 +113,26 @@ export interface PlaylistWithTracks extends Playlist {
 export interface PlaylistWithLineage extends Playlist {
   lineage: PlaylistLineage;
   tracks: PlaylistTrack[];
+}
+
+export interface PlaylistWithMetadata extends Playlist {
+  metadata?: PlaylistMetadata;
+  tracks?: PlaylistTrack[];
+}
+
+export interface MetadataStats {
+  category: string;
+  value: string;
+  count: number;
+}
+
+export interface PlaylistSearchFilters {
+  genre?: string;
+  mood?: string;
+  energy_level?: string;
+  instruments?: string[];
+  themes?: string[];
+  years?: string[];
 }
 
 // Form types for playlist generation

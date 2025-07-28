@@ -61,7 +61,7 @@ export function Sidebar({ onClose }: SidebarProps) {
   };
 
   return (
-    <div className="w-64 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
+    <div className="w-64 md:w-72 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
       {/* Desktop Header */}
       <div className="hidden md:flex p-4 border-b border-gray-200">
         <div className="flex items-center gap-3">
@@ -73,25 +73,25 @@ export function Sidebar({ onClose }: SidebarProps) {
       </div>
 
       {/* Mobile Header */}
-      <div className="md:hidden flex items-center justify-between p-4 border-b border-gray-200">
-        <div className="flex items-center gap-3">
-          <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
-            <Music className="w-5 h-5 text-white" />
+      <div className="md:hidden flex items-center justify-between p-3 border-b border-gray-200">
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+            <Music className="w-4 h-4 text-white" />
           </div>
-          <h1 className="text-lg font-semibold text-gray-900">{siteConfig.name}</h1>
+          <h1 className="text-base font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
         <Button
           variant="ghost"
           size="sm"
           onClick={onClose}
-          className="p-2"
+          className="p-1.5"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4" />
         </Button>
       </div>
 
       {/* Search */}
-      <div className="p-4">
+      <div className="p-3 md:p-4">
         <form onSubmit={handleSearchSubmit} className="relative">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
@@ -100,14 +100,14 @@ export function Sidebar({ onClose }: SidebarProps) {
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={handleSearchFocus}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+            className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
           />
         </form>
       </div>
 
       <ScrollArea className="flex-1 px-2">
         {/* Main Navigation */}
-        <div className="space-y-1 mb-6">
+        <div className="space-y-1 mb-4">
           {navigationItems.map((item) => {
             const isActive = pathname === item.href;
             return (
@@ -115,7 +115,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 key={item.name}
                 onClick={() => handleNavigation(item.href)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
+                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                   isActive 
                     ? "bg-red-100 text-red-700" 
                     : "text-gray-700 hover:bg-gray-100",
@@ -123,7 +123,7 @@ export function Sidebar({ onClose }: SidebarProps) {
                 )}
               >
                 <item.icon className={cn(
-                  "w-5 h-5",
+                  "w-4 h-4",
                   isActive ? "text-red-600" : "text-gray-500",
                   item.highlight && "text-red-500"
                 )} />
@@ -138,10 +138,10 @@ export function Sidebar({ onClose }: SidebarProps) {
           })}
         </div>
 
-        <Separator className="my-4" />
+        <Separator className="my-3" />
 
         {/* Biblioteca */}
-        <div className="mb-6">
+        <div className="mb-4">
           <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
             Biblioteca
           </h3>
@@ -153,14 +153,14 @@ export function Sidebar({ onClose }: SidebarProps) {
                   key={item.name}
                   onClick={() => handleNavigation(item.href)}
                   className={cn(
-                    "w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors text-left",
+                    "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
                     isActive 
                       ? "bg-red-100 text-red-700" 
                       : "text-gray-700 hover:bg-gray-100"
                   )}
                 >
                   <item.icon className={cn(
-                    "w-5 h-5",
+                    "w-4 h-4",
                     isActive ? "text-red-600" : "text-gray-500"
                   )} />
                   {item.name}
@@ -169,8 +169,6 @@ export function Sidebar({ onClose }: SidebarProps) {
             })}
           </div>
         </div>
-
-
       </ScrollArea>
     </div>
   );
