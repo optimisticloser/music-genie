@@ -56,17 +56,23 @@ export async function GET() {
 
     // Process statistics
     const genreCounts = genreStats?.reduce((acc, item) => {
-      acc[item.primary_genre] = (acc[item.primary_genre] || 0) + 1;
+      if (item.primary_genre) {
+        acc[item.primary_genre] = (acc[item.primary_genre] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>) || {};
 
     const moodCounts = moodStats?.reduce((acc, item) => {
-      acc[item.mood] = (acc[item.mood] || 0) + 1;
+      if (item.mood) {
+        acc[item.mood] = (acc[item.mood] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>) || {};
 
     const energyCounts = energyStats?.reduce((acc, item) => {
-      acc[item.energy_level] = (acc[item.energy_level] || 0) + 1;
+      if (item.energy_level) {
+        acc[item.energy_level] = (acc[item.energy_level] || 0) + 1;
+      }
       return acc;
     }, {} as Record<string, number>) || {};
 
