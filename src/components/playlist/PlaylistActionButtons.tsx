@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, Heart } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
 import { useFavoriteToggle } from "@/hooks/useFavoriteToggle";
 
 interface PlaylistActionButtonsProps {
@@ -14,8 +13,7 @@ interface PlaylistActionButtonsProps {
 
 export function PlaylistActionButtons({ 
   playlistId, 
-  spotifyPlaylistId, 
-  isFavorite = false 
+  spotifyPlaylistId
 }: PlaylistActionButtonsProps) {
   const [isUpdatingImages, setIsUpdatingImages] = useState(false);
 
