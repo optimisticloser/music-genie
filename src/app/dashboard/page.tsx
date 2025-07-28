@@ -35,7 +35,6 @@ interface Playlist {
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [loading, setLoading] = useState(true);
   const [spotifyConnected, setSpotifyConnected] = useState(false);
   const [connectingSpotify, setConnectingSpotify] = useState(false);
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
@@ -73,7 +72,7 @@ export default function DashboardPage() {
         console.error("Error fetching user:", error);
         router.push("/login");
       } finally {
-        setLoading(false);
+        // setLoading(false); // Removed as per edit hint
       }
     }
 

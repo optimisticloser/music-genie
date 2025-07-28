@@ -1,21 +1,17 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { 
   Search, 
   Filter, 
-  X, 
-  Heart,
-  Calendar,
-  Clock,
-  Music,
-  Grid,
-  List,
+  Grid3X3, 
+  List, 
   ChevronDown,
-  ChevronUp
+  ChevronUp,
+  X
 } from "lucide-react";
 
 export interface PlaylistFiltersState {
@@ -139,7 +135,7 @@ export function PlaylistFilters({
             })}
             className="flex items-center gap-1"
           >
-            <Calendar className="w-4 h-4" />
+            {/* Calendar icon removed */}
             {filters.sortBy === "created_at" ? "Data" : "Nome"}
             {filters.sortOrder === "desc" ? "↓" : "↑"}
           </Button>
@@ -153,7 +149,7 @@ export function PlaylistFilters({
             })}
             className="flex items-center gap-1"
           >
-            {filters.viewMode === "grid" ? <Grid className="w-4 h-4" /> : <List className="w-4 h-4" />}
+            {filters.viewMode === "grid" ? <Grid3X3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
             {filters.viewMode === "grid" ? "Grid" : "Lista"}
           </Button>
 
@@ -164,7 +160,7 @@ export function PlaylistFilters({
             onClick={() => updateFilters({ favoritesOnly: !filters.favoritesOnly })}
             className="flex items-center gap-1"
           >
-            <Heart className="w-4 h-4" />
+            {/* Heart icon removed */}
             Favoritas
           </Button>
         </div>
@@ -393,7 +389,7 @@ export function PlaylistFilters({
           </>
         ) : (
           <>
-            <Music className="w-4 h-4" />
+            {/* Music icon removed */}
             {totalResults} playlist{totalResults !== 1 ? 's' : ''} encontrada{totalResults !== 1 ? 's' : ''}
           </>
         )}

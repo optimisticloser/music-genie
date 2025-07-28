@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Heart, Play, ExternalLink, Loader2, Sparkles } from "lucide-react";
+import { Sparkles, Loader2, Play, ExternalLink } from "lucide-react";
 
 interface PlaylistActionButtonsProps {
   playlistId: string;

@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Heart, Play, ExternalLink, Loader2 } from "lucide-react";
+import { Sparkles, Loader2, Heart } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useFavoriteToggle } from "@/hooks/useFavoriteToggle";
 
@@ -49,7 +49,7 @@ export function PlaylistActionButtons({
           className="px-6 md:px-8 lg:px-12 py-3 md:py-4 text-base md:text-lg bg-green-600 hover:bg-green-700"
           onClick={() => window.open(`https://open.spotify.com/playlist/${spotifyPlaylistId}`, '_blank')}
         >
-          <Play className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+          <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
           Ouvir no Spotify
         </Button>
       )}
@@ -59,7 +59,7 @@ export function PlaylistActionButtons({
         onClick={handleUpdateImages}
         disabled={isUpdatingImages}
       >
-        <ExternalLink className="w-4 h-4 md:w-5 md:h-5 mr-2" />
+        <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
         {isUpdatingImages ? 'Atualizando...' : 'Atualizar Imagens'}
       </Button>
     </div>

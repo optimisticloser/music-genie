@@ -257,7 +257,7 @@ function getDurationRange(duration: string): { min: number; max: number } | null
 
 function getTimeRange(timeRange: string): { start: string; end: string } | null {
   const now = new Date();
-  let start = new Date();
+  const start = new Date();
   
   switch (timeRange) {
     case 'Últimos 7 dias':

@@ -1,4 +1,3 @@
-import { notFound } from "next/navigation";
 import { Music, Clock, Calendar } from "lucide-react";
 import createClient from "@/lib/supabase/server";
 import { FavoriteButton } from "@/components/playlist/PlaylistActionButtons";
@@ -31,7 +30,7 @@ interface Playlist {
   viewed_at?: string;
   cover_art_url?: string;
   cover_art_description?: string;
-  cover_art_metadata?: any;
+  cover_art_metadata?: Record<string, unknown>;
   tracks: Track[];
   metadata?: {
     id: string;
@@ -433,7 +432,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
                           </tr>
                         </thead>
                         <tbody>
-                          {playlist.tracks.map((track, index) => (
+                          {playlist.tracks.map((track) => (
                             <tr key={track.id} className="border-b border-gray-100 hover:bg-gray-50 transition-colors">
                               <td className="py-3 px-6">
                                 {/* Album artwork only */}
@@ -472,7 +471,7 @@ export default async function PlaylistPage({ params }: { params: Promise<{ id: s
 
                   {/* Mobile Card View */}
                   <div className="md:hidden p-4 space-y-3">
-                    {playlist.tracks.map((track, index) => (
+                    {playlist.tracks.map((track) => (
                       <div key={track.id} className="flex items-center gap-4 p-4 rounded-lg hover:bg-gray-50 transition-colors">
                         {/* Album artwork for mobile */}
                         <div className={`w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center flex-shrink-0 overflow-hidden ${
