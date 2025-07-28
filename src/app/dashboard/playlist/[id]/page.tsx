@@ -30,7 +30,7 @@ interface Playlist {
   viewed_at?: string;
   cover_art_url?: string;
   cover_art_description?: string;
-  cover_art_metadata?: any;
+  cover_art_metadata?: unknown;
   tracks: Track[];
   metadata?: {
     id: string;
