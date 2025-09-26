@@ -3,6 +3,29 @@ import {
   PlaylistCoverArtGenerationInput,
 } from "@/lib/workflowai/agents";
 
+export type CoverGenerationStatus =
+  | {
+      stage: "started";
+    }
+  | {
+      stage: "success";
+      coverArtUrl: string;
+      coverArtDescription?: string | null;
+      metadata: {
+        model?: string | null;
+        cost_usd?: number | null;
+        duration_seconds?: number | null;
+      };
+    }
+  | {
+    stage: "error";
+    message: string;
+  };
+
+interface GeneratePlaylistCoverOptions {
+  onStatus?: (status: CoverGenerationStatus) => void;
+}
+
 // Função para gerar capa de playlist de forma assíncrona
 export async function generatePlaylistCover(
   playlistName: string,
@@ -10,10 +33,12 @@ export async function generatePlaylistCover(
   songList: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  playlistId: string
+  playlistId: string,
+  options: GeneratePlaylistCoverOptions = {}
 ) {
   try {
     console.log("🎨 Starting async cover art generation for playlist:", playlistId);
+    options.onStatus?.({ stage: "started" });
     
     const input: PlaylistCoverArtGenerationInput = {
       playlist_name: playlistName,
@@ -57,9 +82,29 @@ export async function generatePlaylistCover(
       } else {
         console.log("✅ Playlist updated with cover art URL");
       }
+
+      options.onStatus?.({
+        stage: "success",
+        coverArtUrl: output.cover_art.url,
+        coverArtDescription: output.design_description,
+        metadata: {
+          model: version?.properties?.model,
+          cost_usd: cost_usd,
+          duration_seconds: duration_seconds,
+        },
+      });
+    } else {
+      options.onStatus?.({
+        stage: "error",
+        message: "Cover art generation did not return an image",
+      });
     }
   } catch (error) {
     console.error("❌ Error generating cover art:", error);
+    options.onStatus?.({
+      stage: "error",
+      message: error instanceof Error ? error.message : "Unknown cover art error",
+    });
     // Não falha a geração da playlist se a capa falhar
   }
-} 
+}

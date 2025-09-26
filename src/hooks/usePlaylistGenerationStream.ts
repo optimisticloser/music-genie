@@ -32,6 +32,23 @@ type PlaylistRecord = {
   [key: string]: unknown;
 };
 
+type CoverStatusEvent =
+  | {
+      stage: "started";
+    }
+  | {
+      stage: "success";
+      cover_art_url?: string;
+      cover_art_description?: string;
+      metadata?: Record<string, unknown> | null;
+    }
+  | {
+      stage: "error";
+      message?: string;
+    };
+
+export type { CoverStatusEvent };
+
 const FUN_LOADING_MESSAGES = [
   "Reticulating splines…",
   "Sintonizando rádios intergalácticas…",
@@ -104,8 +121,16 @@ export function usePlaylistGenerationStream() {
     playlist: PlaylistRecord | PlaylistGeneratorOutput | null;
     spotify_connected?: boolean;
     metrics?: WorkflowMetrics;
+    tracks?: unknown[];
+    metadata?: Record<string, unknown> | null;
+    songs?: unknown[];
+    cover_art_url?: string;
   } | null>(null);
   const [hasAiUpdate, setHasAiUpdate] = useState(false);
+  const [coverStatusEvent, setCoverStatusEvent] = useState<CoverStatusEvent | null>(
+    null
+  );
+  const [coverArtUrl, setCoverArtUrl] = useState<string | null>(null);
 
   const funIndexRef = useRef(0);
 
@@ -136,6 +161,8 @@ export function usePlaylistGenerationStream() {
     setError(null);
     setCompleteData(null);
     setHasAiUpdate(false);
+    setCoverStatusEvent(null);
+    setCoverArtUrl(null);
     funIndexRef.current = 0;
   }, []);
 
@@ -221,6 +248,15 @@ export function usePlaylistGenerationStream() {
               }
               break;
             }
+            case "cover_status": {
+              if (data) {
+                setCoverStatusEvent(data as CoverStatusEvent);
+                if (data?.cover_art_url) {
+                  setCoverArtUrl(data.cover_art_url as string);
+                }
+              }
+              break;
+            }
             case "playlist_saved": {
               if (data?.playlist_id) {
                 setPlaylistId(data.playlist_id);
@@ -240,6 +276,11 @@ export function usePlaylistGenerationStream() {
                 setPartialOutput((prev) =>
                   mergeOutputs(prev, data.playlist as PlaylistGeneratorOutput)
                 );
+              }
+              if (data?.playlist?.cover_art_url) {
+                setCoverArtUrl(data.playlist.cover_art_url as string);
+              } else if (data?.cover_art_url) {
+                setCoverArtUrl(data.cover_art_url as string);
               }
               setIsRunning(false);
               break;
@@ -323,5 +364,7 @@ export function usePlaylistGenerationStream() {
     metrics,
     error,
     completeData,
+    coverStatus: coverStatusEvent,
+    coverArtUrl,
   };
 }

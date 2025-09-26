@@ -1,48 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
-import { usePlaylistGenerationStream } from '@/hooks/usePlaylistGenerationStream';
+import { Music, Loader2, AlertCircle, X, Send } from 'lucide-react';
 
 interface Tag {
   id: string;
   label: string;
   category: string;
-}
-
-interface GeneratedPlaylist {
-  name?: string;
-  essay?: string;
-  songs?: { 
-    title?: string; 
-    artist?: string;
-    spotify_id?: string;
-    album_name?: string;
-    album_art_url?: string;
-    duration_ms?: number;
-    preview_url?: string;
-    external_url?: string;
-    found_on_spotify?: boolean;
-  }[];
-  album_art?: {
-    style_preferences?: string;
-    color_preferences?: string;
-    image_description?: string;
-  }[];
-  categorization?: {
-    primary_genre?: string;
-    subgenre?: string;
-    mood?: string;
-    years?: string[];
-    energy_level?: string;
-    tempo?: string;
-    dominant_instruments?: string[];
-    vocal_style?: string;
-    themes?: string[];
-  }[];
 }
 
 const TAG_CATEGORIES = {
@@ -97,114 +64,11 @@ export default function GeneratePage() {
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const {
-    generate,
-    cancel,
-    isRunning,
-    status: streamStatus,
-    funMessage,
-    partialOutput,
-    spotifyProgress,
-    playlistId: streamedPlaylistId,
-    spotifyPlaylistId,
-    metrics,
-    error: streamError,
-    completeData,
-  } = usePlaylistGenerationStream();
+  const router = useRouter();
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
-  const [spotifyPlaylistUrl, setSpotifyPlaylistUrl] = useState<string | null>(null);
-  const [spotifyConnected, setSpotifyConnected] = useState<boolean | null>(null);
-
-  const generatedPlaylist = partialOutput as GeneratedPlaylist | null;
-  const statusMessage = streamStatus?.message || (isRunning ? funMessage : null);
-  const knownPlaylistId = savedPlaylistId || streamedPlaylistId || null;
-
-  const describeSpotifyStatus = (
-    index: number,
-    song?: GeneratedPlaylist['songs'] extends Array<infer T> ? T : never
-  ) => {
-    const progress = spotifyProgress[index];
-    switch (progress?.status) {
-      case 'found':
-        return {
-          label: 'No Spotify',
-          className: 'bg-green-100 text-green-700 border border-green-200',
-        };
-      case 'searching':
-        return {
-          label: 'Buscando…',
-          className: 'bg-yellow-100 text-yellow-700 border border-yellow-200 animate-pulse',
-        };
-      case 'not_found':
-        return {
-          label: 'Não encontrada',
-          className: 'bg-red-100 text-red-600 border border-red-200',
-        };
-      case 'skipped':
-        return {
-          label: 'Dados insuficientes',
-          className: 'bg-gray-200 text-gray-600 border border-gray-300',
-        };
-      case 'error':
-        return {
-          label: 'Erro na busca',
-          className: 'bg-orange-100 text-orange-600 border border-orange-200',
-        };
-      default: {
-        if (song?.found_on_spotify) {
-          return {
-            label: 'No Spotify',
-            className: 'bg-green-100 text-green-700 border border-green-200',
-          };
-        }
-        return {
-          label: isRunning ? 'Processando…' : 'Pendente',
-          className: isRunning
-            ? 'bg-yellow-50 text-yellow-600 border border-yellow-200'
-            : 'bg-gray-100 text-gray-600 border border-gray-200',
-        };
-      }
-    }
-  };
-
-  useEffect(() => {
-    if (streamError) {
-      setError(streamError);
-    }
-  }, [streamError]);
-
-  useEffect(() => {
-    if (
-      streamStatus?.stage === 'spotify_connection' &&
-      typeof streamStatus.connected === 'boolean'
-    ) {
-      setSpotifyConnected(streamStatus.connected);
-    }
-
-    if (streamStatus?.message && !streamError) {
-      setError(null);
-    }
-  }, [streamStatus, streamError]);
-
-  useEffect(() => {
-    if (completeData?.spotify_connected !== undefined) {
-      setSpotifyConnected(completeData.spotify_connected ?? null);
-    }
-
-    if (completeData?.playlist && typeof completeData.playlist === 'object') {
-      const playlist = completeData.playlist as { id?: string };
-      if (playlist.id) {
-        setSavedPlaylistId(playlist.id);
-      }
-    }
-
-    if (spotifyPlaylistId) {
-      setSpotifyPlaylistUrl(`https://open.spotify.com/playlist/${spotifyPlaylistId}`);
-    }
-  }, [completeData, spotifyPlaylistId]);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Carrega sugestões iniciais
   useEffect(() => {
@@ -408,15 +272,25 @@ export default function GeneratePage() {
     }
 
     setError(null);
-    setSavedPlaylistId(null);
-    setSpotifyPlaylistUrl(null);
-    setSpotifyConnected(null);
-
+    setIsGenerating(true);
     try {
-      await generate(currentPrompt);
+      const response = await fetch('/api/playlist/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: currentPrompt }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create playlist draft');
+      }
+
+      const { playlistId } = await response.json();
+      router.push(`/dashboard/playlist/${playlistId}`);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate playlist');
+    } finally {
+      setIsGenerating(false);
     }
   };
 
@@ -440,15 +314,11 @@ export default function GeneratePage() {
               variant="outline" 
               className="px-4 py-2 rounded-full"
               onClick={() => {
-                cancel();
                 setPromptParts([]);
                 setSelectedTags([]);
                 setCurrentPrompt('');
                 setError(null);
                 setActiveCategory(null);
-                setSavedPlaylistId(null);
-                setSpotifyPlaylistUrl(null);
-                setSpotifyConnected(null);
                 loadSuggestions('initial');
               }}
             >
@@ -459,10 +329,10 @@ export default function GeneratePage() {
           <div className="flex items-center gap-3">
             <Button 
               onClick={handleGenerate}
-              disabled={isRunning || !currentPrompt.trim()}
+              disabled={isGenerating || !currentPrompt.trim()}
               className="px-6 py-2 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full font-medium flex items-center gap-2"
             >
-              {isRunning ? (
+              {isGenerating ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
                   Gerando…
@@ -488,16 +358,6 @@ export default function GeneratePage() {
                 <div className="flex items-center gap-2 text-red-700">
                   <AlertCircle className="w-5 h-5" />
                   <span className="font-medium">{error}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Success Display */}
-            {savedPlaylistId && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex items-center gap-2 text-green-700">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Playlist saved successfully to your library!</span>
                 </div>
               </div>
             )}
@@ -607,173 +467,6 @@ export default function GeneratePage() {
             )}
 
             {/* Generation Progress & Result */}
-            {(isRunning || generatedPlaylist || completeData) && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm space-y-6">
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <div className="text-sm uppercase tracking-wide text-gray-400 mb-1">
-                      {isRunning ? 'Gerando playlist' : 'Playlist pronta'}
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                      {generatedPlaylist?.name || 'Nome em criação…'}
-                    </h2>
-                    {generatedPlaylist?.categorization?.[0] && (
-                      <div className="flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                        <span>{generatedPlaylist.categorization[0].primary_genre}</span>
-                        <span>•</span>
-                        <span>{generatedPlaylist.categorization[0].mood}</span>
-                        {generatedPlaylist.categorization[0].energy_level && (
-                          <>
-                            <span>•</span>
-                            <span>{generatedPlaylist.categorization[0].energy_level} Energy</span>
-                          </>
-                        )}
-                      </div>
-                    )}
-                    <div className="mt-3 flex items-center gap-2 text-sm text-gray-600">
-                      {isRunning ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-yellow-500" />
-                      ) : (
-                        <CheckCircle className="w-4 h-4 text-green-500" />
-                      )}
-                      <span>{statusMessage || funMessage}</span>
-                    </div>
-                    {spotifyConnected === false && (
-                      <div className="mt-2 text-sm text-amber-600">
-                        Conecte sua conta Spotify para criar playlists automaticamente.
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2 text-sm text-gray-500">
-                    {knownPlaylistId && (
-                      <span className="font-mono bg-gray-100 px-2 py-1 rounded">
-                        ID: {knownPlaylistId.slice(0, 8)}…
-                      </span>
-                    )}
-                    {metrics && typeof metrics.duration_seconds !== 'undefined' && (
-                      <span>
-                        Tempo IA: {Number(metrics.duration_seconds).toFixed(1)}s
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                <div className="space-y-6">
-                  <div className="p-6 bg-gray-50 rounded-lg min-h-[96px]">
-                    {generatedPlaylist?.essay ? (
-                      <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                        {generatedPlaylist.essay}
-                      </p>
-                    ) : (
-                      <p className="text-gray-500">
-                        {isRunning
-                          ? 'Escrevendo a história da sua playlist…'
-                          : 'Nenhuma descrição gerada.'}
-                      </p>
-                    )}
-                  </div>
-
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {generatedPlaylist?.songs?.length
-                        ? `${generatedPlaylist.songs.length} músicas`
-                        : 'Músicas chegando…'}
-                    </h3>
-
-                    {generatedPlaylist?.songs && generatedPlaylist.songs.length > 0 ? (
-                      <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
-                        {generatedPlaylist.songs.map((song, index) => {
-                          const badge = describeSpotifyStatus(index, song);
-                          return (
-                            <div
-                              key={`${song.title}-${index}`}
-                              className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-                            >
-                              <div className="flex items-center gap-3 flex-1 min-w-0">
-                                {song.album_art_url ? (
-                                  <Image
-                                    src={song.album_art_url}
-                                    alt={`${song.title} album art`}
-                                    width={40}
-                                    height={40}
-                                    className="w-10 h-10 rounded object-cover flex-shrink-0"
-                                  />
-                                ) : (
-                                  <div className="w-10 h-10 rounded bg-gray-200 flex-shrink-0" />
-                                )}
-                                <div className="flex-1 min-w-0">
-                                  <div className="font-medium text-gray-900 truncate">
-                                    {song.title || 'Título pendente'}
-                                  </div>
-                                  <div className="text-sm text-gray-600 truncate">
-                                    {song.artist || 'Artista desconhecido'}
-                                  </div>
-                                  {song.album_name && (
-                                    <div className="text-xs text-gray-500 truncate">
-                                      {song.album_name}
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`px-2 py-1 rounded-full text-xs font-medium ${badge.className}`}
-                                >
-                                  {badge.label}
-                                </span>
-                                <div className="text-sm text-gray-500">#{index + 1}</div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="p-6 bg-gray-50 text-sm text-gray-500 rounded-lg text-center">
-                        {isRunning
-                          ? 'Gerando lista de faixas…'
-                          : 'Ainda não há músicas geradas para este prompt.'}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-3 items-center justify-between text-sm text-gray-600">
-                  <div className="flex gap-3 items-center">
-                    {spotifyPlaylistUrl && (
-                      <Button
-                        variant="outline"
-                        onClick={() => window.open(spotifyPlaylistUrl, '_blank')}
-                      >
-                        Abrir no Spotify
-                      </Button>
-                    )}
-                    {knownPlaylistId && (
-                      <Button
-                        variant="outline"
-                        onClick={() => (window.location.href = `/dashboard/playlist/${knownPlaylistId}`)}
-                      >
-                        Ver na Dashboard
-                      </Button>
-                    )}
-                    {spotifyConnected === false && (
-                      <Button
-                        variant="outline"
-                        onClick={() => (window.location.href = '/api/auth/spotify')}
-                        className="border-green-600 text-green-600 hover:bg-green-50"
-                      >
-                        <Music className="w-4 h-4 mr-2" />
-                        Conectar Spotify
-                      </Button>
-                    )}
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {spotifyConnected === false
-                      ? 'Sem conexão com Spotify — geração local apenas.'
-                      : 'Playlist salva automaticamente.'}
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Input Area - Sempre visível */}

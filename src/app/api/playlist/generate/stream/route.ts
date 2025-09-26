@@ -13,7 +13,10 @@ import {
   createPlaylist,
   getCurrentUser,
 } from "@/lib/spotify/api";
-import { generatePlaylistCover } from "@/lib/services/workflowai";
+import {
+  generatePlaylistCover,
+  CoverGenerationStatus,
+} from "@/lib/services/workflowai";
 
 type WorkflowMetrics = Record<string, unknown> | null;
 
@@ -27,6 +30,7 @@ interface EnrichedSong {
   preview_url?: string;
   external_url?: string;
   found_on_spotify?: boolean;
+  position?: number;
 }
 
 interface StreamEventPayload {
@@ -37,6 +41,7 @@ type StreamEventName =
   | "status"
   | "ai_update"
   | "spotify_progress"
+  | "cover_status"
   | "playlist_saved"
   | "complete"
   | "error";
@@ -61,10 +66,11 @@ async function enrichSongsWithSpotify(
     return [];
   }
 
-  const normalizedSongs: EnrichedSong[] = songs.map((song) => ({
+  const normalizedSongs: EnrichedSong[] = songs.map((song, index) => ({
     title: song.title?.trim(),
     artist: song.artist?.trim(),
     found_on_spotify: false,
+    position: index + 1,
   }));
 
   const results: EnrichedSong[] = new Array(normalizedSongs.length);
@@ -121,6 +127,7 @@ async function enrichSongsWithSpotify(
           preview_url: track.preview_url,
           external_url: track.external_urls?.spotify,
           found_on_spotify: true,
+          position: song.position ?? currentIndex + 1,
         };
 
         results[currentIndex] = enriched;
@@ -143,6 +150,77 @@ function calculateTotalDuration(songs: EnrichedSong[]): number {
   return songs.reduce((total, song) => total + (song.duration_ms || 0), 0);
 }
 
+interface PlaylistSnapshot {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  playlist: any;
+  tracks: EnrichedSong[];
+  metadata: Record<string, unknown> | null;
+}
+
+async function fetchPlaylistSnapshot(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  supabase: any,
+  playlistId: string,
+  userId: string
+): Promise<PlaylistSnapshot | null> {
+  const { data: playlist, error: playlistError } = await supabase
+    .from("playlists")
+    .select("*")
+    .eq("id", playlistId)
+    .eq("user_id", userId)
+    .single();
+
+  if (playlistError || !playlist) {
+    return null;
+  }
+
+  const { data: tracksData, error: tracksError } = await supabase
+    .from("playlist_tracks")
+    .select("*")
+    .eq("playlist_id", playlistId)
+    .order("position", { ascending: true });
+
+  if (tracksError) {
+    console.error("Error fetching playlist tracks snapshot", tracksError);
+  }
+
+  const { data: metadataRows, error: metadataError } = await supabase
+    .from("playlist_metadata")
+    .select("*")
+    .eq("playlist_id", playlistId)
+    .limit(1);
+
+  if (metadataError) {
+    console.error("Error fetching playlist metadata snapshot", metadataError);
+  }
+
+  const tracks: EnrichedSong[] = (tracksData || []).map((track, index: number) => {
+    const spotifyId =
+      track.spotify_track_id && !track.spotify_track_id.startsWith("not_found_")
+        ? track.spotify_track_id
+        : undefined;
+
+    return {
+      title: track.track_name || undefined,
+      artist: track.artist_name || undefined,
+      spotify_id: spotifyId,
+      album_name: track.album_name || undefined,
+      album_art_url: track.album_art_url || undefined,
+      duration_ms: track.duration_ms || undefined,
+      preview_url: track.preview_url || undefined,
+      external_url: spotifyId ? `https://open.spotify.com/track/${spotifyId}` : undefined,
+      found_on_spotify: track.found_on_spotify ?? false,
+      position: track.position ?? index + 1,
+    };
+  });
+
+  return {
+    playlist,
+    tracks,
+    metadata: metadataRows && metadataRows.length > 0 ? metadataRows[0] : null,
+  };
+}
+
 async function savePlaylistData({
   supabase,
   prompt,
@@ -160,7 +238,7 @@ async function savePlaylistData({
   output: PlaylistGeneratorOutput;
   songs: EnrichedSong[];
   spotifyPlaylistId: { id: string } | null;
-}) {
+}): Promise<PlaylistSnapshot | null> {
   const totalDurationMs = calculateTotalDuration(songs);
 
   if (playlistId) {
@@ -233,13 +311,7 @@ async function savePlaylistData({
       }
     }
 
-    const { data: playlist } = await supabase
-      .from("playlists")
-      .select()
-      .eq("id", playlistId)
-      .single();
-
-    return playlist;
+    return await fetchPlaylistSnapshot(supabase, playlistId, userId);
   }
 
   const { data: lineage, error: lineageError } = await supabase
@@ -322,7 +394,7 @@ async function savePlaylistData({
     }
   }
 
-  return created;
+  return await fetchPlaylistSnapshot(supabase, created.id, userId);
 }
 
 export async function POST(req: NextRequest) {
@@ -383,10 +455,91 @@ export async function POST(req: NextRequest) {
           message: "Preparando geração da playlist…",
         });
 
-        const run = await playlistGeneratorAgent({ prompt }).stream();
-
-        let latestOutput: PlaylistGeneratorOutput | null = null;
         let metrics: WorkflowMetrics = null;
+        let latestOutput: PlaylistGeneratorOutput | null = null;
+
+        let existingSnapshot: PlaylistSnapshot | null = null;
+        if (playlistId) {
+          existingSnapshot = await fetchPlaylistSnapshot(supabase, playlistId, user.id);
+        }
+
+        if (existingSnapshot?.playlist?.status === "published") {
+          const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
+
+          if (existingSnapshot.tracks.length > 0) {
+            notify("ai_update", {
+              output: {
+                name: existingSnapshot.playlist.title,
+                essay: existingSnapshot.playlist.description,
+                songs: existingSnapshot.tracks.map((track) => ({
+                  title: track.title,
+                  artist: track.artist,
+                })),
+                categorization: existingSnapshot.metadata
+                  ? [
+                      {
+                        primary_genre: existingSnapshot.metadata["primary_genre"] as
+                          | string
+                          | undefined,
+                        subgenre: existingSnapshot.metadata["subgenre"] as
+                          | string
+                          | undefined,
+                        mood: existingSnapshot.metadata["mood"] as
+                          | string
+                          | undefined,
+                        years: existingSnapshot.metadata["years"] as
+                          | string[]
+                          | undefined,
+                        energy_level: existingSnapshot.metadata[
+                          "energy_level"
+                        ] as string | undefined,
+                        tempo: existingSnapshot.metadata["tempo"] as
+                          | string
+                          | undefined,
+                        dominant_instruments: existingSnapshot.metadata[
+                          "dominant_instruments"
+                        ] as string[] | undefined,
+                        vocal_style: existingSnapshot.metadata["vocal_style"] as
+                          | string
+                          | undefined,
+                        themes: existingSnapshot.metadata["themes"] as
+                          | string[]
+                          | undefined,
+                      },
+                    ]
+                  : undefined,
+              },
+            });
+          }
+
+          if (existingSnapshot.playlist.cover_art_url) {
+            notify("cover_status", {
+              stage: "success",
+              cover_art_url: existingSnapshot.playlist.cover_art_url,
+              cover_art_description: existingSnapshot.playlist.cover_art_description,
+              metadata:
+                (existingSnapshot.playlist.cover_art_metadata as Record<string, unknown>) ||
+                null,
+            });
+          }
+
+          notify("playlist_saved", {
+            playlist_id: existingSnapshot.playlist.id,
+            spotify_playlist_id: existingSnapshot.playlist.spotify_playlist_id || undefined,
+          });
+
+          notify("complete", {
+            playlist: existingSnapshot.playlist,
+            tracks: existingSnapshot.tracks,
+            metadata: existingSnapshot.metadata,
+            songs: existingSnapshot.tracks,
+            spotify_connected: isSpotifyConnected,
+            metrics,
+          });
+          return;
+        }
+
+        const run = await playlistGeneratorAgent({ prompt }).stream();
 
         for await (const chunk of run.stream as AsyncIterable<
           RunStreamEvent<PlaylistGeneratorOutput>
@@ -417,10 +570,11 @@ export async function POST(req: NextRequest) {
         });
 
         let enrichedSongs: EnrichedSong[] = (latestOutput.songs || []).map(
-          (song) => ({
+          (song, index) => ({
             title: song.title,
             artist: song.artist,
             found_on_spotify: false,
+            position: index + 1,
           })
         );
         let spotifyPlaylistId: { id: string } | null = null;
@@ -459,7 +613,7 @@ export async function POST(req: NextRequest) {
           }
         }
 
-        const playlistRecord = await savePlaylistData({
+        let playlistSnapshot = await savePlaylistData({
           supabase,
           prompt,
           playlistId,
@@ -470,28 +624,56 @@ export async function POST(req: NextRequest) {
         });
 
         notify("playlist_saved", {
-          playlist_id: playlistRecord?.id,
+          playlist_id: playlistSnapshot?.playlist?.id,
           spotify_playlist_id: spotifyPlaylistId?.id,
         });
 
-        if (playlistRecord) {
+        if (playlistSnapshot?.playlist) {
           const songList = enrichedSongs
             .map((song) => `${song.artist || ""} - ${song.title || ""}`)
             .join("; ");
 
-          generatePlaylistCover(
-            playlistRecord.title || latestOutput.name || "",
-            playlistRecord.description || latestOutput.essay || "",
+          await generatePlaylistCover(
+            playlistSnapshot.playlist.title || latestOutput.name || "",
+            playlistSnapshot.playlist.description || latestOutput.essay || "",
             songList,
             supabase,
-            playlistRecord.id
-          ).catch((error: Error) => {
-            console.error("Async cover generation failed", error);
-          });
+            playlistSnapshot.playlist.id,
+            {
+              onStatus: (status: CoverGenerationStatus) => {
+                if (status.stage === "started") {
+                  notify("cover_status", { stage: "started" });
+                } else if (status.stage === "success") {
+                  notify("cover_status", {
+                    stage: "success",
+                    cover_art_url: status.coverArtUrl,
+                    cover_art_description: status.coverArtDescription,
+                    metadata: status.metadata,
+                  });
+                } else if (status.stage === "error") {
+                  notify("cover_status", {
+                    stage: "error",
+                    message: status.message,
+                  });
+                }
+              },
+            }
+          );
+
+          // Refresh snapshot to capture cover art updates
+          playlistSnapshot =
+            (await fetchPlaylistSnapshot(
+              supabase,
+              playlistSnapshot.playlist.id,
+              user.id
+            )) || playlistSnapshot;
         }
 
         notify("complete", {
-          playlist: playlistRecord || latestOutput,
+          playlist: playlistSnapshot?.playlist || latestOutput,
+          tracks: playlistSnapshot?.tracks || enrichedSongs,
+          metadata: playlistSnapshot?.metadata || null,
+          songs: enrichedSongs,
           spotify_connected: isSpotifyConnected,
           metrics,
         });
