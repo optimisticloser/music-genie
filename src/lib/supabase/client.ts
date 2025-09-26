@@ -12,7 +12,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
     "Supabase credentials are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable Supabase features."
   );
 } else {
-  supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+  supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storageKey: "music-genie-auth",
+      storage: typeof window !== "undefined" ? window.localStorage : undefined,
+    },
+  });
 }
 
 export const supabase = supabaseClient;
