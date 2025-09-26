@@ -178,7 +178,7 @@ async function fetchInitialPlaylist(
     created_at: playlist.created_at,
     cover_art_url: playlist.cover_art_url,
     cover_art_description: playlist.cover_art_description,
-    cover_art_metadata: playlist.cover_art_metadata,
+    cover_art_metadata: playlist.cover_art_metadata as Record<string, unknown> | null,
     gradient: generateGradient(playlist.id),
     status: playlist.status,
     tracks,
