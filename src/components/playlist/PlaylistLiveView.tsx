@@ -380,6 +380,12 @@ export function PlaylistLiveView({
   const displayTracks = viewState.tracks.length > 0 ? viewState.tracks : Array.from({ length: 12 }).map((_, index) => ({
     position: index + 1,
     status: "pending" as TrackStatus,
+    title: undefined,
+    artist: undefined,
+    album: undefined,
+    album_art_url: undefined,
+    duration_ms: undefined,
+    found_on_spotify: false,
   }));
 
   return (

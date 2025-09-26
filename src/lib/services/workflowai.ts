@@ -83,16 +83,18 @@ export async function generatePlaylistCover(
         console.log("✅ Playlist updated with cover art URL");
       }
 
-      options.onStatus?.({
-        stage: "success",
-        coverArtUrl: output.cover_art.url,
-        coverArtDescription: output.design_description,
-        metadata: {
-          model: version?.properties?.model,
-          cost_usd: cost_usd,
-          duration_seconds: duration_seconds,
-        },
-      });
+      if (output.cover_art?.url) {
+        options.onStatus?.({
+          stage: "success",
+          coverArtUrl: output.cover_art.url,
+          coverArtDescription: output.design_description,
+          metadata: {
+            model: version?.properties?.model,
+            cost_usd: cost_usd,
+            duration_seconds: duration_seconds,
+          },
+        });
+      }
     } else {
       options.onStatus?.({
         stage: "error",
