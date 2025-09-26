@@ -298,7 +298,7 @@ export default function GeneratePage() {
   const isEmpty = promptParts.length === 0 && selectedTags.length === 0;
 
   return (
-    <div className="bg-gray-50 h-full flex flex-col">
+    <div className="bg-gray-50 min-h-[100dvh] flex flex-col">
       {/* Header simplificado (fixo no topo do painel direito) */}
       <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 sticky top-0 z-20">
         <div className="flex items-center justify-end max-w-4xl mx-auto">
@@ -448,7 +448,12 @@ export default function GeneratePage() {
         </div>
 
         {/* Input Area - Sticky at bottom of right pane */}
-        <div className="border-t border-gray-200 bg-white p-4 md:p-6 sticky bottom-0 z-20">
+        <div
+          className="border-t border-gray-200 bg-white sticky bottom-0 z-20 px-4 md:px-6 pt-4"
+          style={{
+            paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1rem)',
+          }}
+        >
             
             {/* Categorias predefinidas - SEMPRE VISÍVEIS */}
             <div className="mb-6">
