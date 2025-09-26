@@ -298,56 +298,30 @@ export default function GeneratePage() {
   const isEmpty = promptParts.length === 0 && selectedTags.length === 0;
 
   return (
-    <div className="bg-gray-50 min-h-screen">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-10">
-        <div className="flex items-center justify-between max-w-4xl mx-auto">
-          <div className="flex items-center gap-3">
-            <div className="w-6 h-6 bg-green-500 rounded flex items-center justify-center">
-              <span className="text-white text-xs font-mono">&lt;/&gt;</span>
-            </div>
-            <h1 className="text-lg font-medium text-gray-600">PromptBuilderView</h1>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <Button 
-              variant="outline" 
-              className="px-4 py-2 rounded-full"
-              onClick={() => {
-                setPromptParts([]);
-                setSelectedTags([]);
-                setCurrentPrompt('');
-                setError(null);
-                setActiveCategory(null);
-                loadSuggestions('initial');
-              }}
-            >
-              Cancelar
-            </Button>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Button 
-              onClick={handleGenerate}
-              disabled={isGenerating || !currentPrompt.trim()}
-              className="px-6 py-2 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full font-medium flex items-center gap-2"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  Gerando…
-                </>
-              ) : (
-                'Gerar'
-              )}
-            </Button>
-          </div>
+    <div className="bg-gray-50 h-full flex flex-col">
+      {/* Header simplificado (fixo no topo do painel direito) */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 sticky top-0 z-20">
+        <div className="flex items-center justify-end max-w-4xl mx-auto">
+          <Button 
+            onClick={handleGenerate}
+            disabled={isGenerating || !currentPrompt.trim()}
+            className="px-5 py-2 bg-yellow-400 hover:bg-yellow-500 text-black rounded-full font-medium flex items-center gap-2"
+          >
+            {isGenerating ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Gerando…
+              </>
+            ) : (
+              'Gerar'
+            )}
+          </Button>
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto">
-        {/* Chat-like Container */}
-        <div className="min-h-screen flex flex-col">
+      <div className="max-w-4xl mx-auto flex-1 w-full relative">
+        {/* Scrollable content */}
+        <div className="overflow-y-auto h-full">
           
           {/* Messages Area */}
           <div className="flex-1 p-6 space-y-6">
@@ -469,8 +443,12 @@ export default function GeneratePage() {
             {/* Generation Progress & Result */}
           </div>
 
-          {/* Input Area - Sempre visível */}
-          <div className="border-t border-gray-200 bg-white p-6">
+          {/* Spacer to avoid overlap with sticky input */}
+          <div className="h-4" />
+        </div>
+
+        {/* Input Area - Sticky at bottom of right pane */}
+        <div className="border-t border-gray-200 bg-white p-4 md:p-6 sticky bottom-0 z-20">
             
             {/* Categorias predefinidas - SEMPRE VISÍVEIS */}
             <div className="mb-6">
@@ -565,7 +543,6 @@ export default function GeneratePage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 } 

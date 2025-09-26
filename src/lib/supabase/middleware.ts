@@ -3,6 +3,7 @@ import { NextResponse, type NextRequest } from "next/server";
 
 const PROTECTED_ROUTES = [
   "/dashboard",
+  "/dashboard/new",
   "/dashboard/history",
   "/dashboard/settings",
   "/dashboard/discover",
@@ -62,7 +63,7 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && AUTH_ROUTES.some(route => path.startsWith(route))) {
-    const redirectUrl = new URL('/dashboard', request.url);
+    const redirectUrl = new URL('/dashboard/new', request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
