@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
-import { Sidebar } from './Sidebar';
+import { PlaylistsSidebar } from '@/components/playlist/PlaylistsSidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { siteConfig } from '@/lib/config';
@@ -60,7 +60,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           fixed md:static inset-y-0 left-0 z-50 transform transition-transform duration-300 ease-in-out
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
         `}>
-          <Sidebar onClose={closeSidebar} />
+          <PlaylistsSidebar onClose={closeSidebar} />
         </div>
         
         {/* Main Content */}
