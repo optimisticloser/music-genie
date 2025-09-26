@@ -251,7 +251,7 @@ async function savePlaylistData({
         status: "published",
         total_tracks: songs.length,
         total_duration_ms: totalDurationMs,
-        spotify_playlist_id: spotifyPlaylistId,
+        spotify_playlist_id: spotifyPlaylistId?.id,
       })
       .eq("id", playlistId)
       .eq("user_id", userId)
