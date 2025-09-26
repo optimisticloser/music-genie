@@ -1,19 +1,29 @@
 "use client";
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabase/client';
+import createClient, { SUPABASE_CONFIG_ERROR_MESSAGE } from "@/lib/supabase/client";
 
 export default function TestLoginPage() {
   const [email, setEmail] = useState("sergiowpf@me.com");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   const handleLogin = async () => {
     setLoading(true);
     setResult(null);
+    setConfigError(null);
 
     try {
+      const supabase = createClient();
+
+      if (!supabase) {
+        setConfigError(SUPABASE_CONFIG_ERROR_MESSAGE);
+        setResult({ error: SUPABASE_CONFIG_ERROR_MESSAGE });
+        return;
+      }
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
@@ -37,8 +47,17 @@ export default function TestLoginPage() {
   const handleCheckSession = async () => {
     setLoading(true);
     setResult(null);
+    setConfigError(null);
 
     try {
+      const supabase = createClient();
+
+      if (!supabase) {
+        setConfigError(SUPABASE_CONFIG_ERROR_MESSAGE);
+        setResult({ error: SUPABASE_CONFIG_ERROR_MESSAGE });
+        return;
+      }
+
       const { error } = await supabase.auth.getSession();
       if (error) {
         setResult({ error: error.message });
@@ -60,6 +79,11 @@ export default function TestLoginPage() {
             Teste de Login
           </h2>
         </div>
+        {configError && (
+          <div className="rounded-md bg-yellow-50 border border-yellow-200 p-4 text-sm text-yellow-800">
+            {SUPABASE_CONFIG_ERROR_MESSAGE}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -91,7 +115,7 @@ export default function TestLoginPage() {
           <div className="space-y-2">
             <button
               onClick={handleLogin}
-              disabled={loading}
+              disabled={loading || !!configError}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {loading ? "Fazendo login..." : "Fazer Login"}
@@ -99,7 +123,7 @@ export default function TestLoginPage() {
 
             <button
               onClick={handleCheckSession}
-              disabled={loading}
+              disabled={loading || !!configError}
               className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               Verificar Sessão

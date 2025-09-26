@@ -12,7 +12,7 @@ import {
   Play, 
   MoreHorizontal
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import createClient, { SUPABASE_CONFIG_ERROR_MESSAGE } from "@/lib/supabase/client";
 import { PlaylistFilters, PlaylistFiltersState } from "@/components/shared/PlaylistFilters";
 import { useFavoriteToggle } from "@/hooks/useFavoriteToggle";
 
@@ -45,6 +45,7 @@ export default function FavoritesPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(false);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<PaginationInfo>({
     page: 1,
     limit: 12,
@@ -73,8 +74,18 @@ export default function FavoritesPage() {
   useEffect(() => {
     async function getUser() {
       try {
+        const supabase = createClient();
+
+        if (!supabase) {
+          if (!configError) {
+            setConfigError(SUPABASE_CONFIG_ERROR_MESSAGE);
+            setPlaylistsError(SUPABASE_CONFIG_ERROR_MESSAGE);
+          }
+          return;
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push("/login");
           return;
@@ -84,24 +95,29 @@ export default function FavoritesPage() {
         await loadPlaylists(1);
       } catch (error) {
         console.error("Error fetching user:", error);
-        router.push("/login");
+        if (!configError) {
+          router.push("/login");
+        }
       } finally {
         setLoading(false);
       }
     }
 
     getUser();
-  }, [router]);
+  }, [router, configError]);
 
   // Load playlists when filters change
   useEffect(() => {
-    if (user) {
+    if (user && !configError) {
       loadPlaylists(1);
     }
-  }, [filters]);
+  }, [filters, user, configError]);
 
   const loadPlaylists = async (page: number = pagination.page) => {
     try {
+      if (configError) {
+        return;
+      }
       setLoadingPlaylists(true);
       setPlaylistsError(null);
       
@@ -174,6 +190,21 @@ export default function FavoritesPage() {
         <div className="text-center">
           <div className="w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
           <p className="text-gray-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (configError) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900">Configuração necessária</h1>
+          <p className="text-gray-600">{SUPABASE_CONFIG_ERROR_MESSAGE}</p>
+          <p className="text-sm text-gray-500">
+            Essa página depende do Supabase para carregar playlists. Adicione as variáveis ao ambiente do deploy e tente
+            novamente.
+          </p>
         </div>
       </div>
     );

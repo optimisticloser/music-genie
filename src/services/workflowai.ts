@@ -32,10 +32,21 @@ class WorkflowAIService {
   private readonly endpoint = "/v1/@sergiowpfmecom/tasks/playlist-generator/schemas/1/run";
 
   constructor() {
-    this.apiKey = process.env.NEXT_PUBLIC_WORKFLOWAI_API_KEY || "";
-    
+    const serverKey = process.env.WORKFLOWAI_API_KEY;
+    const legacyBrowserKey = process.env.NEXT_PUBLIC_WORKFLOWAI_API_KEY;
+
+    this.apiKey = serverKey || legacyBrowserKey || "";
+
+    if (!serverKey && legacyBrowserKey) {
+      console.warn(
+        "WorkflowAI API key falling back to NEXT_PUBLIC_WORKFLOWAI_API_KEY. Consider migrating to server-side WORKFLOWAI_API_KEY."
+      );
+    }
+
     if (!this.apiKey) {
-      console.warn("WorkflowAI API key not found. Please set NEXT_PUBLIC_WORKFLOWAI_API_KEY environment variable.");
+      console.warn(
+        "WorkflowAI API key not found. Please set WORKFLOWAI_API_KEY (or NEXT_PUBLIC_WORKFLOWAI_API_KEY for legacy setups)."
+      );
     }
   }
 

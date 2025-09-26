@@ -1,4 +1,4 @@
-C# Sitemap
+# Sitemap
 
 > Last updated: 2024-06-12
 

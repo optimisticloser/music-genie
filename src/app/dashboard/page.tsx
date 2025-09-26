@@ -6,13 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { 
-  Sparkles, 
+import {
+  Sparkles,
   Music,
   Wrench,
   Loader2
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import createClient, { SUPABASE_CONFIG_ERROR_MESSAGE } from "@/lib/supabase/client";
 import LoadingPlaylistCard from '@/components/LoadingPlaylistCard';
 import { PlaylistCard } from '@/components/playlist/PlaylistCard';
 import { NewPlaylistsCounter } from '@/components/playlist/NewPlaylistsCounter';
@@ -40,14 +40,26 @@ export default function DashboardPage() {
   const [playlists, setPlaylists] = useState<Playlist[]>([]);
   const [loadingPlaylists, setLoadingPlaylists] = useState(true);
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
+  const [configError, setConfigError] = useState<string | null>(null);
   const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
   const { toggleFavorite } = useFavoriteToggle();
 
   useEffect(() => {
     async function getUser() {
       try {
+        const supabase = createClient();
+
+        if (!supabase) {
+          if (!configError) {
+            setConfigError(SUPABASE_CONFIG_ERROR_MESSAGE);
+            setPlaylistsError(SUPABASE_CONFIG_ERROR_MESSAGE);
+          }
+          setLoadingPlaylists(false);
+          return;
+        }
+
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push("/login");
           return;
@@ -70,17 +82,22 @@ export default function DashboardPage() {
         await loadPlaylists();
       } catch (error) {
         console.error("Error fetching user:", error);
-        router.push("/login");
+        if (!configError) {
+          router.push("/login");
+        }
       } finally {
         // setLoading(false); // Removed as per edit hint
       }
     }
 
     getUser();
-  }, [router]);
+  }, [router, configError]);
 
   const loadPlaylists = async () => {
     try {
+      if (configError) {
+        return;
+      }
       setLoadingPlaylists(true);
       setPlaylistsError(null);
       
@@ -157,6 +174,20 @@ export default function DashboardPage() {
       );
     }
   };
+
+  if (configError) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="max-w-md space-y-4 text-center">
+          <h1 className="text-2xl font-semibold text-gray-900">Configuração necessária</h1>
+          <p className="text-gray-600">{SUPABASE_CONFIG_ERROR_MESSAGE}</p>
+          <p className="text-sm text-gray-500">
+            Adicione as variáveis do Supabase ao ambiente para visualizar suas playlists e dados do dashboard.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
