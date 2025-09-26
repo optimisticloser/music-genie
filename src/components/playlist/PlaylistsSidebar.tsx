@@ -16,6 +16,16 @@ interface PlaylistListItem {
   is_favorite?: boolean | null;
 }
 
+type ApiPlaylist = {
+  id: string;
+  title?: string | null;
+  status?: string | null;
+  total_tracks?: number | null;
+  viewed_at?: string | null;
+  created_at?: string | null;
+  is_favorite?: boolean | null;
+};
+
 interface PlaylistsSidebarProps {
   onClose?: () => void;
 }
@@ -46,7 +56,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
       const res = await fetch(`/api/playlists/user?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load');
       const data = await res.json();
-      const newItems: PlaylistListItem[] = (data.playlists || []).map((p: any) => ({
+      const newItems: PlaylistListItem[] = (data.playlists as ApiPlaylist[] | undefined || []).map((p: ApiPlaylist) => ({
         id: p.id,
         title: p.title || 'Sem título',
         status: p.status,
