@@ -2,20 +2,20 @@
 
 ## Visão geral
 
-A aplicação web do Music Genie usa o WorkflowAI para gerar prompts, playlists e artes de capa diretamente a partir da camada Next.js. Toda a comunicação acontece através do SDK oficial `@workflowai/workflowai`, e os serviços do app encapsulam as chamadas para manter um ponto único de configuração e de logs.
+A aplicação web do Music Genie usa o WorkflowAI para gerar prompts, playlists e artes de capa diretamente a partir da camada Next.js. Diferente da integração original baseada no SDK oficial, a versão atual comunica-se com o WorkflowAI por meio de requisições HTTP (`fetch`) para os endpoints REST, garantindo controle total sobre headers, payloads e tratamento de erros.
 
 ## Principais módulos
 
 ### `src/services/workflowai.ts`
 
-- Serviço server-side responsável por enviar requisições HTTP para o endpoint de geração de playlists.
+- Serviço server-side responsável por enviar requisições HTTP ao endpoint de geração de playlists (`fetch` direto para `https://run.workflowai.com`).
 - Normaliza o payload esperado (`task_input`, `version`, `use_cache`) e converte a resposta para o formato interno (`name`, `description`, `tracks`).
-- Valida a presença da variável de ambiente `WORKFLOWAI_API_KEY` (com fallback para `NEXT_PUBLIC_WORKFLOWAI_API_KEY` somente para compatibilidade legada).
+- Valida a presença da variável de ambiente `WORKFLOWAI_API_KEY` (com fallback para `NEXT_PUBLIC_WORKFLOWAI_API_KEY` apenas para compatibilidade legada, registrando um aviso em runtime).
 - Expõe helpers `isConfigured()` e `getStatus()` para superfícies de diagnóstico.
 
 ### `src/lib/workflowai/client.ts`
 
-- Instancia o cliente do WorkflowAI com a mesma `WORKFLOWAI_API_KEY`.
+- Instancia o cliente do WorkflowAI com a mesma `WORKFLOWAI_API_KEY` para casos em que o SDK ainda é útil (por exemplo, experimentos ou migrações gradativas).
 - Deve ser importado por módulos que precisam usar os agentes gerenciados pelo WorkflowAI sem repetir configuração.
 
 ### `src/lib/workflowai/agents.ts`
@@ -48,4 +48,4 @@ A aplicação web do Music Genie usa o WorkflowAI para gerar prompts, playlists 
 ## Recursos adicionais
 
 - [WorkflowAI Studio](https://workflowai.com) para gerenciamento de agentes e schemas.
-- [SDK `@workflowai/workflowai`](https://www.npmjs.com/package/@workflowai/workflowai) para detalhes de uso avançado.
+- [Documentação HTTP do WorkflowAI](https://workflowai.com/docs) para detalhes dos endpoints REST.

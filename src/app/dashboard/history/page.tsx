@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -72,6 +72,66 @@ export default function HistoryPage() {
   });
   const { toggleFavorite } = useFavoriteToggle();
 
+  const limit = pagination.limit;
+
+  const loadPlaylists = useCallback(
+    async (page: number = 1) => {
+      try {
+        if (configError) {
+          return;
+        }
+
+        setLoadingPlaylists(true);
+        setPlaylistsError(null);
+
+        const params = new URLSearchParams();
+        params.append("page", page.toString());
+        params.append("limit", limit.toString());
+        params.append("search", filters.search);
+        params.append("sortBy", filters.sortBy);
+        params.append("sortOrder", filters.sortOrder);
+        params.append("favoritesOnly", filters.favoritesOnly.toString());
+        if (filters.genre) params.append("genre", filters.genre);
+        if (filters.mood) params.append("mood", filters.mood);
+        if (filters.energyLevel) params.append("energy_level", filters.energyLevel);
+        if (filters.instruments && filters.instruments.length > 0)
+          params.append("instruments", filters.instruments.join(","));
+        if (filters.themes && filters.themes.length > 0)
+          params.append("themes", filters.themes.join(","));
+        if (filters.years && filters.years.length > 0)
+          params.append("years", filters.years.join(","));
+        if (filters.duration) params.append("duration", filters.duration);
+        if (filters.timeRange) params.append("time_range", filters.timeRange);
+
+        const response = await fetch(`/api/playlists/user?${params}`);
+
+        if (!response.ok) {
+          throw new Error("Failed to load playlists");
+        }
+
+        const data = await response.json();
+        setPlaylists(data.playlists || []);
+        if (data.pagination) {
+          setPagination(prev => ({
+            ...prev,
+            ...data.pagination,
+          }));
+        } else {
+          setPagination(prev => ({
+            ...prev,
+            page,
+          }));
+        }
+      } catch (error) {
+        console.error("Error loading playlists:", error);
+        setPlaylistsError("Failed to load playlists");
+      } finally {
+        setLoadingPlaylists(false);
+      }
+    },
+    [configError, filters, limit]
+  );
+
   useEffect(() => {
     async function getUser() {
       try {
@@ -105,55 +165,14 @@ export default function HistoryPage() {
     }
 
     getUser();
-  }, [router, configError]);
+  }, [router, configError, loadPlaylists]);
 
   // Load playlists when filters change
   useEffect(() => {
     if (user && !configError) {
       loadPlaylists(1);
     }
-  }, [filters, user, configError]);
-
-  const loadPlaylists = async (page: number = pagination.page) => {
-    try {
-      if (configError) {
-        return;
-      }
-      setLoadingPlaylists(true);
-      setPlaylistsError(null);
-      
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', pagination.limit.toString());
-      params.append('search', filters.search);
-      params.append('sortBy', filters.sortBy);
-      params.append('sortOrder', filters.sortOrder);
-      params.append('favoritesOnly', filters.favoritesOnly.toString());
-      if (filters.genre) params.append('genre', filters.genre);
-      if (filters.mood) params.append('mood', filters.mood);
-      if (filters.energyLevel) params.append('energy_level', filters.energyLevel);
-      if (filters.instruments && filters.instruments.length > 0) params.append('instruments', filters.instruments.join(','));
-      if (filters.themes && filters.themes.length > 0) params.append('themes', filters.themes.join(','));
-      if (filters.years && filters.years.length > 0) params.append('years', filters.years.join(','));
-      if (filters.duration) params.append('duration', filters.duration);
-      if (filters.timeRange) params.append('time_range', filters.timeRange);
-      
-      const response = await fetch(`/api/playlists/user?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load playlists');
-      }
-      
-      const data = await response.json();
-      setPlaylists(data.playlists || []);
-      setPagination(data.pagination || pagination);
-    } catch (error) {
-      console.error('Error loading playlists:', error);
-      setPlaylistsError('Failed to load playlists');
-    } finally {
-      setLoadingPlaylists(false);
-    }
-  };
+  }, [filters, user, configError, loadPlaylists]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {

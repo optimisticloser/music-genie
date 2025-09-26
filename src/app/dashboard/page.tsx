@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -43,6 +43,31 @@ export default function DashboardPage() {
   const [configError, setConfigError] = useState<string | null>(null);
   const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
   const { toggleFavorite } = useFavoriteToggle();
+
+  const loadPlaylists = useCallback(async () => {
+    try {
+      if (configError) {
+        return;
+      }
+
+      setLoadingPlaylists(true);
+      setPlaylistsError(null);
+
+      const response = await fetch("/api/playlists/user?limit=8");
+
+      if (!response.ok) {
+        throw new Error("Failed to load playlists");
+      }
+
+      const data = await response.json();
+      setPlaylists(data.playlists || []);
+    } catch (error) {
+      console.error("Error loading playlists:", error);
+      setPlaylistsError("Failed to load playlists");
+    } finally {
+      setLoadingPlaylists(false);
+    }
+  }, [configError]);
 
   useEffect(() => {
     async function getUser() {
@@ -91,31 +116,7 @@ export default function DashboardPage() {
     }
 
     getUser();
-  }, [router, configError]);
-
-  const loadPlaylists = async () => {
-    try {
-      if (configError) {
-        return;
-      }
-      setLoadingPlaylists(true);
-      setPlaylistsError(null);
-      
-      const response = await fetch('/api/playlists/user?limit=8'); // Get first 8 playlists for dashboard
-      
-      if (!response.ok) {
-        throw new Error('Failed to load playlists');
-      }
-      
-      const data = await response.json();
-      setPlaylists(data.playlists || []);
-    } catch (error) {
-      console.error('Error loading playlists:', error);
-      setPlaylistsError('Failed to load playlists');
-    } finally {
-      setLoadingPlaylists(false);
-    }
-  };
+  }, [router, configError, loadPlaylists]);
 
   const handleConnectSpotify = async () => {
     setConnectingSpotify(true);

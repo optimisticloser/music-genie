@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 interface CoverArtStatus {
   playlist_id: string;
@@ -33,7 +33,7 @@ export function useCoverArtStatus({
   const [error, setError] = useState<string | null>(null);
   const [polling, setPolling] = useState(false);
 
-  const checkStatus = async () => {
+  const checkStatus = useCallback(async () => {
     if (!playlistId) return;
 
     try {
@@ -41,7 +41,7 @@ export function useCoverArtStatus({
       setError(null);
 
       const response = await fetch(`/api/playlist/cover-status/${playlistId}`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -60,7 +60,7 @@ export function useCoverArtStatus({
     } finally {
       setLoading(false);
     }
-  };
+  }, [playlistId]);
 
   // Polling automático
   useEffect(() => {
@@ -84,7 +84,7 @@ export function useCoverArtStatus({
       clearInterval(interval);
       setPolling(false);
     };
-  }, [playlistId, autoPoll, polling, status?.has_cover_art, pollInterval]);
+  }, [playlistId, autoPoll, polling, status?.has_cover_art, pollInterval, checkStatus]);
 
   // Parar polling quando a capa for gerada
   useEffect(() => {
