@@ -3,6 +3,29 @@ import {
   PlaylistCoverArtGenerationInput,
 } from "@/lib/workflowai/agents";
 
+export type CoverGenerationStatus =
+  | {
+      stage: "started";
+    }
+  | {
+      stage: "success";
+      coverArtUrl: string;
+      coverArtDescription?: string | null;
+      metadata: {
+        model?: string | null;
+        cost_usd?: number | null;
+        duration_seconds?: number | null;
+      };
+    }
+  | {
+    stage: "error";
+    message: string;
+  };
+
+interface GeneratePlaylistCoverOptions {
+  onStatus?: (status: CoverGenerationStatus) => void;
+}
+
 // Função para gerar capa de playlist de forma assíncrona
 export async function generatePlaylistCover(
   playlistName: string,
@@ -10,10 +33,24 @@ export async function generatePlaylistCover(
   songList: string,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
-  playlistId: string
+  playlistId: string,
+  options: GeneratePlaylistCoverOptions = {}
 ) {
+  // Temporariamente desabilitado devido a problemas com o modelo Gemini no WorkflowAI
+  const COVER_GENERATION_ENABLED = false;
+  
+  if (!COVER_GENERATION_ENABLED) {
+    console.log("⚠️ Cover art generation temporarily disabled due to WorkflowAI model issues");
+    options.onStatus?.({
+      stage: "error",
+      message: "Cover art generation temporarily unavailable"
+    });
+    return;
+  }
+
   try {
     console.log("🎨 Starting async cover art generation for playlist:", playlistId);
+    options.onStatus?.({ stage: "started" });
     
     const input: PlaylistCoverArtGenerationInput = {
       playlist_name: playlistName,
@@ -27,6 +64,8 @@ export async function generatePlaylistCover(
       output,
       data: { duration_seconds, cost_usd, version },
     } = await playlistCoverArtGeneration(input);
+
+    console.log("🔍 Debug - Cover art output:", JSON.stringify(output, null, 2));
 
     if (output?.cover_art) {
       console.log("✅ Cover art generated successfully:", {
@@ -57,9 +96,31 @@ export async function generatePlaylistCover(
       } else {
         console.log("✅ Playlist updated with cover art URL");
       }
+
+      if (output.cover_art?.url) {
+        options.onStatus?.({
+          stage: "success",
+          coverArtUrl: output.cover_art.url,
+          coverArtDescription: output.design_description,
+          metadata: {
+            model: version?.properties?.model,
+            cost_usd: cost_usd,
+            duration_seconds: duration_seconds,
+          },
+        });
+      }
+    } else {
+      options.onStatus?.({
+        stage: "error",
+        message: "Cover art generation did not return an image",
+      });
     }
   } catch (error) {
     console.error("❌ Error generating cover art:", error);
+    options.onStatus?.({
+      stage: "error",
+      message: error instanceof Error ? error.message : "Unknown cover art error",
+    });
     // Não falha a geração da playlist se a capa falhar
   }
-} 
+}

@@ -82,6 +82,6 @@ export const playlistCoverArtGeneration = workflowAI.agent<
 >({
   id: "playlist-cover-art-generation",
   schemaId: 1,
-  version: "dev",
+  version: "production",
   useCache: "auto",
 }); 

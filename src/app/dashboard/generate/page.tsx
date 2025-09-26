@@ -1,47 +1,15 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Music, Loader2, CheckCircle, AlertCircle, X, Send } from 'lucide-react';
+import { Music, Loader2, AlertCircle, X, Send } from 'lucide-react';
 
 interface Tag {
   id: string;
   label: string;
   category: string;
-}
-
-interface GeneratedPlaylist {
-  name?: string;
-  essay?: string;
-  songs?: { 
-    title?: string; 
-    artist?: string;
-    spotify_id?: string;
-    album_name?: string;
-    album_art_url?: string;
-    duration_ms?: number;
-    preview_url?: string;
-    external_url?: string;
-    found_on_spotify?: boolean;
-  }[];
-  album_art?: {
-    style_preferences?: string;
-    color_preferences?: string;
-    image_description?: string;
-  }[];
-  categorization?: {
-    primary_genre?: string;
-    subgenre?: string;
-    mood?: string;
-    years?: string[];
-    energy_level?: string;
-    tempo?: string;
-    dominant_instruments?: string[];
-    vocal_style?: string;
-    themes?: string[];
-  }[];
 }
 
 const TAG_CATEGORIES = {
@@ -96,16 +64,11 @@ export default function GeneratePage() {
   const [currentPrompt, setCurrentPrompt] = useState<string>('');
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
-  const [isGenerating, setIsGenerating] = useState(false);
+  const router = useRouter();
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState(false);
   const [isGeneratingPrompt, setIsGeneratingPrompt] = useState(false);
-  const [generatedPlaylist, setGeneratedPlaylist] = useState<GeneratedPlaylist | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [generationStep] = useState<'idle' | 'generating' | 'complete' | 'error'>('idle');
-  const [isSaving, setIsSaving] = useState(false);
-  const [savedPlaylistId, setSavedPlaylistId] = useState<string | null>(null);
-  const [spotifyConnected] = useState(false);
-  const [spotifyPlaylistUrl, setSpotifyPlaylistUrl] = useState<string | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Carrega sugestões iniciais
   useEffect(() => {
@@ -308,136 +271,26 @@ export default function GeneratePage() {
       return;
     }
 
-    setIsGenerating(true);
     setError(null);
-
+    setIsGenerating(true);
     try {
-      // 1) Cria rascunho
-      const draftRes = await fetch('/api/playlist/start', {
+      const response = await fetch('/api/playlist/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt: currentPrompt }),
       });
 
-      if (!draftRes.ok) throw new Error('Failed to create draft');
-      const { playlistId } = await draftRes.json();
-
-      // 2) Dispara geração usando sendBeacon para garantir envio antes do redirecionamento
-      const generateData = JSON.stringify({ prompt: currentPrompt, playlist_id: playlistId });
-      const success = navigator.sendBeacon('/api/playlist/generate', generateData);
-      
-      if (!success) {
-        console.warn('sendBeacon failed, trying fetch...');
-        // Fallback para fetch se sendBeacon falhar
-        fetch('/api/playlist/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: generateData,
-        }).catch((error) => {
-          console.error('Background generation error:', error);
-        });
+      if (!response.ok) {
+        throw new Error('Failed to create playlist draft');
       }
-      
-      // 3) Redireciona para dashboard
-      window.location.href = '/dashboard';
+
+      const { playlistId } = await response.json();
+      router.push(`/dashboard/playlist/${playlistId}`);
     } catch (err) {
       console.error('Generation error:', err);
       setError(err instanceof Error ? err.message : 'Failed to generate playlist');
     } finally {
       setIsGenerating(false);
-    }
-  };
-
-  // Salva playlist
-  const handleSaveToLibrary = async () => {
-    if (!generatedPlaylist) return;
-
-    setIsSaving(true);
-    setError(null);
-
-    try {
-      console.log('💾 Saving playlist to database and Spotify...');
-      
-      const response = await fetch('/api/playlist/save', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          playlist: generatedPlaylist,
-          prompt: currentPrompt
-        })
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to save playlist');
-      }
-
-      const { playlist, spotify_playlist_url, debug } = await response.json();
-      console.log('💾 Playlist saved successfully:', playlist.id);
-      console.log('🎵 Spotify playlist URL:', spotify_playlist_url);
-      console.log('🔍 Debug info:', debug);
-      
-      setSavedPlaylistId(playlist.id);
-      setSpotifyPlaylistUrl(spotify_playlist_url);
-      setError(null);
-      
-      // Show success message
-      if (spotify_playlist_url) {
-        // Create a more elegant success message
-        const successMessage = document.createElement('div');
-        successMessage.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-        successMessage.innerHTML = `
-          <div class="bg-white rounded-lg p-6 max-w-md mx-4 text-center">
-            <div class="text-green-500 text-4xl mb-4">🎉</div>
-            <h3 class="text-lg font-semibold mb-2">Playlist criada com sucesso!</h3>
-            <p class="text-gray-600 mb-4">Sua playlist foi salva e está disponível no Spotify.</p>
-            <div class="space-y-2">
-              <a href="${spotify_playlist_url}" target="_blank" rel="noopener noreferrer" 
-                 class="block w-full bg-green-500 text-white py-2 px-4 rounded hover:bg-green-600 transition-colors">
-                🎵 Abrir no Spotify
-              </a>
-              <button onclick="this.parentElement.parentElement.parentElement.remove()" 
-                      class="block w-full bg-gray-300 text-gray-700 py-2 px-4 rounded hover:bg-gray-400 transition-colors">
-                Fechar
-              </button>
-            </div>
-          </div>
-        `;
-        document.body.appendChild(successMessage);
-      } else {
-        alert('Playlist salva no banco de dados, mas não foi possível criar no Spotify.');
-      }
-      
-    } catch (err) {
-      console.error('Save error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to save playlist');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const getStepIcon = () => {
-    switch (generationStep) {
-      case 'generating':
-        return <Loader2 className="w-4 h-4 animate-spin" />;
-      case 'complete':
-        return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error':
-        return <AlertCircle className="w-4 h-4 text-red-500" />;
-      default:
-        return null;
-    }
-  };
-
-  const getStepText = () => {
-    switch (generationStep) {
-      case 'generating':
-        return 'Creating your playlist...';
-      case 'complete':
-        return 'Playlist ready!';
-      case 'error':
-        return 'Generation failed';
-      default:
-        return 'Generate';
     }
   };
 
@@ -464,7 +317,6 @@ export default function GeneratePage() {
                 setPromptParts([]);
                 setSelectedTags([]);
                 setCurrentPrompt('');
-                setGeneratedPlaylist(null);
                 setError(null);
                 setActiveCategory(null);
                 loadSuggestions('initial');
@@ -482,8 +334,8 @@ export default function GeneratePage() {
             >
               {isGenerating ? (
                 <>
-                  {getStepIcon()}
-                  {getStepText()}
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Gerando…
                 </>
               ) : (
                 'Gerar'
@@ -506,16 +358,6 @@ export default function GeneratePage() {
                 <div className="flex items-center gap-2 text-red-700">
                   <AlertCircle className="w-5 h-5" />
                   <span className="font-medium">{error}</span>
-                </div>
-              </div>
-            )}
-
-            {/* Success Display */}
-            {savedPlaylistId && (
-              <div className="p-4 bg-green-50 border border-green-200 rounded-xl">
-                <div className="flex items-center gap-2 text-green-700">
-                  <CheckCircle className="w-5 h-5" />
-                  <span className="font-medium">Playlist saved successfully to your library!</span>
                 </div>
               </div>
             )}
@@ -624,118 +466,7 @@ export default function GeneratePage() {
               </div>
             )}
 
-            {/* Generated Playlist Display */}
-            {generatedPlaylist && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-200 shadow-sm">
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                    {generatedPlaylist.name}
-                  </h2>
-                  {generatedPlaylist.categorization && generatedPlaylist.categorization[0] && (
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <span>{generatedPlaylist.categorization[0].primary_genre}</span>
-                      <span>•</span>
-                      <span>{generatedPlaylist.categorization[0].mood}</span>
-                      <span>•</span>
-                      <span>{generatedPlaylist.categorization[0].energy_level} Energy</span>
-                    </div>
-                  )}
-                </div>
-
-                {generatedPlaylist.essay && (
-                  <div className="mb-8 p-6 bg-gray-50 rounded-lg">
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                      {generatedPlaylist.essay}
-                    </p>
-                  </div>
-                )}
-
-                {generatedPlaylist.songs && (
-                  <div className="mb-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                      {generatedPlaylist.songs.length} Songs
-                    </h3>
-                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                      {generatedPlaylist.songs.map((song, index) => (
-                        <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center gap-3 flex-1">
-                            {song.album_art_url && (
-                              <Image 
-                                src={song.album_art_url} 
-                                alt={`${song.title} album art`}
-                                width={40}
-                                height={40}
-                                className="w-10 h-10 rounded object-cover"
-                              />
-                            )}
-                            <div className="flex-1">
-                              <div className="font-medium text-gray-900">{song.title}</div>
-                              <div className="text-sm text-gray-600">{song.artist}</div>
-                              {song.album_name && (
-                                <div className="text-xs text-gray-500">{song.album_name}</div>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {song.found_on_spotify ? (
-                              <div className="w-2 h-2 bg-green-500 rounded-full" title="Available on Spotify" />
-                            ) : (
-                              <div className="w-2 h-2 bg-gray-300 rounded-full" title="Not found on Spotify" />
-                            )}
-                            <div className="text-sm text-gray-500">#{index + 1}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-4">
-                  {spotifyConnected ? (
-                    <Button 
-                      className="bg-green-600 hover:bg-green-700"
-                      onClick={handleSaveToLibrary}
-                      disabled={isSaving || !!savedPlaylistId}
-                    >
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                          Saving to Spotify...
-                        </>
-                      ) : savedPlaylistId ? (
-                        <>
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          {spotifyPlaylistUrl ? 'Saved to Spotify' : 'Saved to Library'}
-                        </>
-                      ) : (
-                        <>
-                          <Music className="w-4 h-4 mr-2" />
-                          Save to Spotify
-                        </>
-                      )}
-                    </Button>
-                  ) : (
-                    <Button 
-                      variant="outline" 
-                      onClick={() => window.location.href = '/api/auth/spotify'}
-                      className="border-green-600 text-green-600 hover:bg-green-50"
-                    >
-                      <Music className="w-4 h-4 mr-2" />
-                      Connect Spotify to Save
-                    </Button>
-                  )}
-                  
-                  {spotifyPlaylistUrl && (
-                    <Button 
-                      variant="outline"
-                      onClick={() => window.open(spotifyPlaylistUrl, '_blank')}
-                    >
-                      Open in Spotify
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
+            {/* Generation Progress & Result */}
           </div>
 
           {/* Input Area - Sempre visível */}
