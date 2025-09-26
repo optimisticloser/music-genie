@@ -6,13 +6,13 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
-import { 
-  Sparkles, 
+import {
+  Sparkles,
   Music,
   Wrench,
   Loader2
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import createClient from "@/lib/supabase/client";
 import LoadingPlaylistCard from '@/components/LoadingPlaylistCard';
 import { PlaylistCard } from '@/components/playlist/PlaylistCard';
 import { NewPlaylistsCounter } from '@/components/playlist/NewPlaylistsCounter';
@@ -46,8 +46,9 @@ export default function DashboardPage() {
   useEffect(() => {
     async function getUser() {
       try {
+        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push("/login");
           return;
