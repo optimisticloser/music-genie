@@ -104,7 +104,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   };
 
   return (
-    <div className="w-64 md:w-72 h-full bg-gray-50 border-r border-gray-200 flex flex-col">
+    <div className="w-64 md:w-72 h-full bg-gray-50 border-r border-gray-200 flex flex-col touch-pan-y will-change-transform">
       <div className="hidden md:flex p-4 border-b border-gray-200 sticky top-0 bg-gray-50 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
@@ -139,7 +139,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
         </div>
       </div>
 
-      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-2">
+      <div ref={scrollRef} onScroll={onScroll} className="flex-1 overflow-y-auto px-2 overscroll-contain">
         <div className="space-y-1 pb-4">
           {items.map(item => {
             const active = activeId === item.id;
