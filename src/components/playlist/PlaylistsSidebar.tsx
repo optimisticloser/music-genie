@@ -94,12 +94,12 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
         </div>
       </div>
 
-      <div className="p-3 md:p-4 flex gap-2 sticky top-14 bg-gray-50 z-10 border-b border-gray-200">
+      <div className="p-3 md:p-4 sticky top-14 bg-gray-50 z-10 border-b border-gray-200">
         <button
           onClick={() => router.push('/dashboard/new')}
-          className="inline-flex items-center gap-2 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm"
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50"
         >
-          <Plus className="w-4 h-4" /> Nova playlist
+          <Plus className="w-4 h-4 text-red-600" /> Nova playlist
         </button>
       </div>
 

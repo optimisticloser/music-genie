@@ -299,8 +299,8 @@ export default function GeneratePage() {
 
   return (
     <div className="bg-gray-50 h-full flex flex-col">
-      {/* Header simplificado */}
-      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 sticky top-0 z-10">
+      {/* Header simplificado (fixo no topo do painel direito) */}
+      <div className="bg-white border-b border-gray-200 px-4 md:px-6 py-3 sticky top-0 z-20">
         <div className="flex items-center justify-end max-w-4xl mx-auto">
           <Button 
             onClick={handleGenerate}
