@@ -30,6 +30,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   const [query, setQuery] = useState('');
   const [typing, setTyping] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const fetchingRef = useRef(false);
 
   const activeId = useMemo(() => {
     const match = pathname?.match(/\/dashboard\/playlist\/([^/?#]+)/);
@@ -54,13 +55,19 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
         created_at: p.created_at,
         is_favorite: p.is_favorite,
       }));
-      setItems(prev => nextPage === 1 ? newItems : [...prev, ...newItems]);
+      setItems(prev => {
+        if (nextPage === 1) return newItems;
+        const merged = new Map<string, PlaylistListItem>();
+        [...prev, ...newItems].forEach(it => merged.set(it.id, it));
+        return Array.from(merged.values());
+      });
       setHasNext(Boolean(data.pagination?.hasNextPage));
       setPage(nextPage);
     } catch (e) {
       console.error('Sidebar playlists load error', e);
     } finally {
       setLoading(false);
+      fetchingRef.current = false;
     }
   }, [loading, hasNext]);
 
@@ -78,9 +85,12 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
 
   const onScroll = () => {
     const el = scrollRef.current;
-    if (!el || loading || !hasNext) return;
+    if (!el || loading || fetchingRef.current || !hasNext) return;
     const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 100;
-    if (nearBottom) fetchPage(page + 1, query);
+    if (nearBottom) {
+      fetchingRef.current = true;
+      fetchPage(page + 1, query);
+    }
   };
 
   return (
@@ -95,12 +105,15 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
       </div>
 
       <div className="p-3 md:p-4 sticky top-14 bg-gray-50 z-10 border-b border-gray-200">
-        <button
+        <div
+          role="button"
+          tabIndex={0}
           onClick={() => router.push('/dashboard/new')}
-          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50"
+          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push('/dashboard/new'); }}
+          className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 cursor-pointer"
         >
           <Plus className="w-4 h-4 text-red-600" /> Nova playlist
-        </button>
+        </div>
       </div>
 
       <div className="px-3 md:px-4 pb-3 sticky top-[84px] bg-gray-50 z-10 border-b border-gray-200">
@@ -121,11 +134,14 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
           {items.map(item => {
             const active = activeId === item.id;
             return (
-              <button
+              <div
                 key={item.id}
                 onClick={() => { router.push(`/dashboard/playlist/${item.id}`); onClose?.(); }}
+                role="button"
+                tabIndex={0}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { router.push(`/dashboard/playlist/${item.id}`); onClose?.(); } }}
                 className={cn(
-                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left',
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left cursor-pointer',
                   active ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'
                 )}
               >
@@ -139,7 +155,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
                     <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{item.viewed_at ? 'visto' : 'novo'}</span>
                   </div>
                 </div>
-              </button>
+              </div>
             );
           })}
           {loading && (
