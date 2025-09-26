@@ -40,7 +40,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
     if (loading || (!hasNext && nextPage !== 1)) return;
     setLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(nextPage), limit: '20', sortBy: 'viewed_at', sortOrder: 'desc' });
+      const params = new URLSearchParams({ page: String(nextPage), limit: '20', sortBy: 'created_at', sortOrder: 'desc' });
       if (q.trim()) params.set('search', q.trim());
       const res = await fetch(`/api/playlists/user?${params.toString()}`);
       if (!res.ok) throw new Error('Failed to load');
