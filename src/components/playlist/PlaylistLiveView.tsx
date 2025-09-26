@@ -377,16 +377,12 @@ export function PlaylistLiveView({
     [viewState.gradient]
   );
 
-  const displayTracks = viewState.tracks.length > 0 ? viewState.tracks : Array.from({ length: 12 }).map((_, index) => ({
-    position: index + 1,
-    status: "pending" as TrackStatus,
-    title: undefined,
-    artist: undefined,
-    album: undefined,
-    album_art_url: undefined,
-    duration_ms: undefined,
-    found_on_spotify: false,
-  }));
+  const readyTracks = viewState.tracks.filter(
+    (track) =>
+      (track.title && track.title.trim() !== "") ||
+      (track.artist && track.artist.trim() !== "")
+  );
+  const hasLoadedTracks = readyTracks.length > 0;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -440,15 +436,15 @@ export function PlaylistLiveView({
                   />
                 </div>
               )}
-              <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80 mb-3 md:mb-4">
-                <div className="flex items-center gap-1">
-                  <Music className="w-3 h-3 md:w-4 md:h-4" />
-                  {viewState.total_tracks ?? displayTracks.length} músicas
-                </div>
-                <div className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                  {formatPlaylistDuration(viewState.total_duration_ms)}
-                </div>
+                <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80 mb-3 md:mb-4">
+                  <div className="flex items-center gap-1">
+                    <Music className="w-3 h-3 md:w-4 md:h-4" />
+                  {viewState.total_tracks ?? (hasLoadedTracks ? readyTracks.length : 0)} músicas
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                    {formatPlaylistDuration(viewState.total_duration_ms)}
+                  </div>
                 {viewState.created_at && (
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 md:w-4 md:h-4" />
@@ -473,12 +469,6 @@ export function PlaylistLiveView({
               <PlaylistActionButtons
                 playlistId={viewState.id}
                 spotifyPlaylistId={viewState.spotify_playlist_id || spotifyPlaylistId || undefined}
-                playlistName={viewState.title || ""}
-                playlistDescription={viewState.description || ""}
-                songList={viewState.tracks
-                  .filter((track) => track.title && track.artist)
-                  .map((track) => `${track.artist} - ${track.title}`)
-                  .join("; ")}
               />
             </div>
           </div>
@@ -519,59 +509,102 @@ export function PlaylistLiveView({
             <div className="xl:col-span-3">
               <div className="bg-white rounded-xl shadow-lg p-6">
                 <h2 className="text-xl font-semibold mb-4">Faixas</h2>
-                <div className="space-y-3">
-                  {displayTracks.map((track, index) => (
-                    <div
-                      key={track.position ?? index}
-                      className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
-                    >
-                      <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                          <span className="text-sm text-gray-500">{track.position}</span>
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-gray-900 truncate">
-                            {track.title || (isRunning ? "Título em geração…" : "Sem título")}
+                {hasLoadedTracks ? (
+                  <div className="space-y-3">
+                    {viewState.tracks.map((track, index) => {
+                      const key = track.position ?? index;
+                      if (!track.title && !track.artist) {
+                        if (!isRunning) {
+                          return null;
+                        }
+                        return (
+                          <div
+                            key={`skeleton-${key}`}
+                            className="flex items-center justify-between p-3 rounded-lg border border-gray-100 animate-pulse"
+                          >
+                            <div className="flex items-center gap-3 flex-1 min-w-0">
+                              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                                <span className="text-sm text-gray-400">
+                                  {track.position ?? index + 1}
+                                </span>
+                              </div>
+                              <div className="flex-1 min-w-0 space-y-2">
+                                <div className="h-3 bg-gray-200 rounded" />
+                                <div className="h-3 bg-gray-200 rounded w-2/3" />
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4">
+                              <div className="h-3 w-12 bg-gray-200 rounded" />
+                              <div className="h-6 w-20 bg-gray-200 rounded-full" />
+                            </div>
                           </div>
-                          <div className="text-sm text-gray-600 truncate">
-                            {track.artist || (isRunning ? "Artista em geração…" : "Sem artista")}
-                          </div>
-                          {track.album && (
-                            <div className="text-xs text-gray-500 truncate">{track.album}</div>
-                          )}
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <span className="text-sm text-gray-500">
-                          {track.duration_ms ? formatDuration(track.duration_ms) : "--:--"}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ${
-                            track.status === "found"
-                              ? "bg-green-50 text-green-700 border border-green-200"
-                              : track.status === "searching"
-                              ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
-                              : track.status === "not_found"
-                              ? "bg-red-50 text-red-600 border border-red-200"
-                              : "bg-gray-50 text-gray-500 border border-gray-200"
-                          }`}
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={key}
+                          className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
                         >
-                          {track.status === "found"
-                            ? "No Spotify"
-                            : track.status === "searching"
-                            ? "Buscando…"
-                            : track.status === "not_found"
-                            ? "Não encontrada"
-                            : track.status === "error"
-                            ? "Erro"
-                            : track.status === "no_token"
-                            ? "Sem token"
-                            : "Processando"}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                          <div className="flex items-center gap-3 flex-1 min-w-0">
+                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                              <span className="text-sm text-gray-500">{track.position ?? index + 1}</span>
+                            </div>
+                            <div className="min-w-0">
+                              <div className="font-medium text-gray-900 truncate">
+                                {track.title}
+                              </div>
+                              <div className="text-sm text-gray-600 truncate">
+                                {track.artist}
+                              </div>
+                              {track.album && (
+                                <div className="text-xs text-gray-500 truncate">{track.album}</div>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <span className="text-sm text-gray-500">
+                              {track.duration_ms ? formatDuration(track.duration_ms) : "--:--"}
+                            </span>
+                            <span
+                              className={`px-2 py-1 rounded-full text-xs font-medium ${
+                                track.status === "found"
+                                  ? "bg-green-50 text-green-700 border border-green-200"
+                                  : track.status === "searching"
+                                  ? "bg-yellow-50 text-yellow-700 border border-yellow-200"
+                                  : track.status === "not_found"
+                                  ? "bg-red-50 text-red-600 border border-red-200"
+                                  : track.status === "error"
+                                  ? "bg-orange-50 text-orange-600 border border-orange-200"
+                                  : track.status === "no_token"
+                                  ? "bg-gray-50 text-gray-500 border border-gray-200"
+                                  : "bg-gray-50 text-gray-500 border border-gray-200"
+                              }`}
+                            >
+                              {track.status === "found"
+                                ? "No Spotify"
+                                : track.status === "searching"
+                                ? "Buscando…"
+                                : track.status === "not_found"
+                                ? "Não encontrada"
+                                : track.status === "error"
+                                ? "Erro"
+                                : track.status === "no_token"
+                                ? "Sem token"
+                                : "Processando"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="p-6 bg-gray-50 text-sm text-gray-500 rounded-lg text-center">
+                    {isRunning
+                      ? "Aguardando a IA montar as faixas…"
+                      : "Ainda não há músicas geradas para este prompt."}
+                  </div>
+                )}
               </div>
             </div>
           </div>

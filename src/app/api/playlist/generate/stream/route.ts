@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { RunStreamEvent } from "@workflowai/workflowai";
-import type { Database } from "@/lib/supabase/database.types";
+// import type { Database } from "@/lib/supabase/database.types";
 import {
   playlistGeneratorAgent,
   PlaylistGeneratorInput,
@@ -158,6 +158,18 @@ interface PlaylistSnapshot {
   metadata: Record<string, unknown> | null;
 }
 
+type PlaylistTrackRow = {
+  track_name?: string | null;
+  artist_name?: string | null;
+  album_name?: string | null;
+  album_art_url?: string | null;
+  duration_ms?: number | null;
+  preview_url?: string | null;
+  spotify_track_id?: string | null;
+  found_on_spotify?: boolean | null;
+  position?: number | null;
+};
+
 async function fetchPlaylistSnapshot(
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   supabase: any,
@@ -195,28 +207,40 @@ async function fetchPlaylistSnapshot(
     console.error("Error fetching playlist metadata snapshot", metadataError);
   }
 
-  const tracks: EnrichedSong[] = (tracksData || []).map((track: Database["public"]["Tables"]["playlist_tracks"]["Row"], index: number) => {
-    const spotifyId =
-      track.spotify_track_id && !track.spotify_track_id.startsWith("not_found_")
-        ? track.spotify_track_id
-        : undefined;
+  const tracks: EnrichedSong[] = ((tracksData || []) as PlaylistTrackRow[]).map(
+    (track, index) => {
+      const spotifyId =
+        track.spotify_track_id && !track.spotify_track_id.startsWith("not_found_")
+          ? track.spotify_track_id
+          : undefined;
 
-    return {
-      title: track.track_name || undefined,
-      artist: track.artist_name || undefined,
-      spotify_id: spotifyId,
-      album_name: track.album_name || undefined,
-      album_art_url: track.album_art_url || undefined,
-      duration_ms: track.duration_ms || undefined,
-      preview_url: track.preview_url || undefined,
-      external_url: spotifyId ? `https://open.spotify.com/track/${spotifyId}` : undefined,
-      found_on_spotify: track.found_on_spotify ?? false,
-      position: track.position ?? index + 1,
-    };
-  });
+      return {
+        title: track.track_name || undefined,
+        artist: track.artist_name || undefined,
+        spotify_id: spotifyId,
+        album_name: track.album_name || undefined,
+        album_art_url: track.album_art_url || undefined,
+        duration_ms: track.duration_ms || undefined,
+        preview_url: track.preview_url || undefined,
+        external_url: spotifyId ? `https://open.spotify.com/track/${spotifyId}` : undefined,
+        found_on_spotify: track.found_on_spotify ?? false,
+        position: track.position ?? index + 1,
+      };
+    }
+  );
+
+  const spotifyPlaylistIdValue =
+    typeof playlist.spotify_playlist_id === "string"
+      ? playlist.spotify_playlist_id
+      : playlist.spotify_playlist_id?.id ?? null;
+
+  const normalizedPlaylist = {
+    ...playlist,
+    spotify_playlist_id: spotifyPlaylistIdValue,
+  };
 
   return {
-    playlist,
+    playlist: normalizedPlaylist,
     tracks,
     metadata: metadataRows && metadataRows.length > 0 ? metadataRows[0] : null,
   };
@@ -339,7 +363,7 @@ async function savePlaylistData({
       version: 1,
       status: "published",
       sharing_permission: "private",
-      spotify_playlist_id: spotifyPlaylistId,
+      spotify_playlist_id: spotifyPlaylistId?.id ?? null,
       total_tracks: songs.length,
       total_duration_ms: totalDurationMs,
     })

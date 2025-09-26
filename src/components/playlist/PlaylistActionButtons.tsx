@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useMemo, useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Sparkles, Loader2, Heart } from "lucide-react";
 import { useFavoriteToggle } from "@/hooks/useFavoriteToggle";
@@ -16,6 +16,35 @@ export function PlaylistActionButtons({
   spotifyPlaylistId
 }: PlaylistActionButtonsProps) {
   const [isUpdatingImages, setIsUpdatingImages] = useState(false);
+
+  const resolvedSpotifyUrl = useMemo(() => {
+    if (!spotifyPlaylistId) {
+      return null;
+    }
+
+    try {
+      const parsed = JSON.parse(spotifyPlaylistId);
+      if (typeof parsed === "string") {
+        return `https://open.spotify.com/playlist/${parsed}`;
+      }
+      if (parsed && typeof parsed === "object") {
+        if (parsed.external_url) {
+          return parsed.external_url as string;
+        }
+        if (parsed.id) {
+          return `https://open.spotify.com/playlist/${parsed.id as string}`;
+        }
+        if (parsed.uri && typeof parsed.uri === "string") {
+          const parts = parsed.uri.split(":");
+          return parts.length ? `https://open.spotify.com/playlist/${parts.pop()}` : null;
+        }
+      }
+    } catch {
+      // not JSON, fall back to raw string below
+    }
+
+    return `https://open.spotify.com/playlist/${spotifyPlaylistId}`;
+  }, [spotifyPlaylistId]);
 
   const handleUpdateImages = async () => {
     setIsUpdatingImages(true);
@@ -42,10 +71,10 @@ export function PlaylistActionButtons({
 
   return (
     <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4">
-      {spotifyPlaylistId && (
+      {resolvedSpotifyUrl && (
         <Button
           className="px-6 md:px-8 lg:px-12 py-3 md:py-4 text-base md:text-lg bg-green-600 hover:bg-green-700"
-          onClick={() => window.open(`https://open.spotify.com/playlist/${spotifyPlaylistId}`, '_blank')}
+          onClick={() => window.open(resolvedSpotifyUrl, '_blank')}
         >
           <Sparkles className="w-4 h-4 md:w-5 md:h-5 mr-2" />
           Ouvir no Spotify
