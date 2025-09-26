@@ -2,7 +2,18 @@
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
-import { Music, Plus, Search, Loader2, Star, Clock } from 'lucide-react';
+import {
+  Music,
+  Plus,
+  Search,
+  Loader2,
+  Star,
+  Clock,
+  LogOut,
+  Settings,
+} from 'lucide-react';
+import type { User } from '@supabase/supabase-js';
+import createClient from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/config';
 import { cn } from '@/lib/utils';
 
@@ -39,13 +50,64 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   const [loading, setLoading] = useState(false);
   const [query, setQuery] = useState('');
   const [typing, setTyping] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const fetchingRef = useRef(false);
+  const supabase = createClient();
 
   const activeId = useMemo(() => {
     const match = pathname?.match(/\/dashboard\/playlist\/([^/?#]+)/);
     return match?.[1] || null;
   }, [pathname]);
+
+  const accountName = useMemo(() => {
+    if (!user) return 'Minha conta';
+    return (
+      (user.user_metadata?.full_name as string | undefined)?.trim() ||
+      user.email?.split('@')[0] ||
+      'Minha conta'
+    );
+  }, [user]);
+
+  const accountInitials = useMemo(() => {
+    return accountName
+      .split(' ')
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((segment) => segment[0]?.toUpperCase())
+      .join('')
+      .padEnd(2, '•');
+  }, [accountName]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (isMounted) {
+          setUser(data.user ?? null);
+        }
+      })
+      .catch((error) => {
+        console.error('Failed to load user profile', error);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      setUser(session?.user ?? null);
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
 
   const fetchPage = useCallback(async (nextPage: number, q: string) => {
     if (loading || (!hasNext && nextPage !== 1)) return;
@@ -100,6 +162,25 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
     if (nearBottom) {
       fetchingRef.current = true;
       fetchPage(page + 1, query);
+    }
+  };
+
+  const goToSettings = () => {
+    router.push('/dashboard/settings');
+    onClose?.();
+  };
+
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    setIsSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      onClose?.();
+      router.replace('/login');
+    } catch (error) {
+      console.error('Erro ao sair:', error);
+    } finally {
+      setIsSigningOut(false);
     }
   };
 
@@ -177,6 +258,47 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
           {!loading && items.length === 0 && !typing && (
             <div className="text-center text-gray-500 text-sm py-8">Nenhuma playlist encontrada</div>
           )}
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 bg-gray-50 p-4 space-y-3">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-full bg-red-100 text-red-600 font-semibold flex items-center justify-center text-sm">
+            {accountInitials}
+          </div>
+          <div className="min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">{accountName}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email || 'Conta não autenticada'}</p>
+          </div>
+        </div>
+
+        <div className="grid gap-2">
+          <button
+            type="button"
+            onClick={goToSettings}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+              pathname?.startsWith('/dashboard/settings')
+                ? 'bg-red-100 text-red-700'
+                : 'text-gray-700 hover:bg-gray-100'
+            )}
+          >
+            <Settings className="w-4 h-4" />
+            Configurações
+          </button>
+          <button
+            type="button"
+            onClick={handleSignOut}
+            disabled={isSigningOut}
+            className="flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-red-600 hover:bg-red-100 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+          >
+            {isSigningOut ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <LogOut className="w-4 h-4" />
+            )}
+            Sair
+          </button>
         </div>
       </div>
     </div>

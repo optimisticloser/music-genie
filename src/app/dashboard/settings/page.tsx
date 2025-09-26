@@ -1,26 +1,114 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { 
-  User, 
-  Bell, 
-  Music, 
-  Shield, 
+import {
+  User,
+  Bell,
+  Music,
+  Shield,
   LogOut,
   Save,
   Trash2
 } from "lucide-react";
+import createClient from "@/lib/supabase/client";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export default function SettingsPage() {
   const [notifications, setNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [publicProfile, setPublicProfile] = useState(false);
+  const [fullName, setFullName] = useState("");
+  const [email, setEmail] = useState("");
+  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
+  const supabase = createClient();
+  const router = useRouter();
+
+  const accountInitials = useMemo(() => {
+    return fullName
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((segment) => segment[0]?.toUpperCase())
+      .join("")
+      .padEnd(2, "•");
+  }, [fullName]);
+
+  useEffect(() => {
+    if (!supabase) return;
+
+    let isMounted = true;
+
+    supabase.auth
+      .getUser()
+      .then(({ data }) => {
+        if (!isMounted) return;
+        const user = data.user as SupabaseUser | null;
+        setFullName(
+          ((user?.user_metadata?.full_name as string | undefined) || "").trim()
+        );
+        setEmail(user?.email ?? "");
+      })
+      .catch((error) => {
+        console.error("Failed to load profile", error);
+      });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
+      const currentUser = session?.user as SupabaseUser | null;
+      setFullName(
+        ((currentUser?.user_metadata?.full_name as string | undefined) || "").trim()
+      );
+      setEmail(currentUser?.email ?? "");
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, [supabase]);
+
+  const handleSaveProfile = async () => {
+    if (!supabase) return;
+    setIsSavingProfile(true);
+    try {
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          full_name: fullName,
+        },
+      });
+
+      if (error) {
+        console.error("Erro ao atualizar perfil", error);
+      }
+    } catch (error) {
+      console.error("Erro inesperado ao salvar perfil", error);
+    } finally {
+      setIsSavingProfile(false);
+    }
+  };
+
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    setIsSigningOut(true);
+    try {
+      await supabase.auth.signOut();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Erro ao sair", error);
+    } finally {
+      setIsSigningOut(false);
+    }
+  };
 
   return (
     <div className="p-4 md:p-8 space-y-6">
@@ -43,25 +131,52 @@ export default function SettingsPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            <div className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+              <div className="w-12 h-12 rounded-full bg-red-100 text-red-600 font-semibold flex items-center justify-center">
+                {accountInitials}
+              </div>
+              <div>
+                <p className="text-sm font-medium text-gray-900">{fullName || "Seu nome"}</p>
+                <p className="text-xs text-gray-500">{email || "email não definido"}</p>
+              </div>
+            </div>
             <div>
               <Label htmlFor="name">Nome completo</Label>
-              <Input id="name" placeholder="Seu nome" className="mt-1" />
+              <Input
+                id="name"
+                placeholder="Seu nome"
+                className="mt-1"
+                value={fullName}
+                onChange={(event) => setFullName(event.target.value)}
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" placeholder="seu@email.com" className="mt-1" disabled />
+              <Input
+                id="email"
+                type="email"
+                placeholder="seu@email.com"
+                className="mt-1"
+                value={email}
+                disabled
+                readOnly
+              />
             </div>
             <div className="flex items-center space-x-2">
-              <Switch 
-                id="public-profile" 
+              <Switch
+                id="public-profile"
                 checked={publicProfile}
                 onCheckedChange={setPublicProfile}
               />
               <Label htmlFor="public-profile">Perfil público</Label>
             </div>
-            <Button className="w-full">
+            <Button
+              className="w-full"
+              onClick={handleSaveProfile}
+              disabled={isSavingProfile}
+            >
               <Save className="w-4 h-4 mr-2" />
-              Salvar alterações
+              {isSavingProfile ? "Salvando..." : "Salvar alterações"}
             </Button>
           </CardContent>
         </Card>
@@ -183,9 +298,14 @@ export default function SettingsPage() {
               <h4 className="font-medium text-orange-900">Sair da conta</h4>
               <p className="text-sm text-orange-700">Você será desconectado</p>
             </div>
-            <Button variant="outline" className="text-orange-600 border-orange-200">
+            <Button
+              variant="outline"
+              className="text-orange-600 border-orange-200"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
               <LogOut className="w-4 h-4 mr-2" />
-              Sair
+              {isSigningOut ? "Saindo..." : "Sair"}
             </Button>
           </div>
         </CardContent>
