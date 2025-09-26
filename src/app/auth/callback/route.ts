@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import type { Session } from "@supabase/supabase-js";
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
@@ -54,29 +55,60 @@ export async function GET(request: Request) {
     console.log("✅ Successfully authenticated user:", data.user.email);
     console.log("🔄 Redirecting to dashboard...");
     
-    const response = NextResponse.redirect(`${origin}/dashboard`);
-    
-    // Set the session cookie manually if needed
-    if (data.session) {
-      response.cookies.set('sb-access-token', data.session.access_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-      
-      response.cookies.set('sb-refresh-token', data.session.refresh_token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
-    }
-    
-    return response;
+    return NextResponse.redirect(`${origin}/dashboard`);
 
   } catch (error) {
     console.error("❌ Unexpected error in auth callback:", error);
     return NextResponse.redirect(`${origin}/auth/auth-code-error?error=unexpected`);
   }
-} 
+}
+
+export async function POST(request: Request) {
+  try {
+    const { event, session }: { event: string; session: Session | null } =
+      await request.json();
+
+    const cookieStore = await cookies();
+    const response = NextResponse.json({ success: true });
+
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll(cookiesToSet) {
+            cookiesToSet.forEach(({ name, value, options }) => {
+              response.cookies.set(name, value, options);
+            });
+          },
+        },
+      }
+    );
+
+    if (event === "SIGNED_OUT") {
+      await supabase.auth.signOut();
+      return response;
+    }
+
+    if (event === "SIGNED_IN" || event === "TOKEN_REFRESHED") {
+      if (!session) {
+        return NextResponse.json({ error: "Missing session" }, { status: 400 });
+      }
+
+      const { error } = await supabase.auth.setSession(session);
+
+      if (error) {
+        console.error("❌ Error syncing session:", error.message);
+        return NextResponse.json({ error: "Session sync failed" }, { status: 500 });
+      }
+    }
+
+    return response;
+  } catch (error) {
+    console.error("❌ Unexpected error in auth callback POST:", error);
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
+}
