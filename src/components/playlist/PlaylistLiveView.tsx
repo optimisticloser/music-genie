@@ -358,7 +358,7 @@ export function PlaylistLiveView({
       })
     );
 
-    if (completeData.playlist?.id) {
+    if (completeData.playlist && 'id' in completeData.playlist && completeData.playlist.id) {
       onPlaylistReady?.(completeData.playlist.id as string);
     }
   }, [completeData, onPlaylistReady]);
