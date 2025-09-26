@@ -319,9 +319,9 @@ export default function GeneratePage() {
         </div>
       </div>
 
-      <div className="max-w-4xl mx-auto pb-24">
-        {/* Chat-like Container */}
-        <div className="min-h-screen flex flex-col">
+      <div className="max-w-4xl mx-auto flex-1 w-full relative">
+        {/* Scrollable content */}
+        <div className="overflow-y-auto h-full">
           
           {/* Messages Area */}
           <div className="flex-1 p-6 space-y-6">
@@ -443,8 +443,12 @@ export default function GeneratePage() {
             {/* Generation Progress & Result */}
           </div>
 
-          {/* Input Area - Sempre visível */}
-          <div className="border-t border-gray-200 bg-white p-6">
+          {/* Spacer to avoid overlap with sticky input */}
+          <div className="h-4" />
+        </div>
+
+        {/* Input Area - Sticky at bottom of right pane */}
+        <div className="border-t border-gray-200 bg-white p-4 md:p-6 sticky bottom-0 z-20">
             
             {/* Categorias predefinidas - SEMPRE VISÍVEIS */}
             <div className="mb-6">
@@ -539,7 +543,6 @@ export default function GeneratePage() {
             </div>
           </div>
         </div>
-      </div>
     </div>
   );
 } 
