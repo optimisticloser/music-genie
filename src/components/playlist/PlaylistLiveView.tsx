@@ -523,7 +523,7 @@ export function PlaylistLiveView({
                             className="flex items-center justify-between p-3 rounded-lg border border-gray-100 animate-pulse"
                           >
                             <div className="flex items-center gap-3 flex-1 min-w-0">
-                              <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
+                              <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100 flex items-center justify-center">
                                 <span className="text-sm text-gray-400">
                                   {track.position ?? index + 1}
                                 </span>
@@ -547,8 +547,22 @@ export function PlaylistLiveView({
                           className="flex items-center justify-between p-3 rounded-lg border border-gray-100"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <div className="w-10 h-10 rounded bg-gray-100 flex items-center justify-center">
-                              <span className="text-sm text-gray-500">{track.position ?? index + 1}</span>
+                            <div className="relative w-12 h-12 rounded overflow-hidden bg-gray-100 flex-shrink-0">
+                              {track.album_art_url ? (
+                                <Image
+                                  src={track.album_art_url}
+                                  alt={`Capa da faixa ${track.title ?? "sem título"}`}
+                                  fill
+                                  sizes="48px"
+                                  className="object-cover"
+                                />
+                              ) : (
+                                <div className="w-full h-full flex items-center justify-center">
+                                  <span className="text-sm text-gray-500">
+                                    {track.position ?? index + 1}
+                                  </span>
+                                </div>
+                              )}
                             </div>
                             <div className="min-w-0">
                               <div className="font-medium text-gray-900 truncate">

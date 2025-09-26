@@ -58,95 +58,6 @@ function enqueueEvent(
   controller.enqueue(encoder.encode(data));
 }
 
-async function enrichSongsWithSpotify(
-  songs: PlaylistGeneratorOutput["songs"],
-  accessToken: string,
-  notify: (payload: StreamEventPayload) => void
-): Promise<EnrichedSong[]> {
-  if (!songs || songs.length === 0) {
-    return [];
-  }
-
-  const normalizedSongs: EnrichedSong[] = songs.map((song, index) => ({
-    title: song.title?.trim(),
-    artist: song.artist?.trim(),
-    found_on_spotify: false,
-    position: index + 1,
-  }));
-
-  const results: EnrichedSong[] = new Array(normalizedSongs.length);
-  const concurrency = Math.min(3, normalizedSongs.length);
-  let nextIndex = 0;
-
-  const worker = async () => {
-    while (true) {
-      const currentIndex = nextIndex++;
-      if (currentIndex >= normalizedSongs.length) {
-        break;
-      }
-
-      const song = normalizedSongs[currentIndex];
-      if (!song.title || !song.artist) {
-        results[currentIndex] = { ...song, found_on_spotify: false };
-        notify({ index: currentIndex, status: "skipped", song });
-        continue;
-      }
-
-      notify({ index: currentIndex, status: "searching", song });
-
-      try {
-        const searchQuery = `${song.artist} ${song.title}`;
-        const response = await fetch(
-          `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
-        );
-
-        if (!response.ok) {
-          results[currentIndex] = { ...song, found_on_spotify: false };
-          notify({ index: currentIndex, status: "not_found", song });
-          continue;
-        }
-
-        const searchData = await response.json();
-        const track = searchData.tracks?.items?.[0];
-        if (!track) {
-          results[currentIndex] = { ...song, found_on_spotify: false };
-          notify({ index: currentIndex, status: "not_found", song });
-          continue;
-        }
-
-        const enriched: EnrichedSong = {
-          ...song,
-          spotify_id: track.id,
-          album_name: track.album?.name,
-          album_art_url: track.album?.images?.[0]?.url,
-          duration_ms: track.duration_ms,
-          preview_url: track.preview_url,
-          external_url: track.external_urls?.spotify,
-          found_on_spotify: true,
-          position: song.position ?? currentIndex + 1,
-        };
-
-        results[currentIndex] = enriched;
-        notify({ index: currentIndex, status: "found", song: enriched });
-      } catch (error) {
-        console.error("Spotify search error", error);
-        results[currentIndex] = { ...song, found_on_spotify: false };
-        notify({ index: currentIndex, status: "error", song });
-      }
-    }
-  };
-
-  const workers = Array.from({ length: Math.max(1, concurrency) }, () => worker());
-  await Promise.all(workers);
-
-  return results;
-}
-
 function calculateTotalDuration(songs: EnrichedSong[]): number {
   return songs.reduce((total, song) => total + (song.duration_ms || 0), 0);
 }
@@ -469,6 +380,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
+  let spotifyAccessToken: string | null = null;
+  if (isSpotifyConnected) {
+    spotifyAccessToken = await SpotifyService.getValidAccessToken(user.id);
+  }
+
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
       const notify = (event: StreamEventName, payload: StreamEventPayload) =>
@@ -564,6 +481,318 @@ export async function POST(req: NextRequest) {
           return;
         }
 
+        notify("status", {
+          stage: "starting",
+          message: "Preparando geração da playlist…",
+        });
+
+        const maxSpotifyConcurrency = 4;
+        let activeSpotifyRequests = 0;
+        const spotifyMatchQueue: Array<() => Promise<void>> = [];
+        const matchedSongIndices = new Set<number>();
+        const pendingSpotifyMatches: Promise<void>[] = [];
+        // metrics already declared above
+        // latestOutput already declared above
+        let latestSongs: PlaylistGeneratorOutput["songs"] = [];
+        let enrichedSongs: EnrichedSong[] = [];
+
+        const updateEnrichedSongAtIndex = (
+          index: number,
+          data: Partial<EnrichedSong>
+        ) => {
+          const current = enrichedSongs[index] || {};
+          enrichedSongs[index] = {
+            title: data.title ?? current.title,
+            artist: data.artist ?? current.artist,
+            spotify_id: data.spotify_id ?? current.spotify_id,
+            album_name: data.album_name ?? current.album_name,
+            album_art_url: data.album_art_url ?? current.album_art_url,
+            duration_ms: data.duration_ms ?? current.duration_ms,
+            preview_url: data.preview_url ?? current.preview_url,
+            external_url: data.external_url ?? current.external_url,
+            found_on_spotify: data.found_on_spotify ?? current.found_on_spotify ?? false,
+            position: data.position ?? current.position ?? index + 1,
+          };
+        };
+
+        const processSpotifyQueue = () => {
+          if (!spotifyAccessToken) {
+            return;
+          }
+          while (
+            activeSpotifyRequests < maxSpotifyConcurrency &&
+            spotifyMatchQueue.length > 0
+          ) {
+            const job = spotifyMatchQueue.shift();
+            if (!job) {
+              continue;
+            }
+            activeSpotifyRequests++;
+            job()
+              .catch((error) => {
+                console.error("Spotify match job error", error);
+              })
+              .finally(() => {
+                activeSpotifyRequests--;
+                processSpotifyQueue();
+              });
+          }
+        };
+
+        const enqueueSpotifyMatch = (job: () => Promise<void>) => {
+          spotifyMatchQueue.push(job);
+          processSpotifyQueue();
+        };
+
+        const scheduleSpotifyMatch = (
+          index: number,
+          song?: { title?: string | null; artist?: string | null }
+        ) => {
+          const title = song?.title ? song.title.trim() : null;
+          const artist = song?.artist ? song.artist.trim() : null;
+
+          if (!title || !artist) {
+            return;
+          }
+
+          if (!spotifyAccessToken) {
+            if (!matchedSongIndices.has(index)) {
+              matchedSongIndices.add(index);
+              updateEnrichedSongAtIndex(index, {
+                title,
+                artist,
+                found_on_spotify: false,
+              });
+              notify("spotify_progress", {
+                index,
+                status: "no_token",
+                song: enrichedSongs[index],
+              });
+            }
+            return;
+          }
+
+          if (matchedSongIndices.has(index)) {
+            return;
+          }
+          matchedSongIndices.add(index);
+
+          const promise = new Promise<void>((resolve) => {
+            enqueueSpotifyMatch(async () => {
+              updateEnrichedSongAtIndex(index, { title, artist });
+              notify("spotify_progress", {
+                index,
+                status: "searching",
+                song: {
+                  title,
+                  artist,
+                },
+              });
+
+              try {
+                const searchQuery = artist + " " + title;
+                const response = await fetch(
+                  "https://api.spotify.com/v1/search?q=" +
+                    encodeURIComponent(searchQuery) +
+                    "&type=track&limit=1",
+                  {
+                    headers: {
+                      Authorization: "Bearer " + spotifyAccessToken,
+                    },
+                  }
+                );
+
+                if (response.ok) {
+                  const searchData = await response.json();
+                  const track = searchData.tracks?.items?.[0];
+                  if (track) {
+                    const enriched: EnrichedSong = {
+                      title,
+                      artist,
+                      spotify_id: track.id,
+                      album_name: track.album?.name,
+                      album_art_url: track.album?.images?.[0]?.url,
+                      duration_ms: track.duration_ms,
+                      preview_url: track.preview_url,
+                      external_url: track.external_urls?.spotify,
+                      found_on_spotify: true,
+                      position: index + 1,
+                    };
+                    enrichedSongs[index] = enriched;
+                    notify("spotify_progress", {
+                      index,
+                      status: "found",
+                      song: enriched,
+                    });
+                    resolve();
+                    return;
+                  }
+                }
+
+                updateEnrichedSongAtIndex(index, {
+                  title,
+                  artist,
+                  found_on_spotify: false,
+                });
+                notify("spotify_progress", {
+                  index,
+                  status: "not_found",
+                  song: enrichedSongs[index],
+                });
+              } catch (error) {
+                console.error("Spotify search error", error);
+                updateEnrichedSongAtIndex(index, {
+                  title,
+                  artist,
+                  found_on_spotify: false,
+                });
+                notify("spotify_progress", {
+                  index,
+                  status: "error",
+                  song: enrichedSongs[index],
+                });
+              } finally {
+                resolve();
+              }
+            });
+          });
+
+          pendingSpotifyMatches.push(promise);
+        };
+
+        const updateSongsFromOutput = (songs?: PlaylistGeneratorOutput["songs"]) => {
+          if (!songs || songs.length === 0) {
+            latestSongs = songs ?? [];
+            return;
+          }
+
+          latestSongs = songs;
+          if (enrichedSongs.length < songs.length) {
+            enrichedSongs.length = songs.length;
+          }
+
+          songs.forEach((song, index) => {
+            updateEnrichedSongAtIndex(index, {
+              title: song?.title,
+              artist: song?.artist,
+              position: index + 1,
+            });
+            scheduleSpotifyMatch(index, song);
+          });
+
+          if (enrichedSongs.length > songs.length) {
+            enrichedSongs = enrichedSongs.slice(0, songs.length);
+          }
+
+          for (const idx of Array.from(matchedSongIndices)) {
+            if (idx >= songs.length) {
+              matchedSongIndices.delete(idx);
+            }
+          }
+        };
+
+        const ensureEnrichedSongFallbacks = () => {
+          if (!latestSongs || latestSongs.length === 0) {
+            enrichedSongs = [];
+            return;
+          }
+
+          enrichedSongs = latestSongs.map((song, index) => ({
+            title: song?.title ?? enrichedSongs[index]?.title,
+            artist: song?.artist ?? enrichedSongs[index]?.artist,
+            spotify_id: enrichedSongs[index]?.spotify_id,
+            album_name: enrichedSongs[index]?.album_name,
+            album_art_url: enrichedSongs[index]?.album_art_url,
+            duration_ms: enrichedSongs[index]?.duration_ms,
+            preview_url: enrichedSongs[index]?.preview_url,
+            external_url: enrichedSongs[index]?.external_url,
+            found_on_spotify: enrichedSongs[index]?.found_on_spotify ?? false,
+            position: index + 1,
+          }));
+        };
+
+        // existingSnapshot already declared above
+        if (playlistId) {
+          existingSnapshot = await fetchPlaylistSnapshot(supabase, playlistId, user.id);
+        }
+
+        if (existingSnapshot?.playlist?.status === "published") {
+          if (existingSnapshot.tracks.length > 0) {
+            notify("ai_update", {
+              output: {
+                name: existingSnapshot.playlist.title,
+                essay: existingSnapshot.playlist.description,
+                songs: existingSnapshot.tracks.map((track) => ({
+                  title: track.title,
+                  artist: track.artist,
+                })),
+                categorization: existingSnapshot.metadata
+                  ? [
+                      {
+                        primary_genre: existingSnapshot.metadata["primary_genre"] as
+                          | string
+                          | undefined,
+                        subgenre: existingSnapshot.metadata["subgenre"] as
+                          | string
+                          | undefined,
+                        mood: existingSnapshot.metadata["mood"] as
+                          | string
+                          | undefined,
+                        years: existingSnapshot.metadata["years"] as
+                          | string[]
+                          | undefined,
+                        energy_level: existingSnapshot.metadata["energy_level"] as
+                          | string
+                          | undefined,
+                        tempo: existingSnapshot.metadata["tempo"] as
+                          | string
+                          | undefined,
+                        dominant_instruments: existingSnapshot.metadata[
+                          "dominant_instruments"
+                        ] as string[] | undefined,
+                        vocal_style: existingSnapshot.metadata["vocal_style"] as
+                          | string
+                          | undefined,
+                        themes: existingSnapshot.metadata["themes"] as string[] | undefined,
+                      },
+                    ]
+                  : undefined,
+              },
+            });
+          }
+
+          if (existingSnapshot.playlist.cover_art_url) {
+            notify("cover_status", {
+              stage: "success",
+              cover_art_url: existingSnapshot.playlist.cover_art_url,
+              cover_art_description: existingSnapshot.playlist.cover_art_description,
+              metadata:
+                (existingSnapshot.playlist.cover_art_metadata as Record<string, unknown>) ||
+                null,
+            });
+          }
+
+          notify("playlist_saved", {
+            playlist_id: existingSnapshot.playlist.id,
+            spotify_playlist_id: existingSnapshot.playlist.spotify_playlist_id || undefined,
+          });
+
+          notify("status", {
+            stage: "spotify_connection",
+            connected: isSpotifyConnected && !!spotifyAccessToken,
+          });
+
+          notify("complete", {
+            playlist: existingSnapshot.playlist,
+            tracks: existingSnapshot.tracks,
+            metadata: existingSnapshot.metadata,
+            songs: existingSnapshot.tracks,
+            spotify_connected: isSpotifyConnected && !!spotifyAccessToken,
+            metrics: null,
+          });
+          return;
+        }
+
         const run = await playlistGeneratorAgent({ prompt }).stream();
 
         for await (const chunk of run.stream as AsyncIterable<
@@ -575,6 +804,11 @@ export async function POST(req: NextRequest) {
 
           if (chunk.output) {
             latestOutput = chunk.output as PlaylistGeneratorOutput;
+            updateSongsFromOutput(
+              (chunk.output as PlaylistGeneratorOutput).songs as
+                | PlaylistGeneratorOutput["songs"]
+                | undefined
+            );
             notify("ai_update", { output: chunk.output });
           }
         }
@@ -588,54 +822,41 @@ export async function POST(req: NextRequest) {
           message: "IA finalizada. Buscando músicas no Spotify…",
         });
 
-        const isSpotifyConnected = await SpotifyService.isSpotifyConnected(user.id);
         notify("status", {
           stage: "spotify_connection",
-          connected: isSpotifyConnected,
+          connected: isSpotifyConnected && !!spotifyAccessToken,
         });
 
-        let enrichedSongs: EnrichedSong[] = (latestOutput.songs || []).map(
-          (song, index) => ({
-            title: song.title,
-            artist: song.artist,
-            found_on_spotify: false,
-            position: index + 1,
-          })
-        );
+        await Promise.all(pendingSpotifyMatches);
+
+        ensureEnrichedSongFallbacks();
+
         let spotifyPlaylistId: { id: string } | null = null;
 
-        if (isSpotifyConnected && latestOutput.songs && latestOutput.songs.length > 0) {
-          const accessToken = await SpotifyService.getValidAccessToken(user.id);
+        if (spotifyAccessToken && enrichedSongs.length > 0) {
+          const foundSongs = enrichedSongs.filter(
+            (song) => song.found_on_spotify && song.spotify_id
+          );
+          if (foundSongs.length > 0) {
+            const currentUser = await getCurrentUser(spotifyAccessToken);
+            if (currentUser) {
+              spotifyPlaylistId = await createPlaylist(
+                currentUser.id,
+                latestOutput.name || "Generated Playlist",
+                latestOutput.essay || "AI-generated playlist",
+                spotifyAccessToken,
+                false
+              );
 
-          if (accessToken) {
-            enrichedSongs = await enrichSongsWithSpotify(
-              latestOutput.songs,
-              accessToken,
-              (payload) => notify("spotify_progress", payload)
-            );
-
-            const foundSongs = enrichedSongs.filter((song) => song.found_on_spotify);
-            if (foundSongs.length > 0) {
-              const currentUser = await getCurrentUser(accessToken);
-              if (currentUser) {
-                spotifyPlaylistId = await createPlaylist(
-                  currentUser.id,
-                  latestOutput.name || "Generated Playlist",
-                  latestOutput.essay || "AI-generated playlist",
-                  accessToken,
-                  false
-                );
-
-                const uris = foundSongs.map((song) => `spotify:track:${song.spotify_id}`);
-                await addTracksToPlaylist(spotifyPlaylistId.id, uris, accessToken);
-              }
+              const uris = foundSongs.map((song) => "spotify:track:" + song.spotify_id);
+              await addTracksToPlaylist(spotifyPlaylistId.id, uris, spotifyAccessToken);
             }
-          } else {
-            notify("spotify_progress", {
-              status: "no_token",
-              message: "Access token indisponível para enriquecer faixas",
-            });
           }
+        } else if (isSpotifyConnected && !spotifyAccessToken && enrichedSongs.length > 0) {
+          notify("spotify_progress", {
+            status: "no_token",
+            message: "Access token indisponível para enriquecer faixas",
+          });
         }
 
         let playlistSnapshot = await savePlaylistData({
@@ -655,7 +876,7 @@ export async function POST(req: NextRequest) {
 
         if (playlistSnapshot?.playlist) {
           const songList = enrichedSongs
-            .map((song) => `${song.artist || ""} - ${song.title || ""}`)
+            .map((song) => (song.artist || "") + " - " + (song.title || ""))
             .join("; ");
 
           await generatePlaylistCover(
@@ -685,7 +906,6 @@ export async function POST(req: NextRequest) {
             }
           );
 
-          // Refresh snapshot to capture cover art updates
           playlistSnapshot =
             (await fetchPlaylistSnapshot(
               supabase,
@@ -699,7 +919,7 @@ export async function POST(req: NextRequest) {
           tracks: playlistSnapshot?.tracks || enrichedSongs,
           metadata: playlistSnapshot?.metadata || null,
           songs: enrichedSongs,
-          spotify_connected: isSpotifyConnected,
+          spotify_connected: isSpotifyConnected && !!spotifyAccessToken,
           metrics,
         });
       } catch (error) {
