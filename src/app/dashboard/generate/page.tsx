@@ -522,29 +522,31 @@ export default function GeneratePage() {
 
             {/* Chat Input */}
             <div className="relative">
-              <Input
-                placeholder={isEmpty 
-                  ? "Type anything you want your playlist to be like..." 
-                  : "Add more details to your playlist..."
-                }
-                value={customInput}
-                onChange={(e) => setCustomInput(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter' && !e.shiftKey) {
-                    e.preventDefault();
-                    handleAddCustomInput();
+              <div className="flex items-center gap-2 rounded-full border border-gray-200 bg-white/80 p-1 shadow-sm transition-all focus-within:border-blue-400 focus-within:ring-2 focus-within:ring-blue-100 focus-within:shadow-md">
+                <Input
+                  placeholder={isEmpty
+                    ? "Type anything you want your playlist to be like..."
+                    : "Add more details to your playlist..."
                   }
-                }}
-                className="pr-12 py-4 text-base bg-gray-50 border-gray-200 rounded-2xl placeholder:text-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-              <Button
-                onClick={handleAddCustomInput}
-                disabled={!customInput.trim()}
-                size="sm"
-                className="absolute right-2 top-1/2 transform -translate-y-1/2 w-8 h-8 p-0 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 rounded-lg"
-              >
-                <Send className="w-4 h-4" />
-              </Button>
+                  value={customInput}
+                  onChange={(e) => setCustomInput(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleAddCustomInput();
+                    }
+                  }}
+                  className="flex-1 h-12 rounded-full border-0 bg-transparent px-5 text-base placeholder:text-gray-400 shadow-none focus-visible:border-0 focus-visible:ring-0"
+                />
+                <Button
+                  onClick={handleAddCustomInput}
+                  disabled={!customInput.trim()}
+                  size="sm"
+                  className="mr-1 flex size-11 items-center justify-center rounded-full bg-gradient-to-br from-blue-500 to-indigo-500 text-white shadow-sm transition-transform hover:scale-[1.02] hover:from-blue-500 hover:to-blue-600 hover:shadow-md disabled:from-gray-200 disabled:to-gray-200 disabled:text-gray-500 disabled:shadow-none"
+                >
+                  <Send className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
           </div>
         </div>
