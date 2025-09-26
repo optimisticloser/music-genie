@@ -2,81 +2,46 @@
 
 ## Overview
 
-This document outlines the integration of WorkflowAI as an alternative AI provider for Play Genie's playlist generation system. The integration allows switching between OpenAI's direct API and WorkflowAI's managed service seamlessly.
+This document explains how Play Genie integrates WorkflowAI as an alternative AI provider for playlist generation. The current implementation uses a lightweight service layer that performs direct HTTP requests with `fetch`, replacing the earlier `@workflowai/workflowai` SDK usage.
 
 ## Architecture
 
-### Core Components
+### Core Pieces
 
-1. **UnifiedAIService** - Main facade that switches between providers
-2. **WorkflowAIService** - Handles WorkflowAI API communication
-3. **AIProviderConfig** - Configuration management for providers
-4. **Settings UI** - User interface for provider selection
+- **Service layer** – `workflowAIService` exposes a `generatePlaylist` helper for playlist prompts and wraps configuration checks.
+- **Consumers** – API routes or React components import the service to request playlists and handle the transformed response payloads.
+- **Configuration** – Environment variables (e.g., `NEXT_PUBLIC_WORKFLOWAI_API_KEY`) determine whether the WorkflowAI option is available.
 
-### Provider System
-
-```swift
-enum AIProvider: String, CaseIterable {
-    case openAI = "openai"
-    case workflowAI = "workflowai"
-}
-```
+This structure keeps the integration small and testable while making it easy to swap providers if needed.
 
 ## Implementation Details
 
-### 1. WorkflowAI Service
+### WorkflowAI Service
 
-**File**: `Play Genie/PlaylistGenerator/Services/WorkflowAIService.swift`
+**File**: `src/services/workflowai.ts`
 
-- Singleton service following the same pattern as `LLMService`
-- Handles API communication with WorkflowAI's playlist generation endpoint
-- Supports configurable caching policies (`auto`, `always`, `never`)
-- Includes comprehensive logging and error handling
+The `workflowAIService` encapsulates the direct integration with WorkflowAI's REST API. Key responsibilities include:
 
-**Key Features**:
-- Memory usage monitoring
-- Request/response logging
-- Configurable timeout settings
-- JSON response parsing with fallback handling
+- Constructing the request body with `task_input.prompt`, `version`, and `use_cache` options.
+- Performing a `fetch` call against `https://run.workflowai.com/v1/@sergiowpfmecom/tasks/playlist-generator/schemas/1/run` with the appropriate headers.
+- Logging request/response metadata for debugging purposes.
+- Normalizing the API response into the application's `PlaylistGenerationResult` shape.
+- Surfacing configuration helpers such as `isConfigured()` and `getStatus()`.
 
-### 2. Unified AI Service
+Consult the service class for the full implementation, including TypeScript interfaces describing request and response payloads.
 
-**File**: `Play Genie/PlaylistGenerator/Services/UnifiedAIService.swift`
+### Example Usage
 
-Acts as a facade pattern implementation that:
-- Switches between OpenAI and WorkflowAI based on configuration
-- Maintains consistent interface for the rest of the app
-- Provides provider status checking
-- Handles provider-specific capabilities
+```ts
+import { workflowAIService } from "@/services/workflowai";
 
-### 3. Configuration System
-
-**File**: `Play Genie/PlaylistGenerator/Config/AIProviderConfig.swift`
-
-Centralized configuration management:
-- Environment variable support for testing
-- UserDefaults persistence for user preferences
-- Provider capability definitions
-- URL and parameter configuration
-
-### 4. API Keys Management
-
-**File**: `Play Genie/PlaylistGenerator/Config/APIKeys.swift`
-
-Updated to include WorkflowAI API key:
-```swift
-static let workflowAIApiKey = "{Add your WorkflowAI API key here}"
+const playlist = await workflowAIService.generatePlaylist(prompt, {
+  version: "dev",
+  useCache: "auto",
+});
 ```
 
-### 5. Settings UI Integration
-
-**File**: `Play Genie/PlaylistGenerator/Views/SettingsView.swift`
-
-Added AI Provider section with:
-- Current provider display
-- Provider selection interface
-- Configuration status indicators
-- Real-time switching capability
+The returned object contains the playlist name, description, and normalized song metadata ready to pass to UI components or persistence layers.
 
 ## WorkflowAI API Integration
 
@@ -120,176 +85,34 @@ Content-Type: application/json
 
 ### Cache Options
 
-- `"auto"` (default): Uses cache if temperature is 0 and previous run exists
-- `"always"`: Always uses cached output when available
-- `"never"`: Never uses cache
+- `"auto"` (default): Uses cache if temperature is 0 and previous run exists.
+- `"always"`: Always uses cached output when available.
+- `"never"`: Never uses cache.
+
+## Setup Instructions
+
+1. **Provide the WorkflowAI API key**:
+   ```bash
+   export NEXT_PUBLIC_WORKFLOWAI_API_KEY="your_actual_api_key_here"
+   ```
+   The `workflowAIService` reads this value during initialization and will warn if it is missing.
+
+2. **Verify configuration**:
+   - Call `workflowAIService.isConfigured()` or inspect `workflowAIService.getStatus()` to ensure the API key has been detected.
+   - Use any relevant settings UI to confirm that WorkflowAI appears as an available provider.
+
+3. **Generate playlists**:
+   - Invoke `workflowAIService.generatePlaylist(prompt, options)` and handle the normalized result in your feature code.
 
 ## Benefits of WorkflowAI Integration
 
-### 1. **Centralized Prompt Management**
-- Server-side prompt templates
-- Easy A/B testing of different prompts
-- No app updates required for prompt changes
-
-### 2. **Provider Flexibility**
-- Easy switching between AI models
-- Cost optimization opportunities
-- Reduced vendor lock-in
-
-### 3. **Enhanced Monitoring**
-- Server-side analytics
-- Performance metrics
-- Usage tracking
-
-### 4. **Simplified Deployment**
-- Managed infrastructure
-- Automatic scaling
-- Built-in caching
-
-## Usage Instructions
-
-### For Developers
-
-1. **Add WorkflowAI API Key**:
-   ```swift
-   // In APIKeys.swift
-   static let workflowAIApiKey = "your_actual_api_key_here"
-   ```
-
-2. **Switch Provider Programmatically**:
-   ```swift
-   UnifiedAIService.shared.switchProvider(to: .workflowAI)
-   ```
-
-3. **Check Provider Status**:
-   ```swift
-   let (current, configured) = UnifiedAIService.shared.getProviderStatus()
-   ```
-
-### For Users
-
-1. Open Settings in the app
-2. Navigate to "AI Provider" section
-3. Select desired provider (OpenAI or WorkflowAI)
-4. Verify configuration status (green checkmark = configured)
-
-## Configuration Options
-
-### Environment Variables
-
-Set `AI_PROVIDER` environment variable for testing:
-```bash
-AI_PROVIDER=workflowai  # or "openai"
-```
-
-### UserDefaults Keys
-
-- `ai_provider_preference`: Stores user's provider choice
-- Persists across app launches
-
-### Provider-Specific Settings
-
-**WorkflowAI**:
-- Base URL: `https://run.workflowai.com`
-- Default version: `"dev"`
-- Default cache policy: `"auto"`
-- Timeout: 60 seconds (request), 300 seconds (resource)
-
-**OpenAI**:
-- Maintains existing configuration
-- Direct API integration
-- Custom prompt management
-
-## Error Handling
-
-### WorkflowAI Specific Errors
-
-1. **API Key Issues**: Clear error messages for invalid/missing keys
-2. **Network Timeouts**: Automatic retry logic for transient failures
-3. **Response Parsing**: Fallback handling for malformed JSON
-4. **Rate Limiting**: Proper error propagation with user-friendly messages
-
-### Fallback Strategy
-
-- If WorkflowAI fails, the system can be manually switched to OpenAI
-- Error messages guide users to check configuration
-- Logging provides detailed debugging information
-
-## Testing
-
-### Unit Tests
-
-Test coverage includes:
-- Provider switching logic
-- Configuration validation
-- API request/response handling
-- Error scenarios
-
-### Integration Tests
-
-- End-to-end playlist generation
-- Provider switching during runtime
-- Configuration persistence
-
-## Future Enhancements
-
-### Planned Features
-
-1. **Automatic Failover**: Switch providers on repeated failures
-2. **Load Balancing**: Distribute requests across multiple providers
-3. **Cost Tracking**: Monitor usage and costs per provider
-4. **Advanced Caching**: Client-side caching with TTL
-5. **Prompt Versioning**: A/B test different prompt versions
-
-### WorkflowAI Extensions
-
-1. **Image Generation**: Integrate DALL-E tasks via WorkflowAI
-2. **Custom Tasks**: Support for additional AI workflows
-3. **Batch Processing**: Multiple playlist generation
-4. **Analytics Integration**: Usage metrics and performance tracking
+1. **Centralized Prompt Management** – Prompt templates can be iterated on server-side without client updates.
+2. **Provider Flexibility** – Seamless switching between AI models for cost and performance optimization.
+3. **Enhanced Monitoring** – Access to WorkflowAI's analytics and performance metrics.
+4. **Simplified Deployment** – Managed infrastructure, automatic scaling, and built-in caching.
 
 ## Troubleshooting
 
-### Common Issues
+- If requests fail with `WorkflowAI API key is required`, ensure `NEXT_PUBLIC_WORKFLOWAI_API_KEY` is defined in your environment (e.g., `.env.local`).
+- Inspect console logs for detailed request/response diagnostics emitted by `workflowAIService`.
 
-1. **"Provider not configured" error**:
-   - Check API key in `APIKeys.swift`
-   - Verify network connectivity
-   - Confirm WorkflowAI account access
-
-2. **Slow response times**:
-   - Check WorkflowAI service status
-   - Consider switching to OpenAI temporarily
-   - Review cache settings
-
-3. **JSON parsing errors**:
-   - Check WorkflowAI task output format
-   - Verify schema compatibility
-   - Review logs for detailed error information
-
-### Debug Information
-
-Enable detailed logging by checking:
-- Console output for request/response details
-- Network logs for API communication
-- Memory usage monitoring
-
-## Security Considerations
-
-### API Key Management
-
-- Store API keys securely (not in version control)
-- Use environment variables for development
-- Consider key rotation policies
-
-### Data Privacy
-
-- Review WorkflowAI data handling policies
-- Understand data retention and processing
-- Ensure compliance with privacy requirements
-
-## Conclusion
-
-The WorkflowAI integration provides a robust, scalable alternative to direct OpenAI integration while maintaining full backward compatibility. The unified architecture allows for easy provider switching and future extensibility.
-
-For questions or issues, refer to the troubleshooting section or check the implementation files for detailed code documentation. 
