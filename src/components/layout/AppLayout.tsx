@@ -25,24 +25,27 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className="h-screen flex flex-col bg-white">
       {/* Mobile Header */}
       <div className="md:hidden flex items-center justify-between p-3 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
-            <span className="text-white text-xs font-bold">MG</span>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggleSidebar}
+            className="p-1.5"
+            aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+          >
+            {sidebarOpen ? (
+              <X className="w-5 h-5" />
+            ) : (
+              <Menu className="w-5 h-5" />
+            )}
+          </Button>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
+              <span className="text-white text-xs font-bold">MG</span>
+            </div>
+            <h1 className="text-base font-semibold text-gray-900">{siteConfig.name}</h1>
           </div>
-          <h1 className="text-base font-semibold text-gray-900">{siteConfig.name}</h1>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={toggleSidebar}
-          className="p-1.5"
-        >
-          {sidebarOpen ? (
-            <X className="w-4 h-4" />
-          ) : (
-            <Menu className="w-4 h-4" />
-          )}
-        </Button>
       </div>
 
       {/* Main Content Area */}
@@ -50,7 +53,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         {/* Mobile Sidebar Overlay */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 md:hidden"
+            className="fixed inset-0 bg-black/40 backdrop-blur-[1px] z-40 md:hidden"
             onClick={closeSidebar}
           />
         )}
@@ -64,7 +67,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
         
         {/* Main Content */}
-        <main className="flex-1 bg-white overflow-y-auto w-full">
+        <main className={`flex-1 bg-white overflow-y-auto w-full transform transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? 'translate-x-64 md:translate-x-0' : ''}`}>
           {children}
         </main>
       </div>
