@@ -8,13 +8,22 @@ export default function TestLoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ success?: boolean; error?: string } | null>(null);
+  const supabaseClient = supabase;
+  const missingSupabaseMessage =
+    "Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to test login.";
 
   const handleLogin = async () => {
     setLoading(true);
     setResult(null);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      if (!supabaseClient) {
+        console.warn("Skipping test login because the Supabase client is unavailable.");
+        setResult({ error: missingSupabaseMessage });
+        return;
+      }
+
+      const { data, error } = await supabaseClient.auth.signInWithPassword({
         email,
         password,
       });
@@ -39,7 +48,13 @@ export default function TestLoginPage() {
     setResult(null);
 
     try {
-      const { error } = await supabase.auth.getSession();
+      if (!supabaseClient) {
+        console.warn("Skipping session check because the Supabase client is unavailable.");
+        setResult({ error: missingSupabaseMessage });
+        return;
+      }
+
+      const { error } = await supabaseClient.auth.getSession();
       if (error) {
         setResult({ error: error.message });
       } else {
@@ -60,6 +75,12 @@ export default function TestLoginPage() {
             Teste de Login
           </h2>
         </div>
+
+        {!supabaseClient && (
+          <div className="rounded-md border border-yellow-300 bg-yellow-50 p-4 text-sm text-yellow-800">
+            {missingSupabaseMessage}
+          </div>
+        )}
 
         <div className="space-y-4">
           <div>
@@ -91,7 +112,7 @@ export default function TestLoginPage() {
           <div className="space-y-2">
             <button
               onClick={handleLogin}
-              disabled={loading}
+              disabled={loading || !supabaseClient}
               className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               {loading ? "Fazendo login..." : "Fazer Login"}
@@ -99,7 +120,7 @@ export default function TestLoginPage() {
 
             <button
               onClick={handleCheckSession}
-              disabled={loading}
+              disabled={loading || !supabaseClient}
               className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
             >
               Verificar Sessão
