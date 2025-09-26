@@ -1,10 +1,9 @@
 'use client';
 
-import GeneratePage from "../generate/page";
+import PromptGeneratorPanel from '@/features/playlist/components/PromptGeneratorPanel';
 
 export default function NewPlaylistPage() {
-  // Reusa a UI de geração existente por enquanto
-  return <GeneratePage />;
+  return <PromptGeneratorPanel />;
 }
 
 
