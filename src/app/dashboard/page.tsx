@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -42,48 +42,15 @@ export default function DashboardPage() {
   const [playlistsError, setPlaylistsError] = useState<string | null>(null);
   const [fixingTrackCounts, setFixingTrackCounts] = useState(false);
   const { toggleFavorite } = useFavoriteToggle();
+  const supabaseClient = supabase;
+  const missingSupabaseMessage =
+    "Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable dashboard features.";
 
-  useEffect(() => {
-    async function getUser() {
-      try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
-        if (!user) {
-          router.push("/login");
-          return;
-        }
-
-        setUser(user);
-
-        // Check if user has Spotify connected
-        if (user) {
-          const { data: userData } = await supabase
-            .from('users')
-            .select('spotify_user_id')
-            .eq('id', user.id)
-            .single();
-          
-          setSpotifyConnected(!!userData?.spotify_user_id);
-        }
-
-        // Load user playlists
-        await loadPlaylists();
-      } catch (error) {
-        console.error("Error fetching user:", error);
-        router.push("/login");
-      } finally {
-        // setLoading(false); // Removed as per edit hint
-      }
-    }
-
-    getUser();
-  }, [router]);
-
-  const loadPlaylists = async () => {
+  const loadPlaylists = useCallback(async () => {
     try {
       setLoadingPlaylists(true);
       setPlaylistsError(null);
-      
+
       const response = await fetch('/api/playlists/user?limit=8'); // Get first 8 playlists for dashboard
       
       if (!response.ok) {
@@ -98,7 +65,49 @@ export default function DashboardPage() {
     } finally {
       setLoadingPlaylists(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    async function getUser() {
+      if (!supabaseClient) {
+        console.warn("Skipping dashboard Supabase calls because the client is unavailable.");
+        setPlaylistsError(missingSupabaseMessage);
+        setLoadingPlaylists(false);
+        return;
+      }
+      try {
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
+        if (!user) {
+          router.push("/login");
+          return;
+        }
+
+        setUser(user);
+
+        // Check if user has Spotify connected
+        if (user) {
+          const { data: userData } = await supabaseClient
+            .from('users')
+            .select('spotify_user_id')
+            .eq('id', user.id)
+            .single();
+
+          setSpotifyConnected(!!userData?.spotify_user_id);
+        }
+
+        // Load user playlists
+        await loadPlaylists();
+      } catch (error) {
+        console.error("Error fetching user:", error);
+        router.push("/login");
+      } finally {
+        // setLoading(false); // Removed as per edit hint
+      }
+    }
+
+    getUser();
+  }, [router, supabaseClient, missingSupabaseMessage, loadPlaylists]);
 
   const handleConnectSpotify = async () => {
     setConnectingSpotify(true);
@@ -157,6 +166,23 @@ export default function DashboardPage() {
       );
     }
   };
+
+  if (!supabaseClient) {
+    return (
+      <ScrollArea className="h-full">
+        <div className="p-4 md:p-6 lg:p-8 max-w-3xl mx-auto">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Supabase configuration missing</h2>
+              <p className="text-gray-600 text-sm">
+                {missingSupabaseMessage}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </ScrollArea>
+    );
+  }
 
   if (!user) {
     return null;

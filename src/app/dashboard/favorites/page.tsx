@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
@@ -69,12 +69,59 @@ export default function FavoritesPage() {
     timeRange: '',
   });
   const { toggleFavorite } = useFavoriteToggle();
+  const supabaseClient = supabase;
+  const missingSupabaseMessage =
+    "Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable favorites features.";
+
+  const loadPlaylists = useCallback(async (page: number) => {
+    try {
+      setLoadingPlaylists(true);
+      setPlaylistsError(null);
+
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('limit', pagination.limit.toString());
+      params.append('search', filters.search);
+      params.append('sortBy', filters.sortBy);
+      params.append('sortOrder', filters.sortOrder);
+      params.append('favoritesOnly', filters.favoritesOnly.toString());
+      if (filters.genre) params.append('genre', filters.genre);
+      if (filters.mood) params.append('mood', filters.mood);
+      if (filters.energyLevel) params.append('energy_level', filters.energyLevel);
+      if (filters.instruments && filters.instruments.length > 0) params.append('instruments', filters.instruments.join(','));
+      if (filters.themes && filters.themes.length > 0) params.append('themes', filters.themes.join(','));
+      if (filters.years && filters.years.length > 0) params.append('years', filters.years.join(','));
+      if (filters.duration) params.append('duration', filters.duration);
+      if (filters.timeRange) params.append('time_range', filters.timeRange);
+
+      const response = await fetch(`/api/playlists/user?${params}`);
+
+      if (!response.ok) {
+        throw new Error('Failed to load playlists');
+      }
+
+      const data = await response.json();
+      setPlaylists(data.playlists || []);
+      setPagination(prev => data.pagination || prev);
+    } catch (error) {
+      console.error('Error loading playlists:', error);
+      setPlaylistsError('Failed to load playlists');
+    } finally {
+      setLoadingPlaylists(false);
+    }
+  }, [filters, pagination.limit]);
 
   useEffect(() => {
     async function getUser() {
+      if (!supabaseClient) {
+        console.warn("Skipping favorites Supabase calls because the client is unavailable.");
+        setPlaylistsError(missingSupabaseMessage);
+        setLoading(false);
+        return;
+      }
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        
+        const { data: { user } } = await supabaseClient.auth.getUser();
+
         if (!user) {
           router.push("/login");
           return;
@@ -91,52 +138,14 @@ export default function FavoritesPage() {
     }
 
     getUser();
-  }, [router]);
+  }, [router, supabaseClient, missingSupabaseMessage, loadPlaylists]);
 
   // Load playlists when filters change
   useEffect(() => {
-    if (user) {
+    if (supabaseClient && user) {
       loadPlaylists(1);
     }
-  }, [filters]);
-
-  const loadPlaylists = async (page: number = pagination.page) => {
-    try {
-      setLoadingPlaylists(true);
-      setPlaylistsError(null);
-      
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('limit', pagination.limit.toString());
-      params.append('search', filters.search);
-      params.append('sortBy', filters.sortBy);
-      params.append('sortOrder', filters.sortOrder);
-      params.append('favoritesOnly', filters.favoritesOnly.toString());
-      if (filters.genre) params.append('genre', filters.genre);
-      if (filters.mood) params.append('mood', filters.mood);
-      if (filters.energyLevel) params.append('energy_level', filters.energyLevel);
-      if (filters.instruments && filters.instruments.length > 0) params.append('instruments', filters.instruments.join(','));
-      if (filters.themes && filters.themes.length > 0) params.append('themes', filters.themes.join(','));
-      if (filters.years && filters.years.length > 0) params.append('years', filters.years.join(','));
-      if (filters.duration) params.append('duration', filters.duration);
-      if (filters.timeRange) params.append('time_range', filters.timeRange);
-      
-      const response = await fetch(`/api/playlists/user?${params}`);
-      
-      if (!response.ok) {
-        throw new Error('Failed to load playlists');
-      }
-      
-      const data = await response.json();
-      setPlaylists(data.playlists || []);
-      setPagination(data.pagination || pagination);
-    } catch (error) {
-      console.error('Error loading playlists:', error);
-      setPlaylistsError('Failed to load playlists');
-    } finally {
-      setLoadingPlaylists(false);
-    }
-  };
+  }, [filters, supabaseClient, user, loadPlaylists]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('pt-BR', {
@@ -176,6 +185,23 @@ export default function FavoritesPage() {
           <p className="text-gray-600">Carregando...</p>
         </div>
       </div>
+    );
+  }
+
+  if (!supabaseClient) {
+    return (
+      <ScrollArea className="h-full">
+        <div className="p-4 md:p-8 max-w-3xl mx-auto">
+          <Card>
+            <CardContent className="p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Supabase configuration missing</h2>
+              <p className="text-gray-600 text-sm">
+                {missingSupabaseMessage}
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </ScrollArea>
     );
   }
 
