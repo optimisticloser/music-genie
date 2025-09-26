@@ -36,6 +36,18 @@ export async function generatePlaylistCover(
   playlistId: string,
   options: GeneratePlaylistCoverOptions = {}
 ) {
+  // Temporariamente desabilitado devido a problemas com o modelo Gemini no WorkflowAI
+  const COVER_GENERATION_ENABLED = false;
+  
+  if (!COVER_GENERATION_ENABLED) {
+    console.log("⚠️ Cover art generation temporarily disabled due to WorkflowAI model issues");
+    options.onStatus?.({
+      stage: "error",
+      message: "Cover art generation temporarily unavailable"
+    });
+    return;
+  }
+
   try {
     console.log("🎨 Starting async cover art generation for playlist:", playlistId);
     options.onStatus?.({ stage: "started" });
@@ -52,6 +64,8 @@ export async function generatePlaylistCover(
       output,
       data: { duration_seconds, cost_usd, version },
     } = await playlistCoverArtGeneration(input);
+
+    console.log("🔍 Debug - Cover art output:", JSON.stringify(output, null, 2));
 
     if (output?.cover_art) {
       console.log("✅ Cover art generated successfully:", {
