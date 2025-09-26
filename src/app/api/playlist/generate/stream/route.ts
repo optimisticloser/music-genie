@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import type { RunStreamEvent } from "@workflowai/workflowai";
+import type { Database } from "@/lib/supabase/database.types";
 import {
   playlistGeneratorAgent,
   PlaylistGeneratorInput,
@@ -194,7 +195,7 @@ async function fetchPlaylistSnapshot(
     console.error("Error fetching playlist metadata snapshot", metadataError);
   }
 
-  const tracks: EnrichedSong[] = (tracksData || []).map((track, index: number) => {
+  const tracks: EnrichedSong[] = (tracksData || []).map((track: Database["public"]["Tables"]["playlist_tracks"]["Row"], index: number) => {
     const spotifyId =
       track.spotify_track_id && !track.spotify_track_id.startsWith("not_found_")
         ? track.spotify_track_id
