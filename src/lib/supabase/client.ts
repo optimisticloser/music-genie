@@ -1,11 +1,22 @@
 import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./database.types";
 
-export const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-export default function createClient() {
-  return supabase;
-} 
+let supabaseClient: SupabaseClient<Database> | null = null;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.warn(
+    "Supabase credentials are missing. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable Supabase features."
+  );
+} else {
+  supabaseClient = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+}
+
+export const supabase = supabaseClient;
+
+export default function createClient(): SupabaseClient<Database> | null {
+  return supabaseClient;
+}
