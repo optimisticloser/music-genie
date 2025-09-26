@@ -12,7 +12,7 @@ import {
   Play, 
   MoreHorizontal
 } from "lucide-react";
-import { supabase } from "@/lib/supabase/client";
+import createClient from "@/lib/supabase/client";
 import { PlaylistFilters, PlaylistFiltersState } from "@/components/shared/PlaylistFilters";
 import { useFavoriteToggle } from "@/hooks/useFavoriteToggle";
 
@@ -73,8 +73,9 @@ export default function FavoritesPage() {
   useEffect(() => {
     async function getUser() {
       try {
+        const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
-        
+
         if (!user) {
           router.push("/login");
           return;
