@@ -104,7 +104,10 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   };
 
   return (
-    <div className="w-64 md:w-72 h-full bg-gray-50 border-r border-gray-200 flex flex-col touch-pan-y will-change-transform">
+    <div
+      className="w-64 md:w-72 h-full bg-gray-50 border-r border-gray-200 flex flex-col touch-pan-y will-change-transform"
+      style={{ paddingTop: 'env(safe-area-inset-top, 0px)', paddingBottom: 'env(safe-area-inset-bottom, 0px)' }}
+    >
       <div className="hidden md:flex p-4 border-b border-gray-200 sticky top-0 bg-gray-50 z-10">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 bg-gradient-to-br from-red-500 to-pink-600 rounded-lg flex items-center justify-center">
@@ -114,7 +117,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
         </div>
       </div>
 
-      <div className="p-3 md:p-4 sticky top-14 bg-gray-50 z-10 border-b border-gray-200">
+      <div className="p-3 md:p-4 md:sticky md:top-14 bg-gray-50 z-10 border-b border-gray-200">
         <div
           role="button"
           tabIndex={0}
@@ -126,7 +129,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
         </div>
       </div>
 
-      <div className="px-3 md:px-4 pb-3 sticky top-[84px] bg-gray-50 z-10 border-b border-gray-200">
+      <div className="px-3 md:px-4 pb-3 md:sticky md:top-[84px] bg-gray-50 z-10 border-b border-gray-200">
         <div className="relative">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
