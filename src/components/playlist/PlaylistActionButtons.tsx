@@ -70,7 +70,7 @@ export function PlaylistActionButtons({
   };
 
   return (
-    <div className="flex flex-col sm:flex-row justify-center gap-3 md:gap-4">
+    <div className="flex w-full flex-col sm:flex-row justify-start sm:items-center gap-3 md:gap-4">
       {resolvedSpotifyUrl && (
         <Button
           className="px-6 md:px-8 lg:px-12 py-3 md:py-4 text-base md:text-lg bg-green-600 hover:bg-green-700"
@@ -121,7 +121,7 @@ export function FavoriteButton({
     <Button
       variant="ghost"
       size="sm"
-      className="text-white hover:bg-white/20 p-1 md:p-2"
+      className="text-white hover:bg-white/20 p-1 md:p-2 rounded-full"
       onClick={handleToggle}
       disabled={isLoading}
     >
