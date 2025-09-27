@@ -45,7 +45,8 @@ type StreamEventName =
   | "cover_status"
   | "playlist_saved"
   | "complete"
-  | "error";
+  | "error"
+  | "diagnostic";
 
 const encoder = new TextEncoder();
 
@@ -392,6 +393,11 @@ export async function POST(req: NextRequest) {
         enqueueEvent(controller, event, payload);
 
       try {
+        notify("diagnostic", {
+          stage: "request_body",
+          payload: body,
+          received_at: new Date().toISOString(),
+        });
         notify("status", {
           stage: "starting",
           message: "Preparando geração da playlist…",
@@ -591,19 +597,38 @@ export async function POST(req: NextRequest) {
 
               try {
                 const searchQuery = artist + " " + title;
-                const response = await fetch(
+                const searchUrl =
                   "https://api.spotify.com/v1/search?q=" +
-                    encodeURIComponent(searchQuery) +
-                    "&type=track&limit=1",
-                  {
-                    headers: {
-                      Authorization: "Bearer " + spotifyAccessToken,
-                    },
-                  }
-                );
+                  encodeURIComponent(searchQuery) +
+                  "&type=track&limit=1";
+
+                notify("diagnostic", {
+                  stage: "spotify_search_request",
+                  index,
+                  payload: {
+                    query: searchQuery,
+                    url: searchUrl,
+                  },
+                  timestamp: new Date().toISOString(),
+                });
+
+                const response = await fetch(searchUrl, {
+                  headers: {
+                    Authorization: "Bearer " + spotifyAccessToken,
+                  },
+                });
 
                 if (response.ok) {
                   const searchData = await response.json();
+                  notify("diagnostic", {
+                    stage: "spotify_search_response",
+                    index,
+                    payload: {
+                      status: response.status,
+                      body: searchData,
+                    },
+                    timestamp: new Date().toISOString(),
+                  });
                   const track = searchData.tracks?.items?.[0];
                   if (track) {
                     const enriched: EnrichedSong = {
@@ -629,6 +654,19 @@ export async function POST(req: NextRequest) {
                   }
                 }
 
+                if (!response.ok) {
+                  const errorText = await response.text();
+                  notify("diagnostic", {
+                    stage: "spotify_search_response",
+                    index,
+                    payload: {
+                      status: response.status,
+                      error: errorText,
+                    },
+                    timestamp: new Date().toISOString(),
+                  });
+                }
+
                 updateEnrichedSongAtIndex(index, {
                   title,
                   artist,
@@ -641,6 +679,15 @@ export async function POST(req: NextRequest) {
                 });
               } catch (error) {
                 console.error("Spotify search error", error);
+                notify("diagnostic", {
+                  stage: "spotify_search_error",
+                  index,
+                  payload: {
+                    message:
+                      error instanceof Error ? error.message : String(error),
+                  },
+                  timestamp: new Date().toISOString(),
+                });
                 updateEnrichedSongAtIndex(index, {
                   title,
                   artist,
@@ -777,18 +824,31 @@ export async function POST(req: NextRequest) {
             spotify_playlist_id: existingSnapshot.playlist.spotify_playlist_id || undefined,
           });
 
+          notify("diagnostic", {
+            stage: "existing_playlist_snapshot",
+            payload: existingSnapshot,
+            timestamp: new Date().toISOString(),
+          });
+
           notify("status", {
             stage: "spotify_connection",
             connected: isSpotifyConnected && !!spotifyAccessToken,
           });
 
-          notify("complete", {
+          const existingCompletePayload = {
             playlist: existingSnapshot.playlist,
             tracks: existingSnapshot.tracks,
             metadata: existingSnapshot.metadata,
             songs: existingSnapshot.tracks,
             spotify_connected: isSpotifyConnected && !!spotifyAccessToken,
             metrics: null,
+          };
+
+          notify("complete", existingCompletePayload);
+          notify("diagnostic", {
+            stage: "complete_payload",
+            payload: existingCompletePayload,
+            timestamp: new Date().toISOString(),
           });
           return;
         }
@@ -810,6 +870,11 @@ export async function POST(req: NextRequest) {
                 | undefined
             );
             notify("ai_update", { output: chunk.output });
+            notify("diagnostic", {
+              stage: "workflow_ai_update",
+              payload: chunk.output,
+              timestamp: new Date().toISOString(),
+            });
           }
         }
 
@@ -820,6 +885,11 @@ export async function POST(req: NextRequest) {
         notify("status", {
           stage: "ai_complete",
           message: "IA finalizada. Buscando músicas no Spotify…",
+        });
+        notify("diagnostic", {
+          stage: "workflow_ai_complete",
+          payload: latestOutput,
+          timestamp: new Date().toISOString(),
         });
 
         notify("status", {
@@ -840,6 +910,16 @@ export async function POST(req: NextRequest) {
           if (foundSongs.length > 0) {
             const currentUser = await getCurrentUser(spotifyAccessToken);
             if (currentUser) {
+              notify("diagnostic", {
+                stage: "spotify_create_playlist_request",
+                payload: {
+                  user_id: currentUser.id,
+                  name: latestOutput.name || "Generated Playlist",
+                  description: latestOutput.essay || "AI-generated playlist",
+                  public: false,
+                },
+                timestamp: new Date().toISOString(),
+              });
               spotifyPlaylistId = await createPlaylist(
                 currentUser.id,
                 latestOutput.name || "Generated Playlist",
@@ -847,9 +927,30 @@ export async function POST(req: NextRequest) {
                 spotifyAccessToken,
                 false
               );
+              notify("diagnostic", {
+                stage: "spotify_create_playlist_response",
+                payload: spotifyPlaylistId,
+                timestamp: new Date().toISOString(),
+              });
 
               const uris = foundSongs.map((song) => "spotify:track:" + song.spotify_id);
+              notify("diagnostic", {
+                stage: "spotify_add_tracks_request",
+                payload: {
+                  playlist_id: spotifyPlaylistId.id,
+                  uris,
+                },
+                timestamp: new Date().toISOString(),
+              });
               await addTracksToPlaylist(spotifyPlaylistId.id, uris, spotifyAccessToken);
+              notify("diagnostic", {
+                stage: "spotify_add_tracks_response",
+                payload: {
+                  playlist_id: spotifyPlaylistId.id,
+                  added: uris.length,
+                },
+                timestamp: new Date().toISOString(),
+              });
             }
           }
         } else if (isSpotifyConnected && !spotifyAccessToken && enrichedSongs.length > 0) {
@@ -868,6 +969,14 @@ export async function POST(req: NextRequest) {
           songs: enrichedSongs,
           spotifyPlaylistId,
         });
+
+        if (playlistSnapshot) {
+          notify("diagnostic", {
+            stage: "playlist_saved_snapshot",
+            payload: playlistSnapshot,
+            timestamp: new Date().toISOString(),
+          });
+        }
 
         notify("playlist_saved", {
           playlist_id: playlistSnapshot?.playlist?.id,
@@ -914,16 +1023,30 @@ export async function POST(req: NextRequest) {
             )) || playlistSnapshot;
         }
 
-        notify("complete", {
+        const completePayload = {
           playlist: playlistSnapshot?.playlist || latestOutput,
           tracks: playlistSnapshot?.tracks || enrichedSongs,
           metadata: playlistSnapshot?.metadata || null,
           songs: enrichedSongs,
           spotify_connected: isSpotifyConnected && !!spotifyAccessToken,
           metrics,
+        };
+
+        notify("complete", completePayload);
+        notify("diagnostic", {
+          stage: "complete_payload",
+          payload: completePayload,
+          timestamp: new Date().toISOString(),
         });
       } catch (error) {
         console.error("Streaming playlist generation error", error);
+        notify("diagnostic", {
+          stage: "error",
+          payload: {
+            message: error instanceof Error ? error.message : String(error),
+          },
+          timestamp: new Date().toISOString(),
+        });
         notify("error", {
           message: error instanceof Error ? error.message : "Unknown error",
         });

@@ -2,12 +2,22 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
-import { Music, Clock, Calendar, Loader2 } from "lucide-react";
+import { Music, Clock, Calendar, Loader2, Bug } from "lucide-react";
 import { FavoriteButton } from "@/components/playlist/PlaylistActionButtons";
 import { ExpandableDescription } from "@/components/playlist/ExpandableDescription";
 import { PlaylistActionButtons } from "@/components/playlist/PlaylistPageClient";
 import { usePlaylistGenerationStream, CoverStatusEvent } from "@/hooks/usePlaylistGenerationStream";
 import type { PlaylistGeneratorOutput } from "@/lib/workflowai/agents";
+import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface InitialTrack {
   title?: string | null;
@@ -101,6 +111,28 @@ interface PlaylistViewState {
   status?: string | null;
   tracks: TrackView[];
   metadata?: InitialMetadata | null;
+}
+
+const DIAGNOSTIC_LABELS: Record<string, string> = {
+  client_request: "Requisição enviada pelo app",
+  request_body: "JSON recebido pelo backend",
+  workflow_ai_update: "Atualização parcial do WorkflowAI",
+  workflow_ai_complete: "Saída final do WorkflowAI",
+  spotify_search_request: "Busca no Spotify (requisição)",
+  spotify_search_response: "Busca no Spotify (resposta)",
+  spotify_search_error: "Erro na busca do Spotify",
+  spotify_create_playlist_request: "Criação de playlist no Spotify (requisição)",
+  spotify_create_playlist_response: "Criação de playlist no Spotify (resposta)",
+  spotify_add_tracks_request: "Envio de faixas ao Spotify (requisição)",
+  spotify_add_tracks_response: "Envio de faixas ao Spotify (resposta)",
+  playlist_saved_snapshot: "Snapshot salvo da playlist",
+  existing_playlist_snapshot: "Snapshot existente da playlist",
+  complete_payload: "Payload final retornado",
+  error: "Erro na execução",
+};
+
+function formatDiagnosticLabel(stage: string): string {
+  return DIAGNOSTIC_LABELS[stage] ?? stage;
 }
 
 function formatDuration(ms?: number | null): string {
@@ -320,6 +352,7 @@ export function PlaylistLiveView({
     completeData,
     coverStatus,
     coverArtUrl,
+    diagnostics,
   } = usePlaylistGenerationStream();
 
   const shouldAutoGenerate = autoGenerate || (initial.status ?? "draft") === "draft";
@@ -466,10 +499,75 @@ export function PlaylistLiveView({
                 <span>{coverMessage}</span>
               </div>
 
-              <PlaylistActionButtons
-                playlistId={viewState.id}
-                spotifyPlaylistId={viewState.spotify_playlist_id || spotifyPlaylistId || undefined}
-              />
+              <div className="flex flex-wrap items-center gap-2 md:gap-3">
+                <PlaylistActionButtons
+                  playlistId={viewState.id}
+                  spotifyPlaylistId={
+                    viewState.spotify_playlist_id || spotifyPlaylistId || undefined
+                  }
+                />
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className="px-3 md:px-4 py-2 md:py-3 text-xs md:text-sm bg-white/20 border-white/30 text-white hover:bg-white/30"
+                    >
+                      <Bug className="w-4 h-4 mr-2" />
+                      Diagnóstico
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className="sm:max-w-4xl max-h-[80vh]">
+                    <DialogHeader>
+                      <DialogTitle>Diagnóstico em tempo real</DialogTitle>
+                      <DialogDescription>
+                        Visualize os dados crus trocados com a IA e o Spotify durante a geração
+                        desta playlist.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <ScrollArea className="mt-4 max-h-[60vh] pr-4">
+                      {diagnostics.length === 0 ? (
+                        <p className="text-sm text-muted-foreground">
+                          Nenhum evento de diagnóstico foi registrado ainda.
+                        </p>
+                      ) : (
+                        <div className="space-y-4">
+                          {diagnostics.map((entry, index) => {
+                            const label = formatDiagnosticLabel(entry.stage);
+                            const rawTimestamp =
+                              "timestamp" in entry.data &&
+                              typeof entry.data.timestamp === "string"
+                                ? (entry.data.timestamp as string)
+                                : undefined;
+                            const parsedTimestamp = rawTimestamp
+                              ? new Date(rawTimestamp)
+                              : new Date(entry.receivedAt);
+                            const displayDate = Number.isNaN(parsedTimestamp.getTime())
+                              ? new Date(entry.receivedAt)
+                              : parsedTimestamp;
+
+                            return (
+                              <div
+                                key={`${entry.stage}-${entry.receivedAt}-${index}`}
+                                className="border border-border rounded-lg p-3 bg-muted/20"
+                              >
+                                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 text-xs text-muted-foreground mb-2">
+                                  <span className="font-semibold text-foreground">
+                                    {label}
+                                  </span>
+                                  <span>{displayDate.toLocaleString("pt-BR")}</span>
+                                </div>
+                                <pre className="text-xs bg-background border border-border rounded-md p-3 whitespace-pre-wrap break-all">
+                                  {JSON.stringify(entry.data, null, 2)}
+                                </pre>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </ScrollArea>
+                  </DialogContent>
+                </Dialog>
+              </div>
             </div>
           </div>
         </div>

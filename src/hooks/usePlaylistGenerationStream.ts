@@ -25,6 +25,12 @@ type SpotifyProgressEvent = {
   message?: string;
 };
 
+type DiagnosticEvent = {
+  stage: string;
+  data: Record<string, unknown>;
+  receivedAt: number;
+};
+
 type PlaylistRecord = {
   id?: string;
   title?: string;
@@ -131,6 +137,7 @@ export function usePlaylistGenerationStream() {
     null
   );
   const [coverArtUrl, setCoverArtUrl] = useState<string | null>(null);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticEvent[]>([]);
 
   const funIndexRef = useRef(0);
 
@@ -163,6 +170,7 @@ export function usePlaylistGenerationStream() {
     setHasAiUpdate(false);
     setCoverStatusEvent(null);
     setCoverArtUrl(null);
+    setDiagnostics([]);
     funIndexRef.current = 0;
   }, []);
 
@@ -183,6 +191,20 @@ export function usePlaylistGenerationStream() {
       }
 
       resetState();
+      setDiagnostics([
+        {
+          stage: "client_request",
+          data: {
+            stage: "client_request",
+            payload: {
+              prompt,
+              playlist_id: playlistIdOverride ?? null,
+            },
+            timestamp: new Date().toISOString(),
+          },
+          receivedAt: Date.now(),
+        },
+      ]);
       setIsRunning(true);
       setStatus({
         stage: "starting",
@@ -292,6 +314,27 @@ export function usePlaylistGenerationStream() {
               setIsRunning(false);
               break;
             }
+            case "diagnostic": {
+              if (data && typeof data === "object") {
+                const record = data as Record<string, unknown>;
+                const stageValue =
+                  typeof record.stage === "string"
+                    ? (record.stage as string)
+                    : "diagnostic";
+                setDiagnostics((prev) => {
+                  const next = [
+                    ...prev,
+                    {
+                      stage: stageValue,
+                      data: record,
+                      receivedAt: Date.now(),
+                    },
+                  ];
+                  return next.length > 100 ? next.slice(next.length - 100) : next;
+                });
+              }
+              break;
+            }
             default: {
               break;
             }
@@ -366,5 +409,6 @@ export function usePlaylistGenerationStream() {
     completeData,
     coverStatus: coverStatusEvent,
     coverArtUrl,
+    diagnostics,
   };
 }
