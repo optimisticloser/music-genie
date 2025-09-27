@@ -387,8 +387,13 @@ export function PlaylistLiveView({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className={`bg-gradient-to-r ${displayGradient} px-4 md:px-6 lg:px-8 xl:px-12 py-4 md:py-6`}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+        <div className="max-w-7xl mx-auto relative">
+          <div className="absolute right-4 top-4 md:right-6 md:top-6">
+            <div className="rounded-full bg-black/30 border border-white/20 backdrop-blur-sm p-1 md:p-1.5">
+              <FavoriteButton playlistId={viewState.id} isFavorite={viewState.is_favorite} />
+            </div>
+          </div>
+          <div className="flex flex-col lg:flex-row gap-5 md:gap-6 lg:gap-8 items-stretch">
             <div className="w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-white/20 rounded-lg md:rounded-xl flex items-center justify-center shadow-2xl flex-shrink-0 overflow-hidden">
               {viewState.cover_art_url ? (
                 <Image
@@ -403,18 +408,16 @@ export function PlaylistLiveView({
               )}
             </div>
 
-            <div className="flex-1 min-w-0">
-              <div className="text-xs md:text-sm text-white/80 mb-1 md:mb-2">Playlist</div>
-              <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-start sm:items-center mb-2 md:mb-3">
-                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
+            <div className="flex-1 min-w-0 flex flex-col gap-3 md:gap-4">
+              <div>
+                <div className="text-xs md:text-sm text-white/80 mb-1 md:mb-2 uppercase tracking-wide">
+                  Playlist
+                </div>
+                <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white leading-tight">
                   {viewState.title || (isRunning ? "Preparando playlist…" : "Playlist sem título")}
                 </h1>
-                <FavoriteButton
-                  playlistId={viewState.id}
-                  isFavorite={viewState.is_favorite}
-                />
               </div>
-              <p className="text-sm md:text-base lg:text-lg text-white/90 mb-2 md:mb-3">
+              <p className="text-sm md:text-base lg:text-lg text-white/90">
                 Criado por {viewState.creator || "Você"}
               </p>
               {viewState.description ? (
@@ -436,24 +439,26 @@ export function PlaylistLiveView({
                   />
                 </div>
               )}
-                <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80 mb-3 md:mb-4">
-                  <div className="flex items-center gap-1">
-                    <Music className="w-3 h-3 md:w-4 md:h-4" />
-                  {viewState.total_tracks ?? (hasLoadedTracks ? readyTracks.length : 0)} músicas
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                    {formatPlaylistDuration(viewState.total_duration_ms)}
-                  </div>
+              <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80">
+                <div className="flex items-center gap-2">
+                  <Music className="w-3 h-3 md:w-4 md:h-4" />
+                  <span>
+                    {viewState.total_tracks ?? (hasLoadedTracks ? readyTracks.length : 0)} músicas
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                  <span>{formatPlaylistDuration(viewState.total_duration_ms)}</span>
+                </div>
                 {viewState.created_at && (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-2">
                     <Calendar className="w-3 h-3 md:w-4 md:h-4" />
-                    {new Date(viewState.created_at).toLocaleDateString("pt-BR")}
+                    <span>{new Date(viewState.created_at).toLocaleDateString("pt-BR")}</span>
                   </div>
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-white/80 mb-4">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-white/80">
                 {isRunning ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -466,10 +471,12 @@ export function PlaylistLiveView({
                 <span>{coverMessage}</span>
               </div>
 
-              <PlaylistActionButtons
-                playlistId={viewState.id}
-                spotifyPlaylistId={viewState.spotify_playlist_id || spotifyPlaylistId || undefined}
-              />
+              <div className="pt-2">
+                <PlaylistActionButtons
+                  playlistId={viewState.id}
+                  spotifyPlaylistId={viewState.spotify_playlist_id || spotifyPlaylistId || undefined}
+                />
+              </div>
             </div>
           </div>
         </div>
