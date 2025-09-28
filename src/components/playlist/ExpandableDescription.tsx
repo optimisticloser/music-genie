@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 interface ExpandableDescriptionProps {
   description: string;
@@ -15,6 +16,7 @@ export function ExpandableDescription({
   className = "" 
 }: ExpandableDescriptionProps) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const t = useTranslations("common.actions");
 
   // Check if description is long enough to need expansion
   const isLongDescription = description.length > 300; // Increased threshold
@@ -46,12 +48,12 @@ export function ExpandableDescription({
         >
           {isExpanded ? (
             <>
-              Ver menos
+              {t("viewLess")}
               <ChevronUp className="w-4 h-4" />
             </>
           ) : (
             <>
-              Ver mais
+              {t("viewMore")}
               <ChevronDown className="w-4 h-4" />
             </>
           )}
@@ -59,4 +61,4 @@ export function ExpandableDescription({
       )}
     </div>
   );
-} 
+}

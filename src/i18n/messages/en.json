@@ -1,0 +1,611 @@
+{
+  "common": {
+    "appName": "Music Genie",
+    "actions": {
+      "viewMore": "View more",
+      "viewLess": "View less"
+    }
+  },
+  "metadata": {
+    "title": "{appName} - AI playlist generator",
+    "description": "Create custom playlists with artificial intelligence and save them straight to Spotify. Discover new songs tailored to your taste.",
+    "keywords": "playlist, music, ai, artificial intelligence, spotify, playlist generator, personalized music, music discovery"
+  },
+  "auth": {
+    "common": {
+      "brandName": "Music Genie",
+      "emailLabel": "Email",
+      "emailPlaceholder": "you@example.com",
+      "passwordLabel": "Password",
+      "passwordPlaceholder": "••••••••",
+      "fullNameLabel": "Full name",
+      "fullNamePlaceholder": "Your full name",
+      "passwordHint": "Minimum 6 characters",
+      "backToLogin": "Back to sign in"
+    },
+    "messages": {
+      "invalidData": "Check the highlighted fields and try again.",
+      "invalidCredentials": "Incorrect email or password.",
+      "signUpFailed": "We couldn't create your account. Try again later.",
+      "invalidEmail": "Enter a valid email address.",
+      "resetFailed": "We couldn't send the reset email. Try again later.",
+      "checkEmail": "Check your inbox to confirm your account.",
+      "resetSent": "We sent you an email with reset instructions.",
+      "passwordTooShort": "Password must have at least 6 characters.",
+      "updatePasswordFailed": "We couldn't update your password. Try again later.",
+      "unexpected": "Something went wrong. Try again."
+    },
+    "login": {
+      "title": "Sign in",
+      "subtitle": "Use your email and password to access your account.",
+      "button": "Sign in",
+      "loading": "Signing in...",
+      "forgot": "Forgot your password?",
+      "signupPrompt": "Don't have an account? <link>Create one</link>"
+    },
+    "signup": {
+      "title": "Create account",
+      "subtitle": "Fill in the details below to get started.",
+      "button": "Create account",
+      "loading": "Creating account...",
+      "loginPrompt": "Already have an account? <link>Sign in</link>"
+    },
+    "forgot": {
+      "title": "Forgot your password?",
+      "subtitle": "Enter your email and we'll send a reset link.",
+      "button": "Send reset link",
+      "loading": "Sending...",
+      "back": "Back to sign in"
+    },
+    "codeError": {
+      "title": "Confirmation error",
+      "subtitle": "We found a problem while confirming your account.",
+      "messages": {
+        "no_code": "No confirmation code was provided. Please make sure you clicked the correct link in your email.",
+        "exchange_failed": "We couldn't process the confirmation: {description}.",
+        "no_user": "We couldn't retrieve your user information after confirmation.",
+        "unexpected": "An unexpected error happened during confirmation.",
+        "default": "The confirmation link may have expired or is invalid. Please make sure you clicked the correct link in your email."
+      },
+      "actions": {
+        "back": "Back to sign in",
+        "create": "Create new account",
+        "resend": "Resend confirmation email"
+      },
+      "loading": "Loading...",
+      "contact": "If the issue persists, get in touch with us.",
+      "errorCode": "Error code: {code}"
+    }
+  },
+  "landing": {
+    "header": {
+      "login": "Sign in",
+      "signup": "Start for free"
+    },
+    "hero": {
+      "badge": "Built with AI",
+      "heading": "Create stunning playlists with <highlight>Artificial Intelligence</highlight>",
+      "description": "Describe what you want to hear and our AI instantly crafts playlists tailored to your mood. Seamless Spotify integration included.",
+      "primaryCta": "Start now",
+      "secondaryCta": "I already have an account"
+    },
+    "features": {
+      "title": "Why choose Music Genie?",
+      "subtitle": "Discover how AI can transform your music experience",
+      "items": {
+        "intelligent": {
+          "title": "Smart AI",
+          "description": "Our AI understands your taste and composes playlists that match your preferences and mood."
+        },
+        "instant": {
+          "title": "Instant",
+          "description": "Generate playlists in seconds. Describe what you want to hear and our AI does the rest."
+        },
+        "personalized": {
+          "title": "Personalized",
+          "description": "Every playlist is unique and adapts to you. It learns from your choices and improves over time."
+        }
+      }
+    },
+    "steps": {
+      "title": "How does it work?",
+      "subtitle": "Three simple steps to build your perfect playlist",
+      "items": {
+        "describe": {
+          "title": "Describe",
+          "description": "Tell us what you want to hear: \"music to study\", \"80s rock\", \"relaxing jazz\"..."
+        },
+        "ai": {
+          "title": "AI Creates",
+          "description": "Our intelligence analyzes millions of tracks and curates the ideal playlist for you."
+        },
+        "enjoy": {
+          "title": "Enjoy",
+          "description": "Save to Spotify, share with friends, or keep creating incredible playlists."
+        }
+      }
+    },
+    "cta": {
+      "title": "Ready to transform your music?",
+      "subtitle": "Join thousands of listeners already discovering the power of AI",
+      "primary": "Start for free now"
+    },
+    "footer": {
+      "tagline": "Shaping the future of music with artificial intelligence.",
+      "product": "Product",
+      "support": "Support",
+      "legal": "Legal",
+      "links": {
+        "dashboard": "Dashboard",
+        "generator": "AI generator",
+        "discover": "Discover",
+        "help": "Help Center",
+        "contact": "Contact",
+        "feedback": "Feedback",
+        "privacy": "Privacy",
+        "terms": "Terms",
+        "cookies": "Cookies"
+      },
+      "copyright": "Copyright {year} Music Genie. All rights reserved."
+    }
+  },
+  "dashboard": {
+    "layout": {
+      "openMenu": "Open menu",
+      "closeMenu": "Close menu"
+    },
+    "sidebar": {
+      "searchPlaceholder": "Search",
+      "close": "Close menu",
+      "libraryTitle": "Library",
+      "nav": {
+        "home": "Home",
+        "discover": "Discover",
+        "radio": "Radio",
+        "generate": "AI generator"
+      },
+      "library": {
+        "history": "Recent additions",
+        "favorites": "Favorites"
+      }
+    },
+    "playlistsSidebar": {
+      "newPlaylist": "New playlist",
+      "searchPlaceholder": "Search playlists",
+      "untitled": "Untitled",
+      "trackCount": "{count, plural, one {# track} other {# tracks}}",
+      "status": {
+        "viewed": "viewed",
+        "new": "new"
+      },
+      "loading": "Loading…",
+      "empty": "No playlists found",
+      "account": {
+        "default": "My account",
+        "unauthenticated": "Unauthenticated account"
+      },
+      "actions": {
+        "settings": "Settings",
+        "signOut": "Sign out",
+        "signingOut": "Signing out…"
+      }
+    },
+    "generate": {
+      "cta": {
+        "submit": "Generate",
+        "submitting": "Generating…"
+      },
+      "messages": {
+        "addElements": "Add some elements to your prompt first.",
+        "suggestionsFailed": "We couldn't load new suggestions. Try again in a moment.",
+        "createDraftFailed": "We couldn't start your playlist. Try again.",
+        "unexpected": "Something went wrong. Try again.",
+        "aiPromptTitle": "AI Generated Prompt:",
+        "aiPromptLoading": "Generating prompt..."
+      },
+      "empty": {
+        "title": "Let's build your perfect playlist",
+        "description": "Start by choosing one of the options below, or type what you have in mind.",
+        "suggestionsTitle": "Popular playlist ideas:",
+        "categoryHint": "Or choose any of these options"
+      },
+      "suggestions": {
+        "loading": "Loading suggestions..."
+      },
+      "input": {
+        "placeholderEmpty": "Type anything you want your playlist to be like...",
+        "placeholderFilled": "Add more details to your playlist..."
+      },
+      "tags": {
+        "categoryTitles": {
+          "genre": "Genre",
+          "mood": "Mood",
+          "era": "Era",
+          "occasion": "Occasion",
+          "source": "Source"
+        },
+        "genre": {
+          "options": {
+            "indie-folk": "Indie Folk",
+            "mellow": "Mellow",
+            "pop": "Pop",
+            "rock": "Rock",
+            "hip-hop-rap": "Hip-Hop/Rap",
+            "electronic": "Electronic",
+            "classic-rock": "Classic Rock",
+            "alternative-rock": "Alternative Rock",
+            "indie": "Indie"
+          }
+        },
+        "mood": {
+          "options": {
+            "chill": "Chill",
+            "energetic": "Energetic",
+            "melancholic": "Melancholic",
+            "upbeat": "Upbeat",
+            "romantic": "Romantic",
+            "nostalgic": "Nostalgic"
+          }
+        },
+        "era": {
+          "options": {
+            "2010s": "2010s",
+            "2000s": "2000s",
+            "90s": "1990s",
+            "80s": "1980s",
+            "70s": "1970s"
+          }
+        },
+        "occasion": {
+          "options": {
+            "road-trip": "Road trip",
+            "workout": "Workout",
+            "study": "Study",
+            "party": "Party",
+            "relaxing": "Relaxing",
+            "cooking": "Cooking"
+          }
+        },
+        "source": {
+          "options": {
+            "movies-soundtrack": "Movie soundtracks",
+            "tv-shows": "TV shows",
+            "video-games": "Video games",
+            "commercials": "Commercials",
+            "viral-tiktok": "Viral TikTok"
+          }
+        }
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Search playlists by name, artist, or description…",
+      "buttons": {
+        "sortDate": "Date",
+        "sortName": "Name",
+        "viewGrid": "Grid",
+        "viewList": "List",
+        "favorites": "Favorites"
+      },
+      "advanced": {
+        "toggle": "Advanced filters",
+        "clearAll": "Clear all"
+      },
+      "labels": {
+        "genre": "Genre",
+        "mood": "Mood",
+        "energy": "Energy",
+        "duration": "Duration",
+        "instruments": "Instruments",
+        "themes": "Themes",
+        "years": "Years/Decades",
+        "timeRange": "Time range"
+      },
+      "select": {
+        "genre": "All genres",
+        "mood": "Any mood",
+        "energy": "Any level",
+        "duration": "Any duration",
+        "timeRange": "All time"
+      },
+      "options": {
+        "genres": {
+          "rock": "Rock",
+          "pop": "Pop",
+          "jazz": "Jazz",
+          "electronic": "Electronic",
+          "hipHop": "Hip-Hop",
+          "rnb": "R&B",
+          "country": "Country",
+          "classical": "Classical",
+          "folk": "Folk",
+          "blues": "Blues",
+          "reggae": "Reggae",
+          "latin": "Latin",
+          "indie": "Indie",
+          "alternative": "Alternative",
+          "metal": "Metal",
+          "punk": "Punk"
+        },
+        "moods": {
+          "happy": "Happy",
+          "melancholic": "Melancholic",
+          "energetic": "Energetic",
+          "relaxing": "Relaxing",
+          "romantic": "Romantic",
+          "nostalgic": "Nostalgic",
+          "motivational": "Motivational",
+          "calm": "Calm",
+          "lively": "Lively",
+          "dark": "Dark",
+          "party": "Party",
+          "thoughtful": "Contemplative"
+        },
+        "energy": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        },
+        "instruments": {
+          "guitar": "Guitar",
+          "piano": "Piano",
+          "drums": "Drums",
+          "synth": "Synthesizer",
+          "acousticGuitar": "Acoustic guitar",
+          "bass": "Bass",
+          "sax": "Saxophone",
+          "trumpet": "Trumpet",
+          "violin": "Violin",
+          "flute": "Flute",
+          "vocal": "Vocals",
+          "percussion": "Percussion",
+          "keyboard": "Keyboard",
+          "harmonica": "Harmonica"
+        },
+        "themes": {
+          "love": "Love",
+          "travel": "Travel",
+          "work": "Work",
+          "party": "Party",
+          "study": "Study",
+          "exercise": "Workout",
+          "meditation": "Meditation",
+          "nostalgia": "Nostalgia",
+          "adventure": "Adventure",
+          "reflection": "Reflection",
+          "celebration": "Celebration",
+          "relaxation": "Relaxation"
+        },
+        "years": {
+          "60s": "60s",
+          "70s": "70s",
+          "80s": "80s",
+          "90s": "90s",
+          "2000s": "2000s",
+          "2010s": "2010s",
+          "2020s": "2020s"
+        },
+        "duration": {
+          "short": "Short (< 30 min)",
+          "medium": "Medium (30–60 min)",
+          "long": "Long (> 60 min)"
+        },
+        "timeRange": {
+          "7days": "Last 7 days",
+          "30days": "Last 30 days",
+          "3months": "Last 3 months",
+          "1year": "Last year"
+        }
+      },
+      "badges": {
+        "search": "Search: {value}",
+        "genre": "Genre: {value}",
+        "mood": "Mood: {value}",
+        "energy": "Energy: {value}",
+        "favorites": "Favorites only"
+      },
+      "results": {
+        "loading": "Loading…",
+        "count": "{count, plural, one {# playlist found} other {# playlists found}}"
+      }
+    },
+    "favorites": {
+      "header": {
+        "title": "Favorites",
+        "subtitle": "Your saved playlists for quick access"
+      },
+      "loading": {
+        "label": "Loading..."
+      },
+      "missingSupabase": {
+        "title": "Supabase configuration missing",
+        "description": "Supabase client is not configured. Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to enable favorites features."
+      },
+      "errors": {
+        "load": "We couldn't load your playlists."
+      },
+      "buttons": {
+        "retry": "Try again",
+        "viewHistory": "View history",
+        "previous": "Previous",
+        "next": "Next"
+      },
+      "empty": {
+        "title": "No favorite playlists",
+        "descriptionDefault": "You haven't favorited any playlists yet. Explore your history and mark your favorites!",
+        "descriptionFiltered": "Try adjusting the filters to find more playlists."
+      },
+      "metadata": {
+        "tracks": "{count, plural, one {# track} other {# tracks}}",
+        "created": "{date}"
+      },
+      "pagination": {
+        "pageOf": "Page {page} of {total}"
+      }
+    },
+  "playlistCard": {
+    "status": {
+      "generating": "Generating…",
+      "new": "NEW",
+      "ai": "AI"
+    },
+    "metadata": {
+      "tracks": "{count, plural, one {# track} other {# tracks}}",
+      "spotify": "Spotify"
+    }
+  },
+  "playlist": {
+    "accessDenied": {
+      "title": "Access denied",
+      "description": "You need to sign in to view this playlist.",
+      "cta": "Sign in"
+    },
+    "notFound": {
+      "title": "Playlist not found",
+      "description": "This playlist doesn’t exist or you don’t have permission to view it.",
+      "cta": "Back to dashboard"
+    },
+    "header": {
+      "label": "Playlist",
+      "loadingTitle": "Preparing playlist…",
+      "untitled": "Untitled playlist",
+      "createdBy": "Created by {name}",
+      "createdByFallback": "You",
+      "prompt": "Prompt"
+    },
+    "summary": {
+      "tracks": "{count, plural, one {# track} other {# tracks}}",
+      "duration": {
+        "hoursMinutes": "{hours} h {minutes} min",
+        "minutes": "{minutes} min"
+      },
+      "createdAt": "{date}"
+    },
+    "status": {
+      "starting": "Preparing your playlist…",
+      "ai_complete": "AI finished. Matching tracks on Spotify…",
+      "complete": "Playlist ready",
+      "fallback": "Working on your playlist…",
+      "error": "We couldn’t finish generating this playlist.",
+      "spotifyConnection": {
+        "connected": "Spotify connected",
+        "disconnected": "Connect Spotify to match songs automatically."
+      }
+    },
+    "cover": {
+      "ready": "Ready to generate cover",
+      "started": "Generating cover with AI…",
+      "success": "Cover generated automatically",
+      "error": "Cover generation failed"
+    },
+    "metadata": {
+      "title": "Metadata",
+      "genre": "Genre",
+      "mood": "Mood",
+      "energy": "Energy"
+    },
+    "tracks": {
+      "title": "Tracklist",
+      "empty": {
+        "pending": "Waiting for the AI to build your tracks…",
+        "idle": "No tracks generated for this prompt yet."
+      },
+      "status": {
+        "found": "On Spotify",
+        "searching": "Searching…",
+        "not_found": "Not found",
+        "error": "Error",
+        "no_token": "Missing Spotify token",
+        "pending": "Processing"
+      },
+      "albumArtAlt": "Track artwork for {title}"
+    },
+    "actions": {
+      "openSpotify": {
+        "label": "Listen on Spotify"
+      },
+      "refreshImages": {
+        "label": "Refresh images",
+        "loading": "Refreshing…",
+        "success": "Playlist images updated.",
+        "error": "We couldn’t refresh the images."
+      },
+      "generateCover": {
+        "label": "Create AI cover",
+        "loading": "Generating…",
+        "success": "New cover saved to your playlist.",
+        "error": "We couldn’t generate the cover."
+      }
+    },
+    "toasts": {
+      "spotifyUnavailable": "Connect your Spotify account to open the playlist."
+    },
+    "stream": {
+      "funMessages": [
+        "Reticulating splines…",
+        "Tuning intergalactic radios…",
+        "Polishing highs and waxing lows…",
+        "Requesting a solo from the imaginary guitarist…",
+        "Warming up virtual backup vocals…",
+        "Slicing BPMs into perfect cubes…"
+      ],
+      "errors": {
+        "streamUnsupported": "Your browser can’t stream this request.",
+        "unknown": "Something went wrong while generating the playlist."
+      },
+      "complete": "Playlist ready!"
+    }
+  },
+  "search": {
+    "header": {
+      "title": "Search",
+      "subtitle": "Find albums, artists, and songs in your library.",
+      "placeholder": "Artists, songs, or albums"
+    },
+    "browse": {
+      "title": "Browse by category",
+      "categories": {
+        "jazz": "Jazz",
+        "rock": "Rock",
+        "pop": "Pop",
+        "classical": "Classical",
+        "electronic": "Electronic",
+        "hipHop": "Hip-Hop",
+        "country": "Country",
+        "rnb": "R&B"
+      }
+    },
+    "results": {
+      "albums": "Albums",
+      "artists": "Artists",
+      "songs": "Songs",
+      "empty": "Start typing to search across your music."
+    }
+  },
+  "settings": {
+    "localization": {
+      "title": "Language & region",
+      "description": "Choose your default language and Spotify market.",
+      "languageLabel": "Language",
+      "languageHint": "Used for the app interface and generated prompts.",
+      "marketLabel": "Spotify market",
+      "marketHint": "Determines which catalog we search on Spotify.",
+      "actions": {
+        "save": "Save preferences",
+        "saving": "Saving…"
+      },
+      "messages": {
+        "success": "Localization preferences updated.",
+        "error": "We couldn't update your preferences."
+      },
+      "languages": {
+        "en": "English",
+        "pt-BR": "Portuguese (Brazil)"
+      },
+      "markets": {
+        "US": "United States",
+        "BR": "Brazil"
+      }
+    }
+  }
+}
+}

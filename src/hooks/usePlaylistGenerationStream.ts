@@ -1,4 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useTranslations, useLocale } from "next-intl";
+import { localeToMarket } from "@/lib/locale";
 import type { PlaylistGeneratorOutput } from "@/lib/workflowai/agents";
 
 type WorkflowMetrics = Record<string, unknown> | null;
@@ -49,14 +51,23 @@ type CoverStatusEvent =
 
 export type { CoverStatusEvent };
 
-const FUN_LOADING_MESSAGES = [
+const FALLBACK_FUN_MESSAGES = [
   "Reticulating splines…",
-  "Sintonizando rádios intergalácticas…",
-  "Polendo agudos e encerando graves…",
-  "Pedindo um solo pra guitarra imaginária…",
-  "Aquecendo vocais dos backing vocals virtuais…",
-  "Fatiando BPMs em cubinhos perfeitos…",
+  "Tuning intergalactic radios…",
+  "Polishing highs and waxing lows…",
+  "Requesting a solo from the imaginary guitarist…",
+  "Warming up virtual backup vocals…",
+  "Slicing BPMs into perfect cubes…",
 ];
+
+function readClientCookie(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]!) : null;
+}
 
 function mergeOutputs(
   previous: PlaylistGeneratorOutput | null,
@@ -104,9 +115,19 @@ function parseEventBlock(block: string) {
 
 export function usePlaylistGenerationStream() {
   const abortControllerRef = useRef<AbortController | null>(null);
+  const t = useTranslations("dashboard.playlist.stream");
+  const locale = useLocale();
+  const funMessagesSource = useMemo(() => {
+    const raw = t.raw("funMessages") as unknown;
+    if (Array.isArray(raw) && raw.length > 0 && raw.every((entry) => typeof entry === "string")) {
+      return raw as string[];
+    }
+    return FALLBACK_FUN_MESSAGES;
+  }, [t]);
+
   const [isRunning, setIsRunning] = useState(false);
   const [status, setStatus] = useState<StreamStatus | null>(null);
-  const [funMessage, setFunMessage] = useState<string>(FUN_LOADING_MESSAGES[0]);
+  const [funMessage, setFunMessage] = useState<string>(funMessagesSource[0] ?? FALLBACK_FUN_MESSAGES[0]);
   const [partialOutput, setPartialOutput] = useState<PlaylistGeneratorOutput | null>(
     null
   );
@@ -135,24 +156,24 @@ export function usePlaylistGenerationStream() {
   const funIndexRef = useRef(0);
 
   useEffect(() => {
-    if (!isRunning || hasAiUpdate) {
+    if (!isRunning || hasAiUpdate || funMessagesSource.length === 0) {
       return;
     }
 
     const interval = setInterval(() => {
       funIndexRef.current =
-        funIndexRef.current + 1 >= FUN_LOADING_MESSAGES.length
+        funIndexRef.current + 1 >= funMessagesSource.length
           ? 0
           : funIndexRef.current + 1;
-      setFunMessage(FUN_LOADING_MESSAGES[funIndexRef.current]);
+      setFunMessage(funMessagesSource[funIndexRef.current]);
     }, 2500);
 
     return () => clearInterval(interval);
-  }, [isRunning, hasAiUpdate]);
+  }, [isRunning, hasAiUpdate, funMessagesSource]);
 
   const resetState = useCallback(() => {
     setStatus(null);
-    setFunMessage(FUN_LOADING_MESSAGES[0]);
+    setFunMessage(funMessagesSource[0] ?? FALLBACK_FUN_MESSAGES[0]);
     setPartialOutput(null);
     setSpotifyProgress({});
     setPlaylistId(null);
@@ -164,7 +185,7 @@ export function usePlaylistGenerationStream() {
     setCoverStatusEvent(null);
     setCoverArtUrl(null);
     funIndexRef.current = 0;
-  }, []);
+  }, [funMessagesSource]);
 
   const cancel = useCallback(() => {
     abortControllerRef.current?.abort();
@@ -184,15 +205,14 @@ export function usePlaylistGenerationStream() {
 
       resetState();
       setIsRunning(true);
-      setStatus({
-        stage: "starting",
-        message: "Preparando geração da playlist…",
-      });
+      setStatus({ stage: "starting" });
+      setFunMessage(funMessagesSource[0] ?? FALLBACK_FUN_MESSAGES[0]);
 
       const controller = new AbortController();
       abortControllerRef.current = controller;
 
       try {
+        const resolvedMarket = localeToMarket(locale, readClientCookie("APP_MARKET"));
         const response = await fetch("/api/playlist/generate/stream", {
           method: "POST",
           headers: {
@@ -201,6 +221,8 @@ export function usePlaylistGenerationStream() {
           body: JSON.stringify({
             prompt,
             playlist_id: playlistIdOverride,
+            locale,
+            market: resolvedMarket,
           }),
           signal: controller.signal,
         });
@@ -211,7 +233,7 @@ export function usePlaylistGenerationStream() {
 
         const reader = response.body?.getReader();
         if (!reader) {
-          throw new Error("Resposta de streaming não suportada pelo navegador");
+          throw new Error(t("errors.streamUnsupported"));
         }
 
         const decoder = new TextDecoder("utf-8");
@@ -225,9 +247,6 @@ export function usePlaylistGenerationStream() {
           switch (eventName) {
             case "status": {
               setStatus(data as StreamStatus);
-              if (data?.message) {
-                setFunMessage(data.message);
-              }
               break;
             }
             case "ai_update": {
@@ -267,7 +286,8 @@ export function usePlaylistGenerationStream() {
               break;
             }
             case "complete": {
-              setStatus({ stage: "complete", message: "Playlist pronta!" });
+              setStatus({ stage: "complete" });
+              setFunMessage(t("complete"));
               setCompleteData(data ?? null);
               if (data?.metrics) {
                 setMetrics(data.metrics as WorkflowMetrics);
@@ -286,9 +306,11 @@ export function usePlaylistGenerationStream() {
               break;
             }
             case "error": {
-              setError(
-                data?.message || "Algo deu errado durante a geração da playlist"
-              );
+              const message =
+                typeof data?.message === "string" && data.message.trim().length > 0
+                  ? data.message
+                  : t("errors.unknown");
+              setError(message);
               setIsRunning(false);
               break;
             }
@@ -334,15 +356,13 @@ export function usePlaylistGenerationStream() {
           return;
         }
         console.error("Streaming playlist error", err);
-        setError(
-          err instanceof Error ? err.message : "Falha na geração da playlist"
-        );
+        setError(err instanceof Error ? err.message : t("errors.unknown"));
         setIsRunning(false);
       } finally {
         abortControllerRef.current = null;
       }
     },
-    [cancel, isRunning, resetState]
+    [cancel, isRunning, resetState, funMessagesSource, t, locale]
   );
 
   useEffect(() => {

@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { Music, Clock, Calendar, Loader2 } from "lucide-react";
 import { FavoriteButton } from "@/components/playlist/PlaylistActionButtons";
 import { ExpandableDescription } from "@/components/playlist/ExpandableDescription";
 import { PlaylistActionButtons } from "@/components/playlist/PlaylistPageClient";
-import { usePlaylistGenerationStream, CoverStatusEvent } from "@/hooks/usePlaylistGenerationStream";
+import { usePlaylistGenerationStream } from "@/hooks/usePlaylistGenerationStream";
 import type { PlaylistGeneratorOutput } from "@/lib/workflowai/agents";
+import { useTranslations, useFormatter } from "next-intl";
 
 interface InitialTrack {
   title?: string | null;
@@ -108,16 +109,6 @@ function formatDuration(ms?: number | null): string {
   const minutes = Math.floor(ms / 60000);
   const seconds = Math.floor((ms % 60000) / 1000);
   return `${minutes}:${seconds.toString().padStart(2, "0")}`;
-}
-
-function formatPlaylistDuration(ms?: number | null): string {
-  if (!ms || ms <= 0) return "0m";
-  const hours = Math.floor(ms / 3600000);
-  const minutes = Math.floor((ms % 3600000) / 60000);
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  return `${minutes}m`;
 }
 
 function buildInitialState(initial: InitialPlaylist): PlaylistViewState {
@@ -284,20 +275,6 @@ function mergeCompleteData(
   return nextState;
 }
 
-function coverStatusMessage(status: CoverStatusEvent | null): string {
-  if (!status) return "Pronto para gerar capa";
-  switch (status.stage) {
-    case "started":
-      return "Gerando capa com IA…";
-    case "success":
-      return "Capa gerada automaticamente";
-    case "error":
-      return "Falha na geração da capa";
-    default:
-      return "";
-  }
-}
-
 export function PlaylistLiveView({
   playlistId,
   prompt,
@@ -321,6 +298,63 @@ export function PlaylistLiveView({
     coverStatus,
     coverArtUrl,
   } = usePlaylistGenerationStream();
+
+  const t = useTranslations("dashboard.playlist");
+  const formatter = useFormatter();
+
+  const formatPlaylistDuration = useCallback(
+    (ms?: number | null) => {
+      if (!ms || ms <= 0) {
+        return t("summary.duration.minutes", { minutes: formatter.number(0) });
+      }
+      const totalMinutes = Math.floor(ms / 60000);
+      const hours = Math.floor(totalMinutes / 60);
+      const minutes = totalMinutes % 60;
+      if (hours > 0) {
+        return t("summary.duration.hoursMinutes", {
+          hours: formatter.number(hours),
+          minutes: formatter.number(minutes),
+        });
+      }
+      return t("summary.duration.minutes", {
+        minutes: formatter.number(totalMinutes),
+      });
+    },
+    [formatter, t]
+  );
+
+  const formatCreatedAt = useCallback(
+    (dateString?: string | null) => {
+      if (!dateString) {
+        return null;
+      }
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) {
+        return null;
+      }
+      return t("summary.createdAt", {
+        date: formatter.dateTime(date, {
+          day: "2-digit",
+          month: "2-digit",
+          year: "numeric",
+        }),
+      });
+    },
+    [formatter, t]
+  );
+
+  const trackStatusLabels = useMemo(
+    () => ({
+      found: t("tracks.status.found"),
+      searching: t("tracks.status.searching"),
+      not_found: t("tracks.status.not_found"),
+      skipped: t("tracks.status.pending"),
+      error: t("tracks.status.error"),
+      no_token: t("tracks.status.no_token"),
+      pending: t("tracks.status.pending"),
+    }),
+    [t]
+  );
 
   const shouldAutoGenerate = autoGenerate || (initial.status ?? "draft") === "draft";
 
@@ -371,7 +405,19 @@ export function PlaylistLiveView({
     }));
   }, [coverArtUrl]);
 
-  const coverMessage = coverStatusMessage(coverStatus);
+  const coverMessage = useMemo(() => {
+    if (!coverStatus) {
+      return t("cover.ready");
+    }
+    if (coverStatus.stage === "error") {
+      return t("cover.error");
+    }
+    if (coverStatus.stage === "success") {
+      return t("cover.success");
+    }
+    return t("cover.started");
+  }, [coverStatus, t]);
+
   const displayGradient = useMemo(
     () => viewState.gradient ?? "from-purple-500 to-pink-500",
     [viewState.gradient]
@@ -383,6 +429,50 @@ export function PlaylistLiveView({
       (track.artist && track.artist.trim() !== "")
   );
   const hasLoadedTracks = readyTracks.length > 0;
+
+  const playlistTitle = viewState.title
+    ? viewState.title
+    : isRunning
+    ? t("header.loadingTitle")
+    : t("header.untitled");
+
+  const creatorName = viewState.creator?.trim() || t("header.createdByFallback");
+  const createdByLabel = t("header.createdBy", { name: creatorName });
+
+  const trackCount = viewState.total_tracks ?? (hasLoadedTracks ? readyTracks.length : 0);
+  const trackCountLabel = t("summary.tracks", { count: trackCount });
+  const durationLabel = formatPlaylistDuration(viewState.total_duration_ms);
+  const createdAtLabel = formatCreatedAt(viewState.created_at);
+
+  const statusMessage = useMemo(() => {
+    if (status?.stage === "spotify_connection") {
+      return status.connected
+        ? t("status.spotifyConnection.connected")
+        : t("status.spotifyConnection.disconnected");
+    }
+
+    if (status?.stage === "starting") {
+      return t("status.starting");
+    }
+
+    if (status?.stage === "ai_complete") {
+      return t("status.ai_complete");
+    }
+
+    if (status?.stage === "complete") {
+      return t("status.complete");
+    }
+
+    if (status?.stage === "error") {
+      return t("status.error");
+    }
+
+    if (status?.message) {
+      return status.message;
+    }
+
+    return isRunning ? funMessage : t("status.complete");
+  }, [status, isRunning, funMessage, t]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -404,10 +494,12 @@ export function PlaylistLiveView({
             </div>
 
             <div className="flex-1 min-w-0">
-              <div className="text-xs md:text-sm text-white/80 mb-1 md:mb-2">Playlist</div>
+              <div className="text-xs md:text-sm text-white/80 mb-1 md:mb-2">
+                {t("header.label")}
+              </div>
               <div className="flex flex-col sm:flex-row gap-2 md:gap-3 items-start sm:items-center mb-2 md:mb-3">
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
-                  {viewState.title || (isRunning ? "Preparando playlist…" : "Playlist sem título")}
+                  {playlistTitle}
                 </h1>
                 <FavoriteButton
                   playlistId={viewState.id}
@@ -415,7 +507,7 @@ export function PlaylistLiveView({
                 />
               </div>
               <p className="text-sm md:text-base lg:text-lg text-white/90 mb-2 md:mb-3">
-                Criado por {viewState.creator || "Você"}
+                {createdByLabel}
               </p>
               {viewState.description ? (
                 <ExpandableDescription
@@ -429,7 +521,9 @@ export function PlaylistLiveView({
               )}
               {viewState.prompt && (
                 <div className="mb-2 md:mb-3">
-                  <span className="text-xs md:text-sm font-medium text-white/70">Prompt:</span>
+                  <span className="text-xs md:text-sm font-medium text-white/70">
+                    {t("header.prompt")}:
+                  </span>
                   <ExpandableDescription
                     description={viewState.prompt}
                     className="mt-1"
@@ -439,16 +533,16 @@ export function PlaylistLiveView({
                 <div className="flex flex-wrap gap-3 md:gap-4 text-xs md:text-sm text-white/80 mb-3 md:mb-4">
                   <div className="flex items-center gap-1">
                     <Music className="w-3 h-3 md:w-4 md:h-4" />
-                  {viewState.total_tracks ?? (hasLoadedTracks ? readyTracks.length : 0)} músicas
+                    {trackCountLabel}
                   </div>
                   <div className="flex items-center gap-1">
                     <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                    {formatPlaylistDuration(viewState.total_duration_ms)}
+                    {durationLabel}
                   </div>
-                {viewState.created_at && (
+                {createdAtLabel && (
                   <div className="flex items-center gap-1">
                     <Calendar className="w-3 h-3 md:w-4 md:h-4" />
-                    {new Date(viewState.created_at).toLocaleDateString("pt-BR")}
+                    {createdAtLabel}
                   </div>
                 )}
               </div>
@@ -457,10 +551,10 @@ export function PlaylistLiveView({
                 {isRunning ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    <span>{status?.message || funMessage}</span>
+                    <span>{statusMessage}</span>
                   </>
                 ) : (
-                  <span>{status?.message || "Playlist finalizada"}</span>
+                  <span>{statusMessage}</span>
                 )}
                 <span className="text-white/60">•</span>
                 <span>{coverMessage}</span>
@@ -469,6 +563,12 @@ export function PlaylistLiveView({
               <PlaylistActionButtons
                 playlistId={viewState.id}
                 spotifyPlaylistId={viewState.spotify_playlist_id || spotifyPlaylistId || undefined}
+                playlistName={viewState.title || ""}
+                playlistDescription={viewState.description || ""}
+                songList={readyTracks
+                  .map((track) => `${track.title ?? ""} - ${track.artist ?? ""}`.trim())
+                  .filter(Boolean)
+                  .join("\n")}
               />
             </div>
           </div>
@@ -481,23 +581,23 @@ export function PlaylistLiveView({
             {viewState.metadata && (
               <div className="xl:col-span-1 hidden xl:block">
                 <div className="bg-white rounded-xl shadow-lg p-6">
-                  <h2 className="text-xl font-semibold mb-6">Metadados</h2>
+                  <h2 className="text-xl font-semibold mb-6">{t("metadata.title")}</h2>
                   <div className="space-y-4">
                     {viewState.metadata.primary_genre && (
                       <div>
-                        <span className="text-sm font-medium text-gray-600">Gênero:</span>
+                        <span className="text-sm font-medium text-gray-600">{t("metadata.genre")}:</span>
                         <p className="text-base text-gray-900 mt-1">{viewState.metadata.primary_genre}</p>
                       </div>
                     )}
                     {viewState.metadata.mood && (
                       <div>
-                        <span className="text-sm font-medium text-gray-600">Humor:</span>
+                        <span className="text-sm font-medium text-gray-600">{t("metadata.mood")}:</span>
                         <p className="text-base text-gray-900 mt-1">{viewState.metadata.mood}</p>
                       </div>
                     )}
                     {viewState.metadata.energy_level && (
                       <div>
-                        <span className="text-sm font-medium text-gray-600">Energia:</span>
+                        <span className="text-sm font-medium text-gray-600">{t("metadata.energy")}:</span>
                         <p className="text-base text-gray-900 mt-1">{viewState.metadata.energy_level}</p>
                       </div>
                     )}
@@ -508,7 +608,7 @@ export function PlaylistLiveView({
 
             <div className="xl:col-span-3">
               <div className="bg-white rounded-xl shadow-lg p-6">
-                <h2 className="text-xl font-semibold mb-4">Faixas</h2>
+                <h2 className="text-xl font-semibold mb-4">{t("tracks.title")}</h2>
                 {hasLoadedTracks ? (
                   <div className="space-y-3">
                     {viewState.tracks.map((track, index) => {
@@ -551,7 +651,9 @@ export function PlaylistLiveView({
                               {track.album_art_url ? (
                                 <Image
                                   src={track.album_art_url}
-                                  alt={`Capa da faixa ${track.title ?? "sem título"}`}
+                                  alt={t("tracks.albumArtAlt", {
+                                    title: track.title ?? t("header.untitled"),
+                                  })}
                                   fill
                                   sizes="48px"
                                   className="object-cover"
@@ -595,17 +697,7 @@ export function PlaylistLiveView({
                                   : "bg-gray-50 text-gray-500 border border-gray-200"
                               }`}
                             >
-                              {track.status === "found"
-                                ? "No Spotify"
-                                : track.status === "searching"
-                                ? "Buscando…"
-                                : track.status === "not_found"
-                                ? "Não encontrada"
-                                : track.status === "error"
-                                ? "Erro"
-                                : track.status === "no_token"
-                                ? "Sem token"
-                                : "Processando"}
+                              {trackStatusLabels[track.status] ?? trackStatusLabels.pending}
                             </span>
                           </div>
                         </div>
@@ -615,8 +707,8 @@ export function PlaylistLiveView({
                 ) : (
                   <div className="p-6 bg-gray-50 text-sm text-gray-500 rounded-lg text-center">
                     {isRunning
-                      ? "Aguardando a IA montar as faixas…"
-                      : "Ainda não há músicas geradas para este prompt."}
+                      ? t("tracks.empty.pending")
+                      : t("tracks.empty.idle")}
                   </div>
                 )}
               </div>

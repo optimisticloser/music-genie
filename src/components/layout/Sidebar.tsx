@@ -1,7 +1,9 @@
 "use client";
 
-import React, { useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import React, { useMemo, useState } from 'react';
+import { useTranslations } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/navigation';
+import { stripLocaleFromPath } from '@/i18n/utils';
 import { 
   Home, 
   Sparkles, 
@@ -22,27 +24,61 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const navigationItems = [
-  { name: 'Início', href: '/dashboard', icon: Home },
-  { name: 'Descobrir', href: '/dashboard/discover', icon: Sparkles },
-  { name: 'Rádio', href: '/dashboard/radio', icon: Radio },
-  { name: 'Gerar AI', href: '/dashboard/generate', icon: Sparkles, highlight: true },
+type NavItem = {
+  key: 'home' | 'discover' | 'radio' | 'generate';
+  href: '/dashboard' | '/dashboard/discover' | '/dashboard/radio' | '/dashboard/generate';
+  icon: typeof Home;
+  highlight?: boolean;
+};
+
+const NAV_ITEMS: NavItem[] = [
+  { key: 'home', href: '/dashboard', icon: Home },
+  { key: 'discover', href: '/dashboard/discover', icon: Sparkles },
+  { key: 'radio', href: '/dashboard/radio', icon: Radio },
+  { key: 'generate', href: '/dashboard/generate', icon: Sparkles, highlight: true },
 ];
 
-const libraryItems = [
-  { name: 'Adições recentes', href: '/dashboard/history', icon: Clock },
-  { name: 'Favoritos', href: '/dashboard/favorites', icon: Heart },
-];
+const LIBRARY_ITEMS = [
+  { key: 'history', href: '/dashboard/history', icon: Clock },
+  { key: 'favorites', href: '/dashboard/favorites', icon: Heart },
+] as const;
 
 export function Sidebar({ onClose }: SidebarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const t = useTranslations('dashboard.sidebar');
+
+  const normalizedPathname = useMemo(
+    () => stripLocaleFromPath(pathname),
+    [pathname]
+  );
+
+  const navigationItems = useMemo(
+    () =>
+      NAV_ITEMS.map((item) => ({
+        ...item,
+        name: t(`nav.${item.key}`),
+      })),
+    [t]
+  );
+
+  const libraryItems = useMemo(
+    () =>
+      LIBRARY_ITEMS.map((item) => ({
+        ...item,
+        name: t(`library.${item.key}`),
+      })),
+    [t]
+  );
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
-      router.push(`/dashboard/search?q=${encodeURIComponent(searchQuery.trim())}`);
+      router.push({
+        pathname: '/dashboard/search',
+        query: { q: searchQuery.trim() },
+      });
     } else {
       router.push('/dashboard/search');
     }
@@ -50,12 +86,14 @@ export function Sidebar({ onClose }: SidebarProps) {
   };
 
   const handleSearchFocus = () => {
-    if (pathname !== '/dashboard/search') {
+    if (normalizedPathname !== '/dashboard/search') {
       router.push('/dashboard/search');
     }
   };
 
-  const handleNavigation = (href: string) => {
+  const handleNavigation = (
+    href: NavItem['href'] | (typeof LIBRARY_ITEMS)[number]['href']
+  ) => {
     router.push(href);
     onClose?.();
   };
@@ -85,6 +123,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           size="sm"
           onClick={onClose}
           className="p-1.5"
+          aria-label={t('close')}
         >
           <X className="w-4 h-4" />
         </Button>
@@ -96,7 +135,7 @@ export function Sidebar({ onClose }: SidebarProps) {
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar"
+            placeholder={t('searchPlaceholder')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             onFocus={handleSearchFocus}
@@ -109,10 +148,10 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* Main Navigation */}
         <div className="space-y-1 mb-4">
           {navigationItems.map((item) => {
-            const isActive = pathname === item.href;
+            const isActive = normalizedPathname === item.href;
             return (
               <button
-                key={item.name}
+                key={item.href}
                 onClick={() => handleNavigation(item.href)}
                 className={cn(
                   "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",
@@ -143,14 +182,14 @@ export function Sidebar({ onClose }: SidebarProps) {
         {/* Biblioteca */}
         <div className="mb-4">
           <h3 className="px-3 mb-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
-            Biblioteca
+            {t('libraryTitle')}
           </h3>
           <div className="space-y-1">
             {libraryItems.map((item) => {
-              const isActive = pathname === item.href;
+              const isActive = normalizedPathname === item.href;
               return (
                 <button
-                  key={item.name}
+                  key={item.href}
                   onClick={() => handleNavigation(item.href)}
                   className={cn(
                     "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors text-left",

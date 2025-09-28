@@ -18,6 +18,7 @@ import {
   generatePlaylistCover,
   CoverGenerationStatus,
 } from "@/lib/services/workflowai";
+import { localeToMarket } from "@/lib/locale";
 
 type WorkflowMetrics = Record<string, unknown> | null;
 
@@ -356,7 +357,7 @@ export async function POST(req: NextRequest) {
     }
   );
 
-  let body: PlaylistGeneratorInput & { playlist_id?: string };
+  let body: PlaylistGeneratorInput & { playlist_id?: string; locale?: string; market?: string };
 
   try {
     body = await req.json();
@@ -366,6 +367,11 @@ export async function POST(req: NextRequest) {
   }
 
   const { prompt, playlist_id: playlistId } = body;
+  const requestedLocale = typeof body.locale === "string" && body.locale.length > 0 ? body.locale : "en";
+  const requestedMarket =
+    typeof body.market === "string" && body.market.length > 0
+      ? body.market.toUpperCase()
+      : localeToMarket(requestedLocale);
 
   if (!prompt) {
     return NextResponse.json({ error: "Prompt is required" }, { status: 400 });
@@ -394,7 +400,6 @@ export async function POST(req: NextRequest) {
       try {
         notify("status", {
           stage: "starting",
-          message: "Preparando geração da playlist…",
         });
 
         let metrics: WorkflowMetrics = null;
@@ -483,7 +488,6 @@ export async function POST(req: NextRequest) {
 
         notify("status", {
           stage: "starting",
-          message: "Preparando geração da playlist…",
         });
 
         const maxSpotifyConcurrency = 4;
@@ -594,7 +598,7 @@ export async function POST(req: NextRequest) {
                 const response = await fetch(
                   "https://api.spotify.com/v1/search?q=" +
                     encodeURIComponent(searchQuery) +
-                    "&type=track&limit=1",
+                    "&type=track&limit=1&market=" + requestedMarket,
                   {
                     headers: {
                       Authorization: "Bearer " + spotifyAccessToken,
@@ -793,7 +797,11 @@ export async function POST(req: NextRequest) {
           return;
         }
 
-        const run = await playlistGeneratorAgent({ prompt }).stream();
+        const run = await playlistGeneratorAgent({
+          prompt,
+          locale: requestedLocale,
+          market: requestedMarket,
+        }).stream();
 
         for await (const chunk of run.stream as AsyncIterable<
           RunStreamEvent<PlaylistGeneratorOutput>
@@ -819,7 +827,6 @@ export async function POST(req: NextRequest) {
 
         notify("status", {
           stage: "ai_complete",
-          message: "IA finalizada. Buscando músicas no Spotify…",
         });
 
         notify("status", {

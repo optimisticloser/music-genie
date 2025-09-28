@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import NextImage from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -176,11 +177,14 @@ export function CoverArtGenerator({
             {result.cover_art && (
               <div className="space-y-2">
                 <Label>Imagem da Capa</Label>
-                <div className="relative aspect-square w-full max-w-md mx-auto">
-                  <img
+                <div className="relative aspect-square w-full max-w-md mx-auto overflow-hidden rounded-lg shadow-lg">
+                  <NextImage
                     src={result.cover_art.url}
                     alt="Playlist cover art"
-                    className="w-full h-full object-cover rounded-lg shadow-lg"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 400px"
+                    className="object-cover"
+                    priority
                   />
                 </div>
               </div>

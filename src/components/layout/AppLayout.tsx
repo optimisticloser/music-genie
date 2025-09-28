@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { useTranslations } from 'next-intl';
 import { PlaylistsSidebar } from '@/components/playlist/PlaylistsSidebar';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
@@ -12,6 +13,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const t = useTranslations('dashboard.layout');
 
   const toggleSidebar = () => {
     setSidebarOpen(!sidebarOpen);
@@ -31,7 +33,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             size="sm"
             onClick={toggleSidebar}
             className="p-1.5"
-            aria-label={sidebarOpen ? 'Fechar menu' : 'Abrir menu'}
+            aria-label={sidebarOpen ? t('closeMenu') : t('openMenu')}
           >
             {sidebarOpen ? (
               <X className="w-5 h-5" />

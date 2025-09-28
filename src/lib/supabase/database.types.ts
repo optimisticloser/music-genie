@@ -326,6 +326,8 @@ export type Database = {
           default_sharing_permission:
             | Database["public"]["Enums"]["sharing_permission"]
             | null
+          default_locale: string
+          default_market: string
           email_notifications: boolean | null
           theme: string | null
           updated_at: string
@@ -336,6 +338,8 @@ export type Database = {
           default_sharing_permission?:
             | Database["public"]["Enums"]["sharing_permission"]
             | null
+          default_locale?: string
+          default_market?: string
           email_notifications?: boolean | null
           theme?: string | null
           updated_at?: string
@@ -346,6 +350,8 @@ export type Database = {
           default_sharing_permission?:
             | Database["public"]["Enums"]["sharing_permission"]
             | null
+          default_locale?: string
+          default_market?: string
           email_notifications?: boolean | null
           theme?: string | null
           updated_at?: string

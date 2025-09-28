@@ -5,6 +5,7 @@ import { playlistGeneratorAgent, PlaylistGeneratorInput } from "@/lib/workflowai
 import { SpotifyService } from "@/lib/services/spotify";
 import { createPlaylist, addTracksToPlaylist, getCurrentUser } from "@/lib/spotify/api";
 import { generatePlaylistCover } from "@/lib/services/workflowai";
+import { localeToMarket } from "@/lib/locale";
 
 interface EnrichedSong {
   title?: string;
@@ -64,6 +65,11 @@ export async function POST(req: NextRequest) {
     }
 
     const { prompt, playlist_id } = body;
+    const requestedLocale = typeof body.locale === "string" && body.locale.length > 0 ? body.locale : "en";
+    const requestedMarket =
+      typeof body.market === "string" && body.market.length > 0
+        ? body.market.toUpperCase()
+        : localeToMarket(requestedLocale);
 
     if (!prompt) {
       console.error("❌ No prompt provided");
@@ -74,7 +80,9 @@ export async function POST(req: NextRequest) {
 
     // Generate playlist with WorkflowAI
     const input: PlaylistGeneratorInput = {
-      prompt: prompt,
+      prompt,
+      locale: requestedLocale,
+      market: requestedMarket,
     };
 
     const { output, data } = await playlistGeneratorAgent(input);
@@ -97,7 +105,7 @@ export async function POST(req: NextRequest) {
               
               const searchQuery = `${song.artist} ${song.title}`;
               const response = await fetch(
-                `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1`,
+                `https://api.spotify.com/v1/search?q=${encodeURIComponent(searchQuery)}&type=track&limit=1&market=${requestedMarket}`,
                 {
                   headers: {
                     'Authorization': `Bearer ${accessToken}`,

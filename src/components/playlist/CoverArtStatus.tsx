@@ -1,10 +1,11 @@
 "use client";
 
+import NextImage from "next/image";
 import { useCoverArtStatus } from "@/hooks/useCoverArtStatus";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Loader2, Image, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
+import { Loader2, Image as ImageIcon, CheckCircle, AlertCircle, RefreshCw } from "lucide-react";
 
 interface CoverArtStatusProps {
   playlistId: string;
@@ -72,11 +73,14 @@ export function CoverArtStatus({ playlistId, className }: CoverArtStatusProps) {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
-          <div className="relative aspect-square w-full max-w-md mx-auto">
-            <img
+          <div className="relative aspect-square w-full max-w-md mx-auto overflow-hidden rounded-lg shadow-lg">
+            <NextImage
               src={coverArtUrl}
-              alt="Playlist cover art"
-              className="w-full h-full object-cover rounded-lg shadow-lg"
+              alt={coverArtDescription || "Playlist cover art"}
+              fill
+              sizes="(max-width: 768px) 100vw, 400px"
+              className="object-cover"
+              priority
             />
           </div>
 
@@ -122,7 +126,7 @@ export function CoverArtStatus({ playlistId, className }: CoverArtStatusProps) {
     <Card className={className}>
       <CardHeader>
         <CardTitle className="flex items-center space-x-2">
-          <Image className="h-5 w-5 text-blue-600" />
+          <ImageIcon className="h-5 w-5 text-blue-600" />
           <span>Gerando Capa</span>
           {polling && <Loader2 className="h-4 w-4 animate-spin" />}
         </CardTitle>

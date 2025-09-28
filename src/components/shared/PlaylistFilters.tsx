@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -38,32 +39,78 @@ interface PlaylistFiltersProps {
 }
 
 const GENRES = [
-  "Rock", "Pop", "Jazz", "Eletrônica", "Hip-Hop", "R&B", "Country", "Classical",
-  "Folk", "Blues", "Reggae", "Latin", "Indie", "Alternative", "Metal", "Punk"
-];
+  "rock",
+  "pop",
+  "jazz",
+  "electronic",
+  "hipHop",
+  "rnb",
+  "country",
+  "classical",
+  "folk",
+  "blues",
+  "reggae",
+  "latin",
+  "indie",
+  "alternative",
+  "metal",
+  "punk",
+] as const;
 
 const MOODS = [
-  "Feliz", "Melancólico", "Energético", "Relaxante", "Romântico", "Nostálgico",
-  "Motivacional", "Tranquilo", "Animado", "Sombrio", "Festivo", "Contemplativo"
-];
+  "happy",
+  "melancholic",
+  "energetic",
+  "relaxing",
+  "romantic",
+  "nostalgic",
+  "motivational",
+  "calm",
+  "lively",
+  "dark",
+  "party",
+  "thoughtful",
+] as const;
 
-const ENERGY_LEVELS = ["Baixa", "Média", "Alta"];
+const ENERGY_LEVELS = ["low", "medium", "high"] as const;
 
 const INSTRUMENTS = [
-  "Guitarra", "Piano", "Bateria", "Sintetizador", "Violão", "Baixo", "Saxofone",
-  "Trompete", "Violino", "Flauta", "Vocal", "Percussão", "Teclado", "Harmônica"
-];
+  "guitar",
+  "piano",
+  "drums",
+  "synth",
+  "acousticGuitar",
+  "bass",
+  "sax",
+  "trumpet",
+  "violin",
+  "flute",
+  "vocal",
+  "percussion",
+  "keyboard",
+  "harmonica",
+] as const;
 
 const THEMES = [
-  "Amor", "Viagem", "Trabalho", "Festa", "Estudo", "Exercício", "Meditação",
-  "Nostalgia", "Aventura", "Reflexão", "Celebração", "Relaxamento"
-];
+  "love",
+  "travel",
+  "work",
+  "party",
+  "study",
+  "exercise",
+  "meditation",
+  "nostalgia",
+  "adventure",
+  "reflection",
+  "celebration",
+  "relaxation",
+] as const;
 
-const YEARS = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s"];
+const YEARS = ["60s", "70s", "80s", "90s", "2000s", "2010s", "2020s"] as const;
 
-const DURATIONS = ["Curta (< 30min)", "Média (30-60min)", "Longa (> 60min)"];
+const DURATIONS = ["short", "medium", "long"] as const;
 
-const TIME_RANGES = ["Últimos 7 dias", "Últimos 30 dias", "Últimos 3 meses", "Último ano"];
+const TIME_RANGES = ["7days", "30days", "3months", "1year"] as const;
 
 export function PlaylistFilters({ 
   filters, 
@@ -71,6 +118,7 @@ export function PlaylistFilters({
   totalResults = 0, 
   isLoading = false 
 }: PlaylistFiltersProps) {
+  const t = useTranslations('dashboard.filters');
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   const updateFilters = (updates: Partial<PlaylistFiltersState>) => {
@@ -116,7 +164,7 @@ export function PlaylistFilters({
         <div className="flex-1 relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <Input
-            placeholder="Buscar playlists por nome, artista ou descrição..."
+            placeholder={t('searchPlaceholder')}
             value={filters.search}
             onChange={(e) => updateFilters({ search: e.target.value })}
             className="pl-10"
@@ -135,8 +183,7 @@ export function PlaylistFilters({
             })}
             className="flex items-center gap-1"
           >
-            {/* Calendar icon removed */}
-            {filters.sortBy === "created_at" ? "Data" : "Nome"}
+            {filters.sortBy === "created_at" ? t('buttons.sortDate') : t('buttons.sortName')}
             {filters.sortOrder === "desc" ? "↓" : "↑"}
           </Button>
 
@@ -150,7 +197,7 @@ export function PlaylistFilters({
             className="flex items-center gap-1"
           >
             {filters.viewMode === "grid" ? <Grid3X3 className="w-4 h-4" /> : <List className="w-4 h-4" />}
-            {filters.viewMode === "grid" ? "Grid" : "Lista"}
+            {filters.viewMode === "grid" ? t('buttons.viewGrid') : t('buttons.viewList')}
           </Button>
 
           {/* Favorites */}
@@ -160,8 +207,7 @@ export function PlaylistFilters({
             onClick={() => updateFilters({ favoritesOnly: !filters.favoritesOnly })}
             className="flex items-center gap-1"
           >
-            {/* Heart icon removed */}
-            Favoritas
+            {t('buttons.favorites')}
           </Button>
         </div>
       </div>
@@ -175,7 +221,7 @@ export function PlaylistFilters({
           className="flex items-center gap-1 text-gray-600"
         >
           <Filter className="w-4 h-4" />
-          Filtros Avançados
+          {t('advanced.toggle')}
           {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </Button>
 
@@ -187,7 +233,7 @@ export function PlaylistFilters({
             className="text-red-600 hover:text-red-700"
           >
             <X className="w-4 h-4 mr-1" />
-            Limpar todos
+            {t('advanced.clearAll')}
           </Button>
         )}
       </div>
@@ -199,60 +245,68 @@ export function PlaylistFilters({
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             {/* Genre */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Gênero</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.genre')}</label>
               <select
                 value={filters.genre || ""}
                 onChange={(e) => updateFilters({ genre: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="">Todos os gêneros</option>
-                {GENRES.map(genre => (
-                  <option key={genre} value={genre}>{genre}</option>
+                <option value="">{t('select.genre')}</option>
+                {GENRES.map((genre) => (
+                  <option key={genre} value={genre}>
+                    {t(`options.genres.${genre}`)}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Mood */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Humor</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.mood')}</label>
               <select
                 value={filters.mood || ""}
                 onChange={(e) => updateFilters({ mood: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="">Qualquer humor</option>
-                {MOODS.map(mood => (
-                  <option key={mood} value={mood}>{mood}</option>
+                <option value="">{t('select.mood')}</option>
+                {MOODS.map((mood) => (
+                  <option key={mood} value={mood}>
+                    {t(`options.moods.${mood}`)}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Energy Level */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Energia</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.energy')}</label>
               <select
                 value={filters.energyLevel || ""}
                 onChange={(e) => updateFilters({ energyLevel: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="">Qualquer nível</option>
-                {ENERGY_LEVELS.map(level => (
-                  <option key={level} value={level}>{level}</option>
+                <option value="">{t('select.energy')}</option>
+                {ENERGY_LEVELS.map((level) => (
+                  <option key={level} value={level}>
+                    {t(`options.energy.${level}`)}
+                  </option>
                 ))}
               </select>
             </div>
 
             {/* Duration */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Duração</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.duration')}</label>
               <select
                 value={filters.duration || ""}
                 onChange={(e) => updateFilters({ duration: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="">Qualquer duração</option>
-                {DURATIONS.map(duration => (
-                  <option key={duration} value={duration}>{duration}</option>
+                <option value="">{t('select.duration')}</option>
+                {DURATIONS.map((duration) => (
+                  <option key={duration} value={duration}>
+                    {t(`options.duration.${duration}`)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -262,16 +316,16 @@ export function PlaylistFilters({
           <div className="space-y-4">
             {/* Instruments */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Instrumentos</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.instruments')}</label>
               <div className="flex flex-wrap gap-2">
-                {INSTRUMENTS.map(instrument => (
+                {INSTRUMENTS.map((instrument) => (
                   <Badge
                     key={instrument}
                     variant={filters.instruments?.includes(instrument) ? "default" : "outline"}
                     className="cursor-pointer hover:bg-gray-100"
                     onClick={() => toggleArrayFilter('instruments', instrument)}
                   >
-                    {instrument}
+                    {t(`options.instruments.${instrument}`)}
                   </Badge>
                 ))}
               </div>
@@ -279,16 +333,16 @@ export function PlaylistFilters({
 
             {/* Themes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Temas</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.themes')}</label>
               <div className="flex flex-wrap gap-2">
-                {THEMES.map(theme => (
+                {THEMES.map((theme) => (
                   <Badge
                     key={theme}
                     variant={filters.themes?.includes(theme) ? "default" : "outline"}
                     className="cursor-pointer hover:bg-gray-100"
                     onClick={() => toggleArrayFilter('themes', theme)}
                   >
-                    {theme}
+                    {t(`options.themes.${theme}`)}
                   </Badge>
                 ))}
               </div>
@@ -296,7 +350,7 @@ export function PlaylistFilters({
 
             {/* Years */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Anos/Décadas</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.years')}</label>
               <div className="flex flex-wrap gap-2">
                 {YEARS.map(year => (
                   <Badge
@@ -313,15 +367,17 @@ export function PlaylistFilters({
 
             {/* Time Range */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Período</label>
+              <label className="block text-sm font-medium text-gray-700 mb-2">{t('labels.timeRange')}</label>
               <select
                 value={filters.timeRange || ""}
                 onChange={(e) => updateFilters({ timeRange: e.target.value || undefined })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
               >
-                <option value="">Todo o período</option>
-                {TIME_RANGES.map(range => (
-                  <option key={range} value={range}>{range}</option>
+                <option value="">{t('select.timeRange')}</option>
+                {TIME_RANGES.map((range) => (
+                  <option key={range} value={range}>
+                    {t(`options.timeRange.${range}`)}
+                  </option>
                 ))}
               </select>
             </div>
@@ -334,7 +390,7 @@ export function PlaylistFilters({
         <div className="flex flex-wrap gap-2">
           {filters.search && (
             <Badge variant="secondary" className="flex items-center gap-1">
-              Busca: {filters.search}
+              {t('badges.search', { value: filters.search })}
               <X 
                 className="w-3 h-3 cursor-pointer" 
                 onClick={() => updateFilters({ search: "" })}
@@ -343,7 +399,7 @@ export function PlaylistFilters({
           )}
           {filters.genre && (
             <Badge variant="secondary" className="flex items-center gap-1">
-              Gênero: {filters.genre}
+              {t('badges.genre', { value: t(`options.genres.${filters.genre}`) })}
               <X 
                 className="w-3 h-3 cursor-pointer" 
                 onClick={() => updateFilters({ genre: undefined })}
@@ -352,31 +408,40 @@ export function PlaylistFilters({
           )}
           {filters.mood && (
             <Badge variant="secondary" className="flex items-center gap-1">
-              Humor: {filters.mood}
+              {t('badges.mood', { value: t(`options.moods.${filters.mood}`) })}
               <X 
                 className="w-3 h-3 cursor-pointer" 
                 onClick={() => updateFilters({ mood: undefined })}
               />
             </Badge>
           )}
-          {filters.instruments?.map(instrument => (
+          {filters.instruments?.map((instrument) => (
             <Badge key={instrument} variant="secondary" className="flex items-center gap-1">
-              {instrument}
+              {t(`options.instruments.${instrument}`)}
               <X 
                 className="w-3 h-3 cursor-pointer" 
                 onClick={() => toggleArrayFilter('instruments', instrument)}
               />
             </Badge>
           ))}
-          {filters.themes?.map(theme => (
+          {filters.themes?.map((theme) => (
             <Badge key={theme} variant="secondary" className="flex items-center gap-1">
-              {theme}
+              {t(`options.themes.${theme}`)}
               <X 
                 className="w-3 h-3 cursor-pointer" 
                 onClick={() => toggleArrayFilter('themes', theme)}
               />
             </Badge>
           ))}
+          {filters.favoritesOnly && (
+            <Badge variant="secondary" className="flex items-center gap-1">
+              {t('badges.favorites')}
+              <X
+                className="w-3 h-3 cursor-pointer"
+                onClick={() => updateFilters({ favoritesOnly: false })}
+              />
+            </Badge>
+          )}
         </div>
       )}
 
@@ -385,15 +450,12 @@ export function PlaylistFilters({
         {isLoading ? (
           <>
             <div className="w-4 h-4 border-2 border-gray-300 border-t-red-500 rounded-full animate-spin"></div>
-            Carregando...
+            {t('results.loading')}
           </>
         ) : (
-          <>
-            {/* Music icon removed */}
-            {totalResults} playlist{totalResults !== 1 ? 's' : ''} encontrada{totalResults !== 1 ? 's' : ''}
-          </>
+          <>{t('results.count', { count: totalResults })}</>
         )}
       </div>
     </div>
   );
-} 
+}

@@ -244,11 +244,11 @@ function generateGradient(id: string): string {
 
 function getDurationRange(duration: string): { min: number; max: number } | null {
   switch (duration) {
-    case 'Curta (< 30min)':
+    case 'short':
       return { min: 0, max: 30 * 60 * 1000 };
-    case 'Média (30-60min)':
+    case 'medium':
       return { min: 30 * 60 * 1000, max: 60 * 60 * 1000 };
-    case 'Longa (> 60min)':
+    case 'long':
       return { min: 60 * 60 * 1000, max: Number.MAX_SAFE_INTEGER };
     default:
       return null;
@@ -260,16 +260,16 @@ function getTimeRange(timeRange: string): { start: string; end: string } | null 
   const start = new Date();
   
   switch (timeRange) {
-    case 'Últimos 7 dias':
+    case '7days':
       start.setDate(now.getDate() - 7);
       break;
-    case 'Últimos 30 dias':
+    case '30days':
       start.setDate(now.getDate() - 30);
       break;
-    case 'Últimos 3 meses':
+    case '3months':
       start.setMonth(now.getMonth() - 3);
       break;
-    case 'Último ano':
+    case '1year':
       start.setFullYear(now.getFullYear() - 1);
       break;
     default:
