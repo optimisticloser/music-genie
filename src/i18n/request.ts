@@ -15,5 +15,6 @@ export default getRequestConfig(async ({locale}) => {
   return {
     locale: validLocale,
     messages,
+    timeZone: "America/Sao_Paulo",
   };
 });
