@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { useLocale, useTranslations } from "next-intl";
+import { useLocale } from "next-intl";
 import { useRouter } from "@/i18n/navigation";
 import { Button } from "@/components/ui/button";
 import { Globe, Check } from "lucide-react";
@@ -21,7 +21,8 @@ export function LanguageSelector() {
   const handleLanguageChange = (newLocale: string) => {
     setIsOpen(false);
     if (newLocale !== locale) {
-      router.replace({ pathname: window.location.pathname }, { locale: newLocale });
+      // Redirect to home page with new locale
+      router.push("/", { locale: newLocale });
     }
   };
 
