@@ -1,12 +1,17 @@
 "use client";
 
 import { useEffect } from "react";
+import { useLocale } from "next-intl";
 import type { Session } from "@supabase/supabase-js";
 import createClient from "@/lib/supabase/client";
 
-async function syncServerSession(event: string, session: Session | null) {
+async function syncServerSession(
+  locale: string,
+  event: string,
+  session: Session | null
+) {
   try {
-    await fetch("/auth/callback", {
+    await fetch(`/${locale}/auth/callback`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -24,6 +29,8 @@ export function SupabaseSessionProvider({
 }: {
   children: React.ReactNode;
 }) {
+  const locale = useLocale();
+
   useEffect(() => {
     const supabase = createClient();
 
@@ -35,7 +42,7 @@ export function SupabaseSessionProvider({
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
       if (event === "INITIAL_SESSION") {
-        syncServerSession(session ? "SIGNED_IN" : "SIGNED_OUT", session);
+        syncServerSession(locale, session ? "SIGNED_IN" : "SIGNED_OUT", session);
         return;
       }
 
@@ -44,14 +51,14 @@ export function SupabaseSessionProvider({
         event === "SIGNED_OUT" ||
         event === "TOKEN_REFRESHED"
       ) {
-        syncServerSession(event, session);
+        syncServerSession(locale, event, session);
       }
     });
 
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [locale]);
 
   return <>{children}</>;
 }

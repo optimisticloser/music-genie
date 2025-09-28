@@ -3,21 +3,37 @@
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import createClient from "@/lib/supabase/server";
+import { defaultLocale, locales } from "@/i18n/routing";
+
+type SupportedLocale = (typeof locales)[number];
+
+function normalizeLocale(entry: FormDataEntryValue | null): SupportedLocale {
+  const value = typeof entry === "string" ? entry : null;
+
+  if (value && (locales as readonly string[]).includes(value)) {
+    return value as SupportedLocale;
+  }
+
+  return defaultLocale as SupportedLocale;
+}
 
 // Validation schemas
 const signUpSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(6, "Senha deve ter pelo menos 6 caracteres"),
-  fullName: z.string().min(2, "Nome deve ter pelo menos 2 caracteres"),
+  email: z.string().email(),
+  password: z.string().min(6),
+  fullName: z.string().min(2),
+  locale: z.string().optional(),
 });
 
 const signInSchema = z.object({
-  email: z.string().email("Email inválido"),
-  password: z.string().min(1, "Senha é obrigatória"),
+  email: z.string().email(),
+  password: z.string().min(1),
+  locale: z.string().optional(),
 });
 
 const resetPasswordSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.string().email(),
+  locale: z.string().optional(),
 });
 
 export async function signUp(formData: FormData) {
@@ -25,16 +41,18 @@ export async function signUp(formData: FormData) {
     email: formData.get("email"),
     password: formData.get("password"),
     fullName: formData.get("fullName"),
+    locale: formData.get("locale"),
   });
 
   if (!validatedFields.success) {
     return {
-      error: "Dados inválidos",
+      error: "invalidData",
       details: validatedFields.error.flatten().fieldErrors,
     };
   }
 
-  const { email, password, fullName } = validatedFields.data;
+  const { email, password, fullName, locale } = validatedFields.data;
+  const resolvedLocale = normalizeLocale(locale ?? null);
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signUp({
@@ -44,19 +62,19 @@ export async function signUp(formData: FormData) {
       data: {
         full_name: fullName,
       },
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/${resolvedLocale}/auth/callback`,
     },
   });
 
   if (error) {
     return {
-      error: error.message,
+      error: "signUpFailed",
+      details: error.message,
     };
   }
 
   return {
-    success: true,
-    message: "Verifique seu email para confirmar a conta!",
+    success: "checkEmail",
   };
 }
 
@@ -64,16 +82,18 @@ export async function signIn(formData: FormData) {
   const validatedFields = signInSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
+    locale: formData.get("locale"),
   });
 
   if (!validatedFields.success) {
     return {
-      error: "Dados inválidos",
+      error: "invalidData",
       details: validatedFields.error.flatten().fieldErrors,
     };
   }
 
-  const { email, password } = validatedFields.data;
+  const { email, password, locale } = validatedFields.data;
+  const resolvedLocale = normalizeLocale(locale ?? null);
   const supabase = await createClient();
 
   const { error } = await supabase.auth.signInWithPassword({
@@ -83,55 +103,59 @@ export async function signIn(formData: FormData) {
 
   if (error) {
     return {
-      error: "Email ou senha incorretos",
+      error: "invalidCredentials",
     };
   }
 
-  redirect("/dashboard");
+  redirect(`/${resolvedLocale}/dashboard`);
 }
 
-export async function signOut() {
+export async function signOut(locale?: string) {
   const supabase = await createClient();
   await supabase.auth.signOut();
-  redirect("/login");
+  const resolvedLocale = normalizeLocale(locale ?? null);
+  redirect(`/${resolvedLocale}/login`);
 }
 
 export async function resetPassword(formData: FormData) {
   const validatedFields = resetPasswordSchema.safeParse({
     email: formData.get("email"),
+    locale: formData.get("locale"),
   });
 
   if (!validatedFields.success) {
     return {
-      error: "Email inválido",
+      error: "invalidEmail",
     };
   }
 
-  const { email } = validatedFields.data;
+  const { email, locale } = validatedFields.data;
+  const resolvedLocale = normalizeLocale(locale ?? null);
   const supabase = await createClient();
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/reset-password`,
+    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/${resolvedLocale}/auth/callback?next=/reset-password`,
   });
 
   if (error) {
     return {
-      error: "Erro ao enviar email de reset",
+      error: "resetFailed",
+      details: error.message,
     };
   }
 
   return {
-    success: true,
-    message: "Email de reset enviado!",
+    success: "resetSent",
   };
 }
 
 export async function updatePassword(formData: FormData) {
   const password = formData.get("password") as string;
+  const locale = normalizeLocale(formData.get("locale"));
   
   if (!password || password.length < 6) {
     return {
-      error: "Senha deve ter pelo menos 6 caracteres",
+      error: "passwordTooShort",
     };
   }
 
@@ -143,9 +167,10 @@ export async function updatePassword(formData: FormData) {
 
   if (error) {
     return {
-      error: "Erro ao atualizar senha",
+      error: "updatePasswordFailed",
+      details: error.message,
     };
   }
 
-  redirect("/dashboard");
-} 
+  redirect(`/${locale}/dashboard`);
+}

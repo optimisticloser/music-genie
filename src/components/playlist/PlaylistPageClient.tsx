@@ -1,8 +1,11 @@
 "use client";
 
 import { useState } from "react";
+import { useTranslations } from "next-intl";
+import { toast } from "sonner";
+import { Loader2, Play, ExternalLink, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Sparkles, Loader2, Play, ExternalLink } from "lucide-react";
+import { useRouter } from "@/i18n/navigation";
 
 interface PlaylistActionButtonsProps {
   playlistId: string;
@@ -21,6 +24,8 @@ export function PlaylistActionButtons({
 }: PlaylistActionButtonsProps) {
   const [isUpdatingImages, setIsUpdatingImages] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
+  const t = useTranslations("dashboard.playlist");
+  const router = useRouter();
 
   const handleUpdateImages = async () => {
     setIsUpdatingImages(true);
@@ -38,10 +43,11 @@ export function PlaylistActionButtons({
       }
 
       await response.json();
-      // Refresh the page to show updated images
-      window.location.reload();
+      toast.success(t("actions.refreshImages.success"));
+      router.refresh();
     } catch (error) {
       console.error('Error updating playlist images:', error);
+      toast.error(t("actions.refreshImages.error"));
     } finally {
       setIsUpdatingImages(false);
     }
@@ -70,15 +76,11 @@ export function PlaylistActionButtons({
       }
 
       const data = await response.json();
-      console.log('✅ Cover art generated:', data);
 
-      // Verificar se temos a URL da capa
       if (!data.cover_art?.url) {
-        console.error('❌ No cover art URL received:', data);
         throw new Error('No cover art URL received from generation');
       }
 
-      // Atualizar a playlist com a URL da capa gerada
       const updateResponse = await fetch('/api/playlist/update-cover', {
         method: 'POST',
         headers: {
@@ -97,15 +99,12 @@ export function PlaylistActionButtons({
         throw new Error(errorData.error || 'Failed to update playlist with cover art');
       }
 
-      const updateData = await updateResponse.json();
-      console.log('✅ Playlist updated successfully:', updateData);
-      
-      // Refresh the page to show the new cover
-      window.location.reload();
-
+      await updateResponse.json();
+      toast.success(t("actions.generateCover.success"));
+      router.refresh();
     } catch (error) {
       console.error('Error generating cover art:', error);
-      alert(`Erro ao gerar capa: ${error instanceof Error ? error.message : 'Erro desconhecido'}`);
+      toast.error(t("actions.generateCover.error"));
     } finally {
       setIsGeneratingCover(false);
     }
@@ -114,7 +113,9 @@ export function PlaylistActionButtons({
   const handleSpotifyOpen = () => {
     if (spotifyPlaylistId) {
       window.open(`https://open.spotify.com/playlist/${spotifyPlaylistId}`, '_blank');
+      return;
     }
+    toast.info(t("toasts.spotifyUnavailable"));
   };
 
   return (
@@ -125,7 +126,7 @@ export function PlaylistActionButtons({
           onClick={handleSpotifyOpen}
         >
           <Play className="w-4 h-4 mr-2" />
-          Ouvir no Spotify
+          {t("actions.openSpotify.label")}
         </Button>
       )}
       <Button
@@ -139,7 +140,7 @@ export function PlaylistActionButtons({
         ) : (
           <ExternalLink className="w-4 h-4 mr-2" />
         )}
-        {isUpdatingImages ? 'Atualizando...' : 'Atualizar Imagens'}
+        {isUpdatingImages ? t("actions.refreshImages.loading") : t("actions.refreshImages.label")}
       </Button>
       <Button
         variant="outline"
@@ -152,7 +153,7 @@ export function PlaylistActionButtons({
         ) : (
           <Sparkles className="w-4 h-4 mr-2" />
         )}
-        {isGeneratingCover ? 'Gerando...' : 'Criar capa com IA'}
+        {isGeneratingCover ? t("actions.generateCover.loading") : t("actions.generateCover.label")}
       </Button>
     </div>
   );

@@ -28,6 +28,9 @@ export const playlistPromptAgent = workflowAI.agent<
 // === Playlist Generator ===
 export interface PlaylistGeneratorInput {
   prompt?: string;
+  locale?: string;
+  market?: string;
+  cultural_context?: string;
 }
 
 export interface PlaylistGeneratorOutput {

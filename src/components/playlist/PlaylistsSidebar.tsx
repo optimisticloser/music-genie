@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
+import { usePathname, useRouter } from '@/i18n/navigation';
 import {
   Music,
   Plus,
@@ -15,6 +16,7 @@ import {
 import type { User } from '@supabase/supabase-js';
 import createClient from '@/lib/supabase/client';
 import { siteConfig } from '@/lib/config';
+import { stripLocaleFromPath } from '@/i18n/utils';
 import { cn } from '@/lib/utils';
 
 interface PlaylistListItem {
@@ -44,6 +46,7 @@ interface PlaylistsSidebarProps {
 export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const t = useTranslations('dashboard.playlistsSidebar');
   const [items, setItems] = useState<PlaylistListItem[]>([]);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
@@ -56,19 +59,23 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
   const fetchingRef = useRef(false);
   const supabase = createClient();
 
+  const normalizedPathname = useMemo(
+    () => stripLocaleFromPath(pathname),
+    [pathname]
+  );
+
   const activeId = useMemo(() => {
-    const match = pathname?.match(/\/dashboard\/playlist\/([^/?#]+)/);
+    const match = normalizedPathname.match(/\/dashboard\/playlist\/([^/?#]+)/);
     return match?.[1] || null;
-  }, [pathname]);
+  }, [normalizedPathname]);
 
   const accountName = useMemo(() => {
-    if (!user) return 'Minha conta';
-    return (
-      (user.user_metadata?.full_name as string | undefined)?.trim() ||
-      user.email?.split('@')[0] ||
-      'Minha conta'
-    );
-  }, [user]);
+    if (!user) return t('account.default');
+    const fullName = (user.user_metadata?.full_name as string | undefined)?.trim();
+    if (fullName) return fullName;
+    if (user.email) return user.email.split('@')[0];
+    return t('account.default');
+  }, [user, t]);
 
   const accountInitials = useMemo(() => {
     return accountName
@@ -120,7 +127,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
       const data = await res.json();
       const newItems: PlaylistListItem[] = (data.playlists as ApiPlaylist[] | undefined || []).map((p: ApiPlaylist) => ({
         id: p.id,
-        title: p.title || 'Sem título',
+        title: p.title || t('untitled'),
         status: p.status,
         total_tracks: p.total_tracks,
         viewed_at: p.viewed_at,
@@ -141,7 +148,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
       setLoading(false);
       fetchingRef.current = false;
     }
-  }, [loading, hasNext]);
+  }, [loading, hasNext, t]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -178,7 +185,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
       onClose?.();
       router.replace('/login');
     } catch (error) {
-      console.error('Erro ao sair:', error);
+      console.error('Failed to sign out', error);
     } finally {
       setIsSigningOut(false);
     }
@@ -203,10 +210,12 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
           role="button"
           tabIndex={0}
           onClick={() => router.push('/dashboard/new')}
-          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') router.push('/dashboard/new'); }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') router.push('/dashboard/new');
+          }}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-700 hover:bg-red-50 cursor-pointer"
         >
-          <Plus className="w-4 h-4 text-red-600" /> Nova playlist
+          <Plus className="w-4 h-4 text-red-600" /> {t('newPlaylist')}
         </div>
       </div>
 
@@ -215,7 +224,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
           <input
             type="text"
-            placeholder="Buscar playlists"
+            placeholder={t('searchPlaceholder')}
             value={query}
             onChange={(e) => { setQuery(e.target.value); setTyping(true); }}
             className="w-full pl-9 pr-3 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-500"
@@ -230,10 +239,24 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
             return (
               <div
                 key={item.id}
-                onClick={() => { router.push(`/dashboard/playlist/${item.id}`); onClose?.(); }}
+                onClick={() => {
+                  router.push({
+                    pathname: '/dashboard/playlist/[id]',
+                    params: { id: item.id },
+                  });
+                  onClose?.();
+                }}
                 role="button"
                 tabIndex={0}
-                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { router.push(`/dashboard/playlist/${item.id}`); onClose?.(); } }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    router.push({
+                      pathname: '/dashboard/playlist/[id]',
+                      params: { id: item.id },
+                    });
+                    onClose?.();
+                  }
+                }}
                 className={cn(
                   'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm transition-colors text-left cursor-pointer',
                   active ? 'bg-red-100 text-red-700' : 'text-gray-700 hover:bg-gray-100'
@@ -245,18 +268,26 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
                     {item.is_favorite ? <Star className="w-3.5 h-3.5 text-yellow-500" /> : null}
                   </div>
                   <div className="flex items-center gap-2 text-xs text-gray-500">
-                    {item.total_tracks ? <span>{item.total_tracks} faixas</span> : null}
-                    <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{item.viewed_at ? 'visto' : 'novo'}</span>
+                    {item.total_tracks ? (
+                      <span>{t('trackCount', { count: item.total_tracks })}</span>
+                    ) : null}
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {item.viewed_at ? t('status.viewed') : t('status.new')}
+                    </span>
                   </div>
                 </div>
               </div>
             );
           })}
           {loading && (
-            <div className="flex justify-center py-4 text-gray-500 text-sm"><Loader2 className="w-4 h-4 animate-spin mr-2" />Carregando…</div>
+            <div className="flex justify-center py-4 text-gray-500 text-sm">
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              {t('loading')}
+            </div>
           )}
           {!loading && items.length === 0 && !typing && (
-            <div className="text-center text-gray-500 text-sm py-8">Nenhuma playlist encontrada</div>
+            <div className="text-center text-gray-500 text-sm py-8">{t('empty')}</div>
           )}
         </div>
       </div>
@@ -268,7 +299,7 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
           </div>
           <div className="min-w-0">
             <p className="text-sm font-medium text-gray-900 truncate">{accountName}</p>
-            <p className="text-xs text-gray-500 truncate">{user?.email || 'Conta não autenticada'}</p>
+            <p className="text-xs text-gray-500 truncate">{user?.email || t('account.unauthenticated')}</p>
           </div>
         </div>
 
@@ -278,13 +309,13 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
             onClick={goToSettings}
             className={cn(
               'flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-              pathname?.startsWith('/dashboard/settings')
+              normalizedPathname.startsWith('/dashboard/settings')
                 ? 'bg-red-100 text-red-700'
                 : 'text-gray-700 hover:bg-gray-100'
             )}
           >
             <Settings className="w-4 h-4" />
-            Configurações
+            {t('actions.settings')}
           </button>
           <button
             type="button"
@@ -297,12 +328,10 @@ export function PlaylistsSidebar({ onClose }: PlaylistsSidebarProps) {
             ) : (
               <LogOut className="w-4 h-4" />
             )}
-            Sair
+            {isSigningOut ? t('actions.signingOut') : t('actions.signOut')}
           </button>
         </div>
       </div>
     </div>
   );
 }
-
-

@@ -1,5 +1,10 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import {createServerClient} from "@supabase/ssr";
+import {NextResponse, type NextRequest} from "next/server";
+import {defaultLocale, locales} from "@/i18n/routing";
+
+type AppLocale = (typeof locales)[number];
+
+const SUPPORTED_LOCALES = locales as ReadonlyArray<AppLocale>;
 
 const PROTECTED_ROUTES = [
   "/dashboard",
@@ -13,18 +18,45 @@ const PROTECTED_ROUTES = [
   "/dashboard/playlist",
 ];
 
-const AUTH_ROUTES = [
-  "/login",
-  "/signup",
-  "/forgot-password",
-];
+const AUTH_ROUTES = ["/login", "/signup", "/forgot-password"];
 
-export async function updateSession(request: NextRequest) {
-  let response = NextResponse.next({
-    request: {
-      headers: request.headers,
-    },
-  });
+type ParsedPath = {
+  locale: AppLocale;
+  pathname: string;
+};
+
+function isSupportedLocale(locale: string): locale is AppLocale {
+  return SUPPORTED_LOCALES.includes(locale as AppLocale);
+}
+
+function parseLocale(pathname: string): ParsedPath {
+  const segments = pathname.split("/").filter(Boolean);
+  const potentialLocale = segments[0];
+
+  if (potentialLocale && isSupportedLocale(potentialLocale)) {
+    const pathWithoutLocale = `/${segments.slice(1).join("/")}`;
+    return {
+      locale: potentialLocale,
+      pathname: pathWithoutLocale === "/" ? "/" : pathWithoutLocale,
+    };
+  }
+
+  return { locale: defaultLocale as AppLocale, pathname: pathname || "/" };
+}
+
+export async function updateSession(
+  request: NextRequest,
+  response?: NextResponse
+) {
+  const { locale, pathname } = parseLocale(request.nextUrl.pathname);
+
+  const nextResponse =
+    response ??
+    NextResponse.next({
+      request: {
+        headers: request.headers,
+      },
+    });
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -37,35 +69,35 @@ export async function updateSession(request: NextRequest) {
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value);
-            response = NextResponse.next({
-              request: {
-                headers: request.headers,
-              },
-            });
-            response.cookies.set(name, value, options);
+            nextResponse.cookies.set(name, value, options);
           });
         },
       },
     }
   );
 
-  // Don't interfere with auth callback
-  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
-    return response;
+  if (pathname.startsWith("/auth/callback")) {
+    return nextResponse;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
-  const path = request.nextUrl.pathname;
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-  if (!user && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
-    const redirectUrl = new URL('/login', request.url);
+  const requiresAuth = PROTECTED_ROUTES.some((route) =>
+    pathname === route || pathname.startsWith(`${route}/`)
+  );
+
+  if (!user && requiresAuth) {
+    const redirectUrl = new URL(`/${locale}/login`, request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (user && AUTH_ROUTES.some(route => path.startsWith(route))) {
-    const redirectUrl = new URL('/dashboard/new', request.url);
+  const isAuthRoute = AUTH_ROUTES.some((route) => pathname.startsWith(route));
+  if (user && isAuthRoute) {
+    const redirectUrl = new URL(`/${locale}/dashboard/generate`, request.url);
     return NextResponse.redirect(redirectUrl);
   }
 
-  return response;
-} 
+  return nextResponse;
+}

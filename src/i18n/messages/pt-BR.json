@@ -1,0 +1,611 @@
+{
+  "common": {
+    "appName": "Music Genie",
+    "actions": {
+      "viewMore": "Ver mais",
+      "viewLess": "Ver menos"
+    }
+  },
+  "metadata": {
+    "title": "{appName} - Gerador de playlists com IA",
+    "description": "Crie playlists personalizadas com inteligência artificial e salve direto no Spotify. Descubra novas músicas feitas para o seu gosto.",
+    "keywords": "playlist, música, ia, inteligência artificial, spotify, gerador de playlists, música personalizada, descoberta musical"
+  },
+  "auth": {
+    "common": {
+      "brandName": "Music Genie",
+      "emailLabel": "Email",
+      "emailPlaceholder": "seu@email.com",
+      "passwordLabel": "Senha",
+      "passwordPlaceholder": "••••••••",
+      "fullNameLabel": "Nome completo",
+      "fullNamePlaceholder": "Seu nome completo",
+      "passwordHint": "Mínimo de 6 caracteres",
+      "backToLogin": "Voltar para o login"
+    },
+    "messages": {
+      "invalidData": "Revise os campos destacados e tente novamente.",
+      "invalidCredentials": "Email ou senha incorretos.",
+      "signUpFailed": "Não foi possível criar sua conta. Tente novamente mais tarde.",
+      "invalidEmail": "Informe um email válido.",
+      "resetFailed": "Não foi possível enviar o email de recuperação. Tente novamente mais tarde.",
+      "checkEmail": "Verifique sua caixa de entrada para confirmar a conta.",
+      "resetSent": "Enviamos um email com instruções para redefinir sua senha.",
+      "passwordTooShort": "A senha deve ter pelo menos 6 caracteres.",
+      "updatePasswordFailed": "Não conseguimos atualizar sua senha. Tente novamente.",
+      "unexpected": "Ocorreu um erro inesperado. Tente novamente."
+    },
+    "login": {
+      "title": "Entrar",
+      "subtitle": "Use seu email e senha para acessar sua conta.",
+      "button": "Entrar",
+      "loading": "Entrando...",
+      "forgot": "Esqueceu sua senha?",
+      "signupPrompt": "Não tem uma conta? <link>Crie agora</link>"
+    },
+    "signup": {
+      "title": "Criar conta",
+      "subtitle": "Preencha os dados abaixo para começar.",
+      "button": "Criar conta",
+      "loading": "Criando conta...",
+      "loginPrompt": "Já tem uma conta? <link>Entre aqui</link>"
+    },
+    "forgot": {
+      "title": "Esqueceu sua senha?",
+      "subtitle": "Digite seu email e enviaremos um link para redefinir.",
+      "button": "Enviar link de reset",
+      "loading": "Enviando...",
+      "back": "Voltar para o login"
+    },
+    "codeError": {
+      "title": "Erro na confirmação",
+      "subtitle": "Encontramos um problema ao confirmar sua conta.",
+      "messages": {
+        "no_code": "Nenhum código de confirmação foi fornecido. Verifique se você clicou no link correto do seu email.",
+        "exchange_failed": "Não foi possível processar a confirmação: {description}.",
+        "no_user": "Não conseguimos recuperar os dados do usuário após a confirmação.",
+        "unexpected": "Ocorreu um erro inesperado durante o processo de confirmação.",
+        "default": "O link de confirmação pode ter expirado ou ser inválido. Verifique se você clicou no link correto do seu email."
+      },
+      "actions": {
+        "back": "Voltar para o login",
+        "create": "Criar nova conta",
+        "resend": "Reenviar email de confirmação"
+      },
+      "loading": "Carregando...",
+      "contact": "Se o problema persistir, entre em contato conosco.",
+      "errorCode": "Código do erro: {code}"
+    }
+  },
+  "landing": {
+    "header": {
+      "login": "Entrar",
+      "signup": "Começar grátis"
+    },
+    "hero": {
+      "badge": "Criado com IA",
+      "heading": "Crie playlists incríveis com <highlight>Inteligência Artificial</highlight>",
+      "description": "Descreva o que você quer ouvir e nossa IA cria playlists sob medida para o seu momento. Integração perfeita com o Spotify.",
+      "primaryCta": "Começar agora",
+      "secondaryCta": "Já tenho conta"
+    },
+    "features": {
+      "title": "Por que escolher o Music Genie?",
+      "subtitle": "Descubra como a IA pode transformar sua experiência musical",
+      "items": {
+        "intelligent": {
+          "title": "IA inteligente",
+          "description": "Nossa IA entende o seu gosto musical e cria playlists que combinam com suas preferências e humor."
+        },
+        "instant": {
+          "title": "Instantâneo",
+          "description": "Gere playlists em segundos. Basta descrever o que você quer ouvir que a IA faz o resto."
+        },
+        "personalized": {
+          "title": "Personalizado",
+          "description": "Cada playlist é única e adaptada a você. Aprende com suas escolhas e melhora com o tempo."
+        }
+      }
+    },
+    "steps": {
+      "title": "Como funciona?",
+      "subtitle": "Três passos simples para criar a playlist perfeita",
+      "items": {
+        "describe": {
+          "title": "Descreva",
+          "description": "Diga o que quer ouvir: \"músicas para estudar\", \"rock dos anos 80\", \"jazz relaxante\"..."
+        },
+        "ai": {
+          "title": "IA cria",
+          "description": "Nossa inteligência analisa milhões de faixas e monta a playlist ideal para você."
+        },
+        "enjoy": {
+          "title": "Aproveite",
+          "description": "Salve no Spotify, compartilhe com amigos ou continue criando playlists incríveis."
+        }
+      }
+    },
+    "cta": {
+      "title": "Pronto para transformar sua música?",
+      "subtitle": "Junte-se a milhares de pessoas que já descobriram o poder da IA musical",
+      "primary": "Começar grátis agora"
+    },
+    "footer": {
+      "tagline": "Criando o futuro da música com inteligência artificial.",
+      "product": "Produto",
+      "support": "Suporte",
+      "legal": "Legal",
+      "links": {
+        "dashboard": "Dashboard",
+        "generator": "Gerador IA",
+        "discover": "Descobrir",
+        "help": "Central de ajuda",
+        "contact": "Contato",
+        "feedback": "Feedback",
+        "privacy": "Privacidade",
+        "terms": "Termos",
+        "cookies": "Cookies"
+      },
+      "copyright": "Direitos autorais {year} Music Genie. Todos os direitos reservados."
+    }
+  },
+  "dashboard": {
+    "layout": {
+      "openMenu": "Abrir menu",
+      "closeMenu": "Fechar menu"
+    },
+    "sidebar": {
+      "searchPlaceholder": "Buscar",
+      "close": "Fechar menu",
+      "libraryTitle": "Biblioteca",
+      "nav": {
+        "home": "Início",
+        "discover": "Descobrir",
+        "radio": "Rádio",
+        "generate": "Gerador IA"
+      },
+      "library": {
+        "history": "Adições recentes",
+        "favorites": "Favoritos"
+      }
+    },
+    "playlistsSidebar": {
+      "newPlaylist": "Nova playlist",
+      "searchPlaceholder": "Buscar playlists",
+      "untitled": "Sem título",
+      "trackCount": "{count, plural, one {# faixa} other {# faixas}}",
+      "status": {
+        "viewed": "visto",
+        "new": "novo"
+      },
+      "loading": "Carregando…",
+      "empty": "Nenhuma playlist encontrada",
+      "account": {
+        "default": "Minha conta",
+        "unauthenticated": "Conta não autenticada"
+      },
+      "actions": {
+        "settings": "Configurações",
+        "signOut": "Sair",
+        "signingOut": "Saindo…"
+      }
+    },
+    "generate": {
+      "cta": {
+        "submit": "Gerar",
+        "submitting": "Gerando…"
+      },
+      "messages": {
+        "addElements": "Adicione alguns detalhes ao seu prompt primeiro.",
+        "suggestionsFailed": "Não conseguimos carregar novas sugestões. Tente novamente em instantes.",
+        "createDraftFailed": "Não foi possível iniciar sua playlist. Tente novamente.",
+        "unexpected": "Algo deu errado. Tente novamente.",
+        "aiPromptTitle": "Prompt gerado pela IA:",
+        "aiPromptLoading": "Gerando prompt..."
+      },
+      "empty": {
+        "title": "Vamos criar a sua playlist perfeita",
+        "description": "Comece escolhendo uma das opções abaixo ou digite o que você tem em mente.",
+        "suggestionsTitle": "Ideias populares de playlist:",
+        "categoryHint": "Ou escolha qualquer uma destas opções"
+      },
+      "suggestions": {
+        "loading": "Carregando sugestões..."
+      },
+      "input": {
+        "placeholderEmpty": "Digite o que você quer que sua playlist seja...",
+        "placeholderFilled": "Adicione mais detalhes à sua playlist..."
+      },
+      "tags": {
+        "categoryTitles": {
+          "genre": "Gênero",
+          "mood": "Clima",
+          "era": "Década",
+          "occasion": "Ocasião",
+          "source": "Origem"
+        },
+        "genre": {
+          "options": {
+            "indie-folk": "Indie Folk",
+            "mellow": "Calmo",
+            "pop": "Pop",
+            "rock": "Rock",
+            "hip-hop-rap": "Hip-Hop/Rap",
+            "electronic": "Eletrônica",
+            "classic-rock": "Rock Clássico",
+            "alternative-rock": "Rock Alternativo",
+            "indie": "Indie"
+          }
+        },
+        "mood": {
+          "options": {
+            "chill": "Tranquilo",
+            "energetic": "Energizante",
+            "melancholic": "Melancólico",
+            "upbeat": "Animado",
+            "romantic": "Romântico",
+            "nostalgic": "Nostálgico"
+          }
+        },
+        "era": {
+          "options": {
+            "2010s": "Anos 2010",
+            "2000s": "Anos 2000",
+            "90s": "Anos 90",
+            "80s": "Anos 80",
+            "70s": "Anos 70"
+          }
+        },
+        "occasion": {
+          "options": {
+            "road-trip": "Viagem de carro",
+            "workout": "Treino",
+            "study": "Estudos",
+            "party": "Festa",
+            "relaxing": "Relaxar",
+            "cooking": "Cozinhar"
+          }
+        },
+        "source": {
+          "options": {
+            "movies-soundtrack": "Trilhas de filmes",
+            "tv-shows": "Séries de TV",
+            "video-games": "Jogos eletrônicos",
+            "commercials": "Comerciais",
+            "viral-tiktok": "Virais do TikTok"
+          }
+        }
+      }
+    },
+    "filters": {
+      "searchPlaceholder": "Buscar playlists por nome, artista ou descrição...",
+      "buttons": {
+        "sortDate": "Data",
+        "sortName": "Nome",
+        "viewGrid": "Grade",
+        "viewList": "Lista",
+        "favorites": "Favoritas"
+      },
+      "advanced": {
+        "toggle": "Filtros avançados",
+        "clearAll": "Limpar todos"
+      },
+      "labels": {
+        "genre": "Gênero",
+        "mood": "Humor",
+        "energy": "Energia",
+        "duration": "Duração",
+        "instruments": "Instrumentos",
+        "themes": "Temas",
+        "years": "Anos/Décadas",
+        "timeRange": "Período"
+      },
+      "select": {
+        "genre": "Todos os gêneros",
+        "mood": "Qualquer humor",
+        "energy": "Qualquer nível",
+        "duration": "Qualquer duração",
+        "timeRange": "Todo o período"
+      },
+      "options": {
+        "genres": {
+          "rock": "Rock",
+          "pop": "Pop",
+          "jazz": "Jazz",
+          "electronic": "Eletrônica",
+          "hipHop": "Hip-Hop",
+          "rnb": "R&B",
+          "country": "Country",
+          "classical": "Classical",
+          "folk": "Folk",
+          "blues": "Blues",
+          "reggae": "Reggae",
+          "latin": "Latin",
+          "indie": "Indie",
+          "alternative": "Alternative",
+          "metal": "Metal",
+          "punk": "Punk"
+        },
+        "moods": {
+          "happy": "Feliz",
+          "melancholic": "Melancólico",
+          "energetic": "Energético",
+          "relaxing": "Relaxante",
+          "romantic": "Romântico",
+          "nostalgic": "Nostálgico",
+          "motivational": "Motivacional",
+          "calm": "Tranquilo",
+          "lively": "Animado",
+          "dark": "Sombrio",
+          "party": "Festivo",
+          "thoughtful": "Contemplativo"
+        },
+        "energy": {
+          "low": "Baixa",
+          "medium": "Média",
+          "high": "Alta"
+        },
+        "instruments": {
+          "guitar": "Guitarra",
+          "piano": "Piano",
+          "drums": "Bateria",
+          "synth": "Sintetizador",
+          "acousticGuitar": "Violão",
+          "bass": "Baixo",
+          "sax": "Saxofone",
+          "trumpet": "Trompete",
+          "violin": "Violino",
+          "flute": "Flauta",
+          "vocal": "Vocal",
+          "percussion": "Percussão",
+          "keyboard": "Teclado",
+          "harmonica": "Harmônica"
+        },
+        "themes": {
+          "love": "Amor",
+          "travel": "Viagem",
+          "work": "Trabalho",
+          "party": "Festa",
+          "study": "Estudo",
+          "exercise": "Exercício",
+          "meditation": "Meditação",
+          "nostalgia": "Nostalgia",
+          "adventure": "Aventura",
+          "reflection": "Reflexão",
+          "celebration": "Celebração",
+          "relaxation": "Relaxamento"
+        },
+        "years": {
+          "60s": "Anos 60",
+          "70s": "Anos 70",
+          "80s": "Anos 80",
+          "90s": "Anos 90",
+          "2000s": "Anos 2000",
+          "2010s": "Anos 2010",
+          "2020s": "Anos 2020"
+        },
+        "duration": {
+          "short": "Curta (< 30min)",
+          "medium": "Média (30-60min)",
+          "long": "Longa (> 60min)"
+        },
+        "timeRange": {
+          "7days": "Últimos 7 dias",
+          "30days": "Últimos 30 dias",
+          "3months": "Últimos 3 meses",
+          "1year": "Último ano"
+        }
+      },
+      "badges": {
+        "search": "Busca: {value}",
+        "genre": "Gênero: {value}",
+        "mood": "Humor: {value}",
+        "energy": "Energia: {value}",
+        "favorites": "Somente favoritas"
+      },
+      "results": {
+        "loading": "Carregando…",
+        "count": "{count, plural, one {# playlist encontrada} other {# playlists encontradas}}"
+      }
+    },
+    "favorites": {
+      "header": {
+        "title": "Favoritos",
+        "subtitle": "Suas playlists favoritas salvas para fácil acesso"
+      },
+      "loading": {
+        "label": "Carregando..."
+      },
+      "missingSupabase": {
+        "title": "Configuração do Supabase ausente",
+        "description": "O cliente Supabase não está configurado. Defina NEXT_PUBLIC_SUPABASE_URL e NEXT_PUBLIC_SUPABASE_ANON_KEY para habilitar os favoritos."
+      },
+      "errors": {
+        "load": "Não foi possível carregar suas playlists."
+      },
+      "buttons": {
+        "retry": "Tentar novamente",
+        "viewHistory": "Ver histórico",
+        "previous": "Anterior",
+        "next": "Próxima"
+      },
+      "empty": {
+        "title": "Nenhuma playlist favorita",
+        "descriptionDefault": "Você ainda não tem playlists favoritas. Explore o histórico e marque suas favoritas!",
+        "descriptionFiltered": "Tente ajustar os filtros para encontrar mais playlists."
+      },
+      "metadata": {
+        "tracks": "{count, plural, one {# faixa} other {# faixas}}",
+        "created": "{date}"
+      },
+      "pagination": {
+        "pageOf": "Página {page} de {total}"
+      }
+    },
+  "playlistCard": {
+    "status": {
+      "generating": "Gerando…",
+      "new": "NOVO",
+      "ai": "IA"
+    },
+    "metadata": {
+      "tracks": "{count, plural, one {# faixa} other {# faixas}}",
+      "spotify": "Spotify"
+    }
+  },
+  "playlist": {
+    "accessDenied": {
+      "title": "Acesso negado",
+      "description": "Você precisa estar logado para ver esta playlist.",
+      "cta": "Fazer login"
+    },
+    "notFound": {
+      "title": "Playlist não encontrada",
+      "description": "Esta playlist não existe ou você não tem permissão para acessá-la.",
+      "cta": "Voltar ao dashboard"
+    },
+    "header": {
+      "label": "Playlist",
+      "loadingTitle": "Preparando playlist…",
+      "untitled": "Playlist sem título",
+      "createdBy": "Criada por {name}",
+      "createdByFallback": "Você",
+      "prompt": "Prompt"
+    },
+    "summary": {
+      "tracks": "{count, plural, one {# faixa} other {# faixas}}",
+      "duration": {
+        "hoursMinutes": "{hours} h {minutes} min",
+        "minutes": "{minutes} min"
+      },
+      "createdAt": "{date}"
+    },
+    "status": {
+      "starting": "Preparando sua playlist…",
+      "ai_complete": "IA finalizada. Buscando músicas no Spotify…",
+      "complete": "Playlist pronta",
+      "fallback": "Trabalhando na sua playlist…",
+      "error": "Não foi possível concluir a geração da playlist.",
+      "spotifyConnection": {
+        "connected": "Spotify conectado",
+        "disconnected": "Conecte o Spotify para encontrar músicas automaticamente."
+      }
+    },
+    "cover": {
+      "ready": "Pronto para gerar capa",
+      "started": "Gerando capa com IA…",
+      "success": "Capa gerada automaticamente",
+      "error": "Falha na geração da capa"
+    },
+    "metadata": {
+      "title": "Metadados",
+      "genre": "Gênero",
+      "mood": "Humor",
+      "energy": "Energia"
+    },
+    "tracks": {
+      "title": "Faixas",
+      "empty": {
+        "pending": "Aguardando a IA montar as faixas…",
+        "idle": "Ainda não há músicas geradas para este prompt."
+      },
+      "status": {
+        "found": "No Spotify",
+        "searching": "Buscando…",
+        "not_found": "Não encontrada",
+        "error": "Erro",
+        "no_token": "Sem token do Spotify",
+        "pending": "Processando"
+      },
+      "albumArtAlt": "Capa da faixa {title}"
+    },
+    "actions": {
+      "openSpotify": {
+        "label": "Ouvir no Spotify"
+      },
+      "refreshImages": {
+        "label": "Atualizar imagens",
+        "loading": "Atualizando…",
+        "success": "Imagens da playlist atualizadas.",
+        "error": "Não foi possível atualizar as imagens."
+      },
+      "generateCover": {
+        "label": "Criar capa com IA",
+        "loading": "Gerando…",
+        "success": "Nova capa salva na sua playlist.",
+        "error": "Não foi possível gerar a capa."
+      }
+    },
+    "toasts": {
+      "spotifyUnavailable": "Conecte sua conta Spotify para abrir a playlist."
+    },
+    "stream": {
+      "funMessages": [
+        "Reticulando splines…",
+        "Sintonizando rádios intergalácticas…",
+        "Polindo agudos e encerando graves…",
+        "Pedindo um solo pra guitarra imaginária…",
+        "Aquecendo vocais dos backing vocals virtuais…",
+        "Fatiando BPMs em cubinhos perfeitos…"
+      ],
+      "errors": {
+        "streamUnsupported": "Seu navegador não suporta este tipo de streaming.",
+        "unknown": "Algo deu errado durante a geração da playlist."
+      },
+      "complete": "Playlist pronta!"
+    }
+  },
+  "search": {
+    "header": {
+      "title": "Buscar",
+      "subtitle": "Encontre álbuns, artistas e músicas na sua biblioteca.",
+      "placeholder": "Artistas, músicas ou álbuns"
+    },
+    "browse": {
+      "title": "Navegar por categoria",
+      "categories": {
+        "jazz": "Jazz",
+        "rock": "Rock",
+        "pop": "Pop",
+        "classical": "Clássica",
+        "electronic": "Eletrônica",
+        "hipHop": "Hip-Hop",
+        "country": "Country",
+        "rnb": "R&B"
+      }
+    },
+    "results": {
+      "albums": "Álbuns",
+      "artists": "Artistas",
+      "songs": "Músicas",
+      "empty": "Comece a digitar para buscar nas suas músicas."
+    }
+  },
+  "settings": {
+    "localization": {
+      "title": "Idioma e região",
+      "description": "Escolha o idioma padrão e o mercado do Spotify.",
+      "languageLabel": "Idioma",
+      "languageHint": "Usado na interface e nos prompts gerados.",
+      "marketLabel": "Mercado do Spotify",
+      "marketHint": "Define qual catálogo usamos nas buscas do Spotify.",
+      "actions": {
+        "save": "Salvar preferências",
+        "saving": "Salvando…"
+      },
+      "messages": {
+        "success": "Preferências de localização atualizadas.",
+        "error": "Não foi possível atualizar suas preferências."
+      },
+      "languages": {
+        "en": "Inglês",
+        "pt-BR": "Português (Brasil)"
+      },
+      "markets": {
+        "US": "Estados Unidos",
+        "BR": "Brasil"
+      }
+    }
+  }
+}
+}
