@@ -6,6 +6,12 @@
       "viewLess": "View less"
     }
   },
+  "notFound": {
+    "title": "This page could not be found.",
+    "description": "The page you're looking for doesn't exist or has been moved.",
+    "goHome": "Go to Home",
+    "goDashboard": "Go to Dashboard"
+  },
   "metadata": {
     "title": "{appName} - AI playlist generator",
     "description": "Create custom playlists with artificial intelligence and save them straight to Spotify. Discover new songs tailored to your taste.",

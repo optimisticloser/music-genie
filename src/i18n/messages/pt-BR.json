@@ -6,6 +6,12 @@
       "viewLess": "Ver menos"
     }
   },
+  "notFound": {
+    "title": "Esta página não foi encontrada.",
+    "description": "A página que você está procurando não existe ou foi movida.",
+    "goHome": "Ir para Início",
+    "goDashboard": "Ir para Dashboard"
+  },
   "metadata": {
     "title": "{appName} - Gerador de playlists com IA",
     "description": "Crie playlists personalizadas com inteligência artificial e salve direto no Spotify. Descubra novas músicas feitas para o seu gosto.",
