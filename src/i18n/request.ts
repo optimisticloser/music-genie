@@ -5,14 +5,15 @@ import {routing} from "./routing";
 export default getRequestConfig(async ({locale}) => {
   const supportedLocales = routing.locales as unknown as Locale[];
 
-  if (!locale || !hasLocale(supportedLocales, locale)) {
-    throw new Error(`Unknown locale: ${locale ?? "undefined"}`);
-  }
+  // Fallback para locale undefined durante build estático
+  const validLocale = locale && hasLocale(supportedLocales, locale) 
+    ? locale 
+    : routing.defaultLocale;
 
-  const messages = (await import(`./messages/${locale}.json`)).default;
+  const messages = (await import(`./messages/${validLocale}.json`)).default;
 
   return {
-    locale,
+    locale: validLocale,
     messages,
   };
 });
