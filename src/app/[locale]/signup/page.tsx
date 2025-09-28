@@ -31,7 +31,7 @@ export default function SignUpPage() {
   const t = useTranslations("auth.signup");
   const common = useTranslations("auth.common");
   const messages = useTranslations("auth.messages");
-  const locale = useLocale();
+  const locale = useLocale() || "en";
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true);

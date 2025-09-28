@@ -26,7 +26,7 @@ import { useRouter } from "@/i18n/navigation";
 
 export default function SettingsPage() {
   const t = useTranslations("dashboard.settings");
-  const locale = useLocale();
+  const locale = useLocale() || "en";
   const [notifications, setNotifications] = useState(true);
   const [autoSave, setAutoSave] = useState(true);
   const [publicProfile, setPublicProfile] = useState(false);

@@ -188,8 +188,8 @@ async function fetchInitialPlaylist(
   };
 }
 
-export default async function PlaylistPage({ params }: { params: RouteParams }) {
-  const { id } = params;
+export default async function PlaylistPage({ params }: { params: Promise<RouteParams> }) {
+  const { id } = await params;
   const t = await getTranslations("dashboard.playlist");
 
   const supabase = await createClient();

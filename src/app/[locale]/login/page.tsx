@@ -28,7 +28,7 @@ export default function LoginPage() {
   const t = useTranslations("auth.login");
   const common = useTranslations("auth.common");
   const messages = useTranslations("auth.messages");
-  const locale = useLocale();
+  const locale = useLocale() || "en";
 
   async function handleSubmit(formData: FormData) {
     setIsLoading(true);

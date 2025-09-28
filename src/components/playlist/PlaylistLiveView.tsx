@@ -477,8 +477,13 @@ export function PlaylistLiveView({
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className={`bg-gradient-to-r ${displayGradient} px-4 md:px-6 lg:px-8 xl:px-12 py-4 md:py-6`}>
-        <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row gap-4 md:gap-6 items-start">
+        <div className="max-w-7xl mx-auto relative">
+          <div className="absolute right-4 top-4 md:right-6 md:top-6">
+            <div className="rounded-full bg-black/30 border border-white/20 backdrop-blur-sm p-1 md:p-1.5">
+              <FavoriteButton playlistId={viewState.id} isFavorite={viewState.is_favorite} />
+            </div>
+          </div>
+          <div className="flex flex-col lg:flex-row gap-5 md:gap-6 lg:gap-8 items-stretch">
             <div className="w-32 h-32 md:w-40 md:h-40 lg:w-48 lg:h-48 bg-white/20 rounded-lg md:rounded-xl flex items-center justify-center shadow-2xl flex-shrink-0 overflow-hidden">
               {viewState.cover_art_url ? (
                 <Image
@@ -501,10 +506,6 @@ export function PlaylistLiveView({
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-white">
                   {playlistTitle}
                 </h1>
-                <FavoriteButton
-                  playlistId={viewState.id}
-                  isFavorite={viewState.is_favorite}
-                />
               </div>
               <p className="text-sm md:text-base lg:text-lg text-white/90 mb-2 md:mb-3">
                 {createdByLabel}
@@ -547,7 +548,7 @@ export function PlaylistLiveView({
                 )}
               </div>
 
-              <div className="flex items-center gap-2 text-sm text-white/80 mb-4">
+              <div className="flex flex-wrap items-center gap-2 text-sm text-white/80">
                 {isRunning ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />

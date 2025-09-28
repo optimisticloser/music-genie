@@ -31,11 +31,11 @@ export const viewport: Viewport = {
 };
 
 type MetadataProps = {
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export async function generateMetadata({ params }: MetadataProps): Promise<Metadata> {
-  const { locale } = params;
+  const { locale } = await params;
   const supportedLocales = routing.locales as unknown as Locale[];
 
   if (!hasLocale(supportedLocales, locale)) {
@@ -109,14 +109,14 @@ export async function generateMetadata({ params }: MetadataProps): Promise<Metad
 
 type LocaleLayoutProps = {
   children: React.ReactNode;
-  params: { locale: string };
+  params: Promise<{ locale: string }>;
 };
 
 export default async function LocaleLayout({
   children,
   params,
 }: LocaleLayoutProps) {
-  const { locale } = params;
+  const { locale } = await params;
   const supportedLocales = routing.locales as unknown as Locale[];
 
   if (!hasLocale(supportedLocales, locale)) {

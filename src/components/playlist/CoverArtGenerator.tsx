@@ -174,7 +174,7 @@ export function CoverArtGenerator({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {result.cover_art && (
+            {result.cover_art && result.cover_art.url && (
               <div className="space-y-2">
                 <Label>Imagem da Capa</Label>
                 <div className="relative aspect-square w-full max-w-md mx-auto overflow-hidden rounded-lg shadow-lg">

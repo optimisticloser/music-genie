@@ -17,10 +17,11 @@ function resolveLocale(locale?: string): SupportedLocale {
 
 export async function GET(
   request: Request,
-  { params }: { params: { locale: string } }
+  { params }: { params: Promise<{ locale: string }> }
 ) {
   const { searchParams, origin } = new URL(request.url);
-  const locale = resolveLocale(params.locale);
+  const resolvedParams = await params;
+  const locale = resolveLocale(resolvedParams.locale);
   const code = searchParams.get("code");
 
   console.log("🔐 Auth callback called with code:", !!code);
@@ -99,7 +100,7 @@ export async function GET(
 
 export async function POST(
   request: Request,
-  { params }: { params: { locale: string } }
+  { params }: { params: Promise<{ locale: string }> }
 ) {
   try {
     const { event, session }: { event: string; session: Session | null } =
@@ -108,7 +109,8 @@ export async function POST(
     const cookieStore = await cookies();
     const response = NextResponse.json({ success: true });
 
-    const locale = resolveLocale(params.locale);
+    const resolvedParams = await params;
+    const locale = resolveLocale(resolvedParams.locale);
     const market = localeToMarket(locale);
 
     const supabase = createServerClient(

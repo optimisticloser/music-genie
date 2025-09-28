@@ -44,7 +44,7 @@ interface PaginationInfo {
 
 export default function FavoritesPage() {
   const router = useRouter();
-  const locale = useLocale();
+  const locale = useLocale() || "en";
   const t = useTranslations("dashboard.favorites");
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [loading, setLoading] = useState(true);

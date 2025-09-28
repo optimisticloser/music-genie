@@ -21,7 +21,7 @@ function readClientCookie(name: string): string | null {
 }
 
 export default function TestAsyncCoverPage() {
-  const locale = useLocale();
+  const locale = useLocale() || "en";
   const [prompt, setPrompt] = useState("Contemporary indie party anthems with energetic vibes");
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedPlaylist, setGeneratedPlaylist] = useState<{ id: string; title: string; total_tracks?: number } | null>(null);

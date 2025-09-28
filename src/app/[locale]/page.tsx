@@ -12,8 +12,9 @@ type FooterLinkGroup = {
   items: Array<{ href: LinkHref; label: string }>;
 };
 
-export default async function LandingPage() {
-  const t = await getTranslations("landing");
+export default async function LandingPage({ params }: { params: Promise<{ locale: string }> }) {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "landing" });
   const year = new Date().getFullYear();
 
   const featureCards = [
