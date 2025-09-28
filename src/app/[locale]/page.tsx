@@ -4,6 +4,7 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Link } from "@/i18n/navigation";
+import { LanguageSelector } from "@/components/shared/LanguageSelector";
 
 type LinkHref = ComponentProps<typeof Link>["href"];
 
@@ -80,6 +81,7 @@ export default async function LandingPage({ params }: { params: Promise<{ locale
               <h1 className="text-xl font-bold text-gray-900">Music Genie</h1>
             </div>
             <div className="flex items-center gap-4">
+              <LanguageSelector />
               <Link href="/login">
                 <Button variant="ghost">{t("header.login")}</Button>
               </Link>
