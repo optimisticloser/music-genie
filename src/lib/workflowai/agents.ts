@@ -61,7 +61,7 @@ export const playlistGeneratorAgent = workflowAI.agent<
 >({
   id: "playlist-generator",
   schemaId: 4,
-  version: "dev",
+  version: "production",
   useCache: "auto",
 });
 
