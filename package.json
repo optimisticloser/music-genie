@@ -1,13 +1,51 @@
 {
-  "name": "temp_app",
-  "version": "0.1.0",
+  "name": "music-genie",
+  "version": "1.0.0",
+  "description": "Gerador de Playlists com Inteligência Artificial - Crie playlists personalizadas com IA e salve diretamente no Spotify",
+  "keywords": [
+    "music",
+    "playlist",
+    "ai",
+    "artificial-intelligence",
+    "spotify",
+    "nextjs",
+    "typescript",
+    "supabase",
+    "workflowai",
+    "music-discovery",
+    "personalized-playlists"
+  ],
+  "author": {
+    "name": "Music Genie Team",
+    "email": "team@musicgenie.app",
+    "url": "https://music-genie-seven.vercel.app"
+  },
+  "license": "MIT",
+  "homepage": "https://music-genie-seven.vercel.app",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/optimisticloser/music-genie.git"
+  },
+  "bugs": {
+    "url": "https://github.com/optimisticloser/music-genie/issues"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=8.0.0"
+  },
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "test": "tsx --test \"src/**/*.test.ts\""
+    "lint:fix": "next lint --fix",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "test:watch": "tsx --test --watch \"src/**/*.test.ts\"",
+    "type-check": "tsc --noEmit",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "analyze": "cross-env ANALYZE=true npm run build"
   },
   "dependencies": {
     "@radix-ui/react-avatar": "^1.1.10",
