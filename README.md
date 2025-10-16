@@ -2,9 +2,9 @@
 
 <div align="center">
 
-**Gerador de Playlists com Inteligência Artificial**
+**AI-Powered Playlist Generator**
 
-Uma aplicação web moderna que utiliza IA avançada para criar playlists personalizadas baseadas no seu gosto musical e salvá-las diretamente no Spotify.
+A modern web application that uses advanced AI to create personalized playlists based on your musical taste and save them directly to Spotify.
 
 [![Next.js](https://img.shields.io/badge/Next.js-15.3.3-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue?style=for-the-badge&logo=typescript)](https://www.typescriptlang.org/)
@@ -12,76 +12,75 @@ Uma aplicação web moderna que utiliza IA avançada para criar playlists person
 [![Spotify](https://img.shields.io/badge/Spotify-1DB954?style=for-the-badge&logo=spotify)](https://spotify.com/)
 [![Vercel](https://img.shields.io/badge/Vercel-000000?style=for-the-badge&logo=vercel)](https://vercel.com/)
 
-[🌐 **Demo Online**](https://music-genie-seven.vercel.app) • [📖 **Documentação**](./docs/) • [🐛 **Reportar Bug**](https://github.com/optimisticloser/music-genie/issues) • [💡 **Sugerir Feature**](https://github.com/optimisticloser/music-genie/issues)
+[🌐 **Live Demo**](https://music-genie-seven.vercel.app) • [📖 **Documentation**](./docs/) • [🐛 **Report Bug**](https://github.com/optimisticloser/music-genie/issues) • [💡 **Request Feature**](https://github.com/optimisticloser/music-genie/issues)
 
 </div>
 
 ---
 
-## 📋 Índice
+## 📋 Table of Contents
 
-- [🎯 Visão Geral](#-visão-geral)
-- [✨ Funcionalidades](#-funcionalidades)
-- [🏗️ Arquitetura](#️-arquitetura)
-- [🛠️ Stack Tecnológica](#️-stack-tecnológica)
+- [🎯 Overview](#-overview)
+- [✨ Features](#-features)
+- [🏗️ Architecture](#️-architecture)
+- [🛠️ Tech Stack](#️-tech-stack)
 - [🚀 Quick Start](#-quick-start)
-- [📁 Estrutura do Projeto](#-estrutura-do-projeto)
-- [🔧 Desenvolvimento](#-desenvolvimento)
+- [📁 Project Structure](#-project-structure)
+- [🔧 Development](#-development)
 - [🚀 Deploy](#-deploy)
-- [📊 Métricas e Performance](#-métricas-e-performance)
-- [🤝 Contribuindo](#-contribuindo)
-- [📄 Licença](#-licença)
+- [🤝 Contributing](#-contributing)
+- [📄 License](#-license)
 
 ---
 
-## 🎯 Visão Geral
+## 🎯 Overview
 
-O **Music Genie** é uma aplicação web inovadora que combina **Inteligência Artificial** com **integração musical** para criar uma experiência única de descoberta de música. A plataforma permite que usuários criem playlists personalizadas usando prompts naturais ou seleções guiadas, e as salva diretamente em suas contas do Spotify.
+**Music Genie** is an innovative web application that combines **Artificial Intelligence** with **music integration** to create a unique music discovery experience. The platform allows users to create personalized playlists using natural prompts or guided selections, and saves them directly to their Spotify accounts.
 
-### 🎨 Interface Híbrida
-- **Seleções Guiadas**: Categorias predefinidas (Gênero, Humor, Época, Instrumentação)
-- **Texto Livre**: Prompts criativos personalizados
-- **Combinação Inteligente**: Mistura ambos os métodos para resultados únicos
+### 🎨 Hybrid Interface
+- **Guided Selections**: Predefined categories (Genre, Mood, Era, Instrumentation)
+- **Free Text**: Custom creative prompts
+- **Smart Combination**: Mixes both methods for unique results
 
-### 🧠 IA Avançada
-- **WorkflowAI Integration**: Processamento de linguagem natural avançado
-- **Geração Contextual**: Playlists baseadas em contexto e preferências
-- **Versionamento**: Múltiplas versões de uma mesma playlist
+### 🧠 Advanced AI
+- **WorkflowAI Integration**: Advanced natural language processing
+- **Contextual Generation**: Playlists based on context and preferences
+- **Versioning**: Multiple versions of the same playlist
 
 ---
 
-## ✨ Funcionalidades
+## ✨ Features
 
-### 🎵 **Geração de Playlists**
-- ✅ Prompts naturais em linguagem humana
-- ✅ Interface híbrida (guiada + texto livre)
-- ✅ Geração baseada em IA com WorkflowAI
-- ✅ Versionamento de playlists
-- ✅ Histórico completo de gerações
+### 🎵 **Playlist Generation**
+- ✅ Natural language prompts
+- ✅ Hybrid interface (guided + free text)
+- ✅ AI-based generation with WorkflowAI
+- ✅ Playlist versioning
+- ✅ Complete generation history
 
-### 🎧 **Integração Spotify**
-- ✅ OAuth 2.0 com Spotify Web API
-- ✅ Salvamento direto na conta do usuário
-- ✅ Preview de áudio das músicas
-- ✅ Capas de álbuns e metadados completos
-- ✅ Busca e enriquecimento de dados
+### 🎧 **Spotify Integration**
+- ✅ OAuth 2.0 with Spotify Web API
+- ✅ Direct saving to user account
+- ✅ Audio preview of songs
+- ✅ Album covers and complete metadata
+- ✅ Search and data enrichment
 
 ### 📱 **Interface & UX**
-- ✅ Design responsivo (desktop + mobile)
-- ✅ Componentes shadcn/ui + Tailwind CSS
-- ✅ Loading states e feedback visual
-- ✅ Sistema de favoritos
-- ✅ Navegação intuitiva
+- ✅ Responsive design (desktop + mobile)
+- ✅ shadcn/ui + Tailwind CSS components
+- ✅ Loading states and visual feedback
+- ✅ Favorites system
+- ✅ Intuitive navigation
 
-### 🔐 **Autenticação & Segurança**
-- ✅ Supabase Auth com OAuth
+### 🔐 **Authentication & Security**
+- ✅ Supabase Auth with OAuth
 - ✅ Row Level Security (RLS)
-- ✅ Tokens seguros e refresh automático
-- ✅ Políticas de privacidade granulares
+- ✅ Secure tokens and automatic refresh
+- ✅ Granular privacy policies
 
 ---
 
-## 🏗️ Arquitetura
+## 🏗️ Architecture
 
 ```mermaid
 graph TB
@@ -119,85 +118,85 @@ graph TB
     style M fill:#FF6B6B
 ```
 
-### 🔄 **Fluxo de Dados**
+### 🔄 **Data Flow**
 
-1. **Autenticação**: Supabase Auth + Spotify OAuth
-2. **Geração**: Prompt → WorkflowAI → Spotify Search → Database
-3. **Versionamento**: Playlist Lineage com histórico completo
-4. **Sincronização**: Real-time updates via Supabase
+1. **Authentication**: Supabase Auth + Spotify OAuth
+2. **Generation**: Prompt → WorkflowAI → Spotify Search → Database
+3. **Versioning**: Playlist Lineage with complete history
+4. **Synchronization**: Real-time updates via Supabase
 
 ---
 
-## 🛠️ Stack Tecnológica
+## 🛠️ Tech Stack
 
 ### **Frontend**
-- **Framework**: [Next.js 15](https://nextjs.org/) com App Router
-- **Linguagem**: [TypeScript](https://www.typescriptlang.org/)
+- **Framework**: [Next.js 15](https://nextjs.org/) with App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
 - **Styling**: [Tailwind CSS](https://tailwindcss.com/) + [shadcn/ui](https://ui.shadcn.com/)
-- **Animações**: [Framer Motion](https://www.framer.com/motion/)
-- **Ícones**: [Lucide React](https://lucide.dev/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Icons**: [Lucide React](https://lucide.dev/)
 
 ### **Backend**
 - **Runtime**: [Node.js](https://nodejs.org/) + Edge Runtime
 - **API**: Next.js API Routes + Server Actions
-- **Validação**: [Zod](https://zod.dev/)
-- **ORM**: Supabase Client (tipado)
+- **Validation**: [Zod](https://zod.dev/)
+- **ORM**: Typed Supabase Client
 
-### **Banco de Dados**
-- **Principal**: [Supabase](https://supabase.com/) (PostgreSQL)
-- **Auth**: Supabase Auth com OAuth providers
-- **Storage**: Supabase Storage (imagens de capa)
+### **Database**
+- **Main**: [Supabase](https://supabase.com/) (PostgreSQL)
+- **Auth**: Supabase Auth with OAuth providers
+- **Storage**: Supabase Storage (cover images)
 - **Real-time**: Supabase Realtime
 
-### **Integrações**
-- **Música**: [Spotify Web API](https://developer.spotify.com/documentation/web-api/)
-- **IA**: [WorkflowAI](https://workflowai.com/) para processamento de linguagem natural
-- **Deploy**: [Vercel](https://vercel.com/) com otimizações automáticas
+### **Integrations**
+- **Music**: [Spotify Web API](https://developer.spotify.com/documentation/web-api/)
+- **AI**: [WorkflowAI](https://workflowai.com/) for natural language processing
+- **Deploy**: [Vercel](https://vercel.com/) with automatic optimizations
 
-### **Ferramentas de Desenvolvimento**
+### **Development Tools**
 - **Linting**: [ESLint](https://eslint.org/) + [Prettier](https://prettier.io/)
-- **Testing**: [tsx](https://github.com/esbuild-kit/tsx) para testes
+- **Testing**: [tsx](https://github.com/esbuild-kit/tsx) for tests
 - **Type Safety**: TypeScript strict mode
-- **Git Hooks**: Husky (planejado)
+- **Git Hooks**: Husky (planned)
 
 ---
 
 ## 🚀 Quick Start
 
-### 📋 **Pré-requisitos**
+### 📋 **Prerequisites**
 
 - Node.js 18+ 
-- npm ou yarn
-- Conta no [Supabase](https://supabase.com)
-- App no [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-- API Key do [WorkflowAI](https://workflowai.com) (opcional)
+- npm or yarn
+- [Supabase](https://supabase.com) account
+- App in [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+- [WorkflowAI](https://workflowai.com) API Key (optional)
 
-### 🔧 **Instalação**
+### 🔧 **Installation**
 
 ```bash
-# 1. Clone o repositório
+# 1. Clone the repository
 git clone https://github.com/optimisticloser/music-genie.git
 cd music-genie
 
-# 2. Instale as dependências
+# 2. Install dependencies
 npm install
 
-# 3. Configure as variáveis de ambiente
+# 3. Configure environment variables
 cp .env.example .env.local
-# Edite .env.local com suas credenciais
+# Edit .env.local with your credentials
 
-# 4. Execute as migrações do banco
-# No dashboard do Supabase, execute:
+# 4. Run database migrations
+# In the Supabase dashboard, execute:
 # supabase/migrations/001_initial_schema.sql
 # supabase/migrations/002_demo_prompts.sql
 
-# 5. Inicie o servidor de desenvolvimento
+# 5. Start the development server
 npm run dev
 ```
 
-Acesse [http://localhost:3000](http://localhost:3000) 🚀
+Visit [http://localhost:3000](http://localhost:3000) 🚀
 
-### 🔑 **Configuração de Variáveis**
+### 🔑 **Environment Variables**
 
 ```env
 # Supabase
@@ -210,13 +209,13 @@ SPOTIFY_CLIENT_ID="your-spotify-client-id"
 SPOTIFY_CLIENT_SECRET="your-spotify-client-secret"
 SPOTIFY_REDIRECT_URI="http://localhost:3000/api/auth/spotify/callback"
 
-# WorkflowAI (opcional)
+# WorkflowAI (optional)
 WORKFLOWAI_API_KEY="your-workflowai-api-key"
 ```
 
 ---
 
-## 📁 Estrutura do Projeto
+## 📁 Project Structure
 
 ```
 src/
@@ -225,13 +224,13 @@ src/
 │   │   ├── auth/spotify/         # OAuth callbacks
 │   │   ├── playlist/             # Playlist operations
 │   │   └── playlists/            # Playlist CRUD
-│   ├── auth/                     # Páginas de autenticação
-│   ├── dashboard/                # Interface principal
-│   │   ├── generate/             # Gerador de playlists
-│   │   ├── playlist/[id]/        # Visualização de playlist
-│   │   └── settings/             # Configurações
-│   └── layout.tsx                # Layout raiz
-├── components/                   # Componentes React
+│   ├── auth/                     # Authentication pages
+│   ├── dashboard/                # Main interface
+│   │   ├── generate/             # Playlist generator
+│   │   ├── playlist/[id]/        # Playlist view
+│   │   └── settings/             # Settings
+│   └── layout.tsx                # Root layout
+├── components/                   # React components
 │   ├── ui/                       # shadcn/ui components
 │   ├── layout/                   # Layout components
 │   ├── playlist/                 # Playlist-specific components
@@ -250,151 +249,125 @@ src/
 └── services/                     # Service layer
 ```
 
-### 🎯 **Padrões de Arquitetura**
+### 🎯 **Architecture Patterns**
 
-- **Domain-Driven Design**: Features organizadas por domínio
-- **Server Components**: Renderização no servidor quando possível
-- **Client Components**: Interatividade e estado local
-- **Server Actions**: Mutations seguras e tipadas
-- **API Routes**: Endpoints RESTful para operações complexas
+- **Domain-Driven Design**: Features organized by domain
+- **Server Components**: Server-side rendering when possible
+- **Client Components**: Interactivity and local state
+- **Server Actions**: Secure and typed mutations
+- **API Routes**: RESTful endpoints for complex operations
 
 ---
 
-## 🔧 Desenvolvimento
+## 🔧 Development
 
-### 📝 **Scripts Disponíveis**
+### 📝 **Available Scripts**
 
 ```bash
-# Desenvolvimento
-npm run dev          # Servidor de desenvolvimento com Turbopack
-npm run build        # Build de produção
-npm run start        # Servidor de produção
+# Development
+npm run dev          # Development server with Turbopack
+npm run build        # Production build
+npm run start        # Production server
 npm run lint         # ESLint + Prettier
 
-# Testes
-npm run test         # Executar testes
-npm run test:watch   # Testes em modo watch
+# Testing
+npm run test         # Run tests
+npm run test:watch   # Tests in watch mode
 ```
 
-### 🎨 **Adicionando Componentes UI**
+### 🎨 **Adding UI Components**
 
 ```bash
-# Instalar componente do shadcn/ui
+# Install shadcn/ui component
 npx shadcn-ui@latest add button
 npx shadcn-ui@latest add card
 npx shadcn-ui@latest add dialog
 ```
 
-### 🔄 **Convenções de Código**
+### 🔄 **Code Conventions**
 
-- **TypeScript**: Strict mode ativado
+- **TypeScript**: Strict mode enabled
 - **Imports**: Absolute imports via `@/`
-- **Naming**: PascalCase para componentes, camelCase para funções
-- **File Structure**: Colocation de arquivos relacionados
-- **Error Handling**: Try/catch com logs estruturados
+- **Naming**: PascalCase for components, camelCase for functions
+- **File Structure**: Colocation of related files
+- **Error Handling**: Try/catch with structured logs
 
 ---
 
 ## 🚀 Deploy
 
-### ⚡ **Vercel (Recomendado)**
+### ⚡ **Vercel (Recommended)**
 
 ```bash
-# 1. Conecte o repositório ao Vercel
-# 2. Configure as variáveis de ambiente
-# 3. Deploy automático a cada push
+# 1. Connect repository to Vercel
+# 2. Configure environment variables
+# 3. Automatic deploy on every push
 
-# Deploy manual (opcional)
+# Manual deploy (optional)
 npx vercel --prod
 ```
 
-### 🌐 **Outras Plataformas**
+### 🌐 **Other Platforms**
 
-O projeto é compatível com qualquer plataforma que suporte Next.js:
+The project is compatible with any platform that supports Next.js:
 
 - **Netlify**: Build command: `npm run build`
-- **Railway**: Deploy automático via Git
+- **Railway**: Automatic deploy via Git
 - **DigitalOcean**: App Platform
-- **AWS**: Amplify ou EC2
+- **AWS**: Amplify or EC2
 
-### 🔧 **Configurações de Produção**
+### 🔧 **Production Settings**
 
-- ✅ Edge Runtime ativado para performance
-- ✅ Image optimization automática
-- ✅ Bundle analysis e otimização
-- ✅ Error tracking (planejado: Sentry)
-- ✅ Analytics (planejado: Vercel Analytics)
-
----
-
-## 📊 Métricas e Performance
-
-### ⚡ **Performance**
-
-- **Lighthouse Score**: 95+ em todas as categorias
-- **Core Web Vitals**: Otimizado
-- **Bundle Size**: < 500KB gzipped
-- **Time to Interactive**: < 2s
-
-### 📈 **Funcionalidades**
-
-- ✅ **Server-Side Rendering**: Páginas estáticas otimizadas
-- ✅ **Image Optimization**: Next.js Image component
-- ✅ **Code Splitting**: Lazy loading automático
-- ✅ **Caching**: Supabase + Vercel Edge Cache
-- ✅ **Real-time**: Supabase Realtime subscriptions
-
-### 🔍 **Monitoramento**
-
-- Console logs estruturados
-- Error boundaries no frontend
-- API route error handling
-- Database query optimization
+- ✅ Edge Runtime enabled for performance
+- ✅ Automatic image optimization
+- ✅ Bundle analysis and optimization
+- ✅ Error tracking (planned: Sentry)
+- ✅ Analytics (planned: Vercel Analytics)
 
 ---
 
-## 🤝 Contribuindo
+## 🤝 Contributing
 
-Agradecemos seu interesse em contribuir com o Music Genie! 🎉
+We appreciate your interest in contributing to Music Genie! 🎉
 
-### 🚀 **Como Contribuir**
+### 🚀 **How to Contribute**
 
-1. **Fork** o projeto no GitHub
-2. **Crie uma branch** para sua feature:
+1. **Fork** the project on GitHub
+2. **Create a branch** for your feature:
    ```bash
    git checkout -b feature/amazing-feature
    ```
-3. **Commit** suas mudanças:
+3. **Commit** your changes:
    ```bash
    git commit -m 'feat: add amazing feature'
    ```
-4. **Push** para a branch:
+4. **Push** to the branch:
    ```bash
    git push origin feature/amazing-feature
    ```
-5. **Abra um Pull Request** com descrição detalhada
+5. **Open a Pull Request** with detailed description
 
-### 📋 **Diretrizes**
+### 📋 **Guidelines**
 
-- ✅ Mantenha o código limpo e bem documentado
-- ✅ Siga os padrões de TypeScript e ESLint
-- ✅ Teste suas mudanças antes de submeter
-- ✅ Adicione testes quando apropriado
-- ✅ Atualize a documentação se necessário
+- ✅ Keep code clean and well documented
+- ✅ Follow TypeScript and ESLint standards
+- ✅ Test your changes before submitting
+- ✅ Add tests when appropriate
+- ✅ Update documentation if necessary
 
-### 🐛 **Reportar Bugs**
+### 🐛 **Reporting Bugs**
 
-Use o template de issue para bugs:
-- Descrição clara do problema
-- Passos para reproduzir
-- Comportamento esperado vs atual
-- Screenshots se aplicável
+Use the issue template for bugs:
+- Clear problem description
+- Steps to reproduce
+- Expected vs actual behavior
+- Screenshots if applicable
 
 ---
 
-## 📄 Licença
+## 📄 License
 
-Este projeto está sob a licença **MIT**. Veja o arquivo [LICENSE](LICENSE) para mais detalhes.
+This project is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for more details.
 
 ```
 MIT License
@@ -414,39 +387,18 @@ copies or substantial portions of the Software.
 
 ---
 
-## 🆘 Suporte
-
-### 📞 **Canais de Ajuda**
-
-- 🌐 **Website**: [music-genie-seven.vercel.app](https://music-genie-seven.vercel.app)
-- 📧 **Email**: support@musicgenie.app
-- 🐛 **Issues**: [GitHub Issues](https://github.com/optimisticloser/music-genie/issues)
-- 📖 **Wiki**: [Documentação Completa](https://github.com/optimisticloser/music-genie/wiki)
-- 💬 **Discord**: [Comunidade](https://discord.gg/musicgenie)
-
-### 🔧 **Problemas Comuns**
-
-| Problema | Solução |
-|----------|---------|
-| Erro de autenticação Spotify | Verificar redirect URIs no dashboard |
-| Falha na conexão Supabase | Confirmar variáveis de ambiente |
-| Playlist não salva | Verificar permissões OAuth |
-| IA não responde | Confirmar WORKFLOWAI_API_KEY |
-
----
-
 <div align="center">
 
-## 🌟 Agradecimentos
+## 🌟 Acknowledgments
 
-**Spotify** pela API incrível • **Supabase** pela infraestrutura robusta • **WorkflowAI** pela tecnologia de IA • **Vercel** pela plataforma de deploy • **Comunidade open source** por todas as contribuições
+**Spotify** for the amazing API • **Supabase** for the robust infrastructure • **WorkflowAI** for the AI technology • **Vercel** for the deployment platform • **Open source community** for all contributions
 
 ---
 
-**Feito com ❤️ pela equipe Music Genie**
+**Made with ❤️ by Sergio Fernandes**
 
-*Transformando a forma como você descobre música através da inteligência artificial*
+*Transforming how you discover music through artificial intelligence*
 
-[⬆️ Voltar ao topo](#-music-genie)
+[⬆️ Back to top](#-music-genie)
 
 </div>

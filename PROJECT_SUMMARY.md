@@ -1,8 +1,8 @@
-# 🎵 Music Genie - Resumo Executivo para Entrevistas
+# 🎵 Music Genie - Executive Summary for Interviews
 
-## 📋 Visão Geral do Projeto
+## 📋 Project Overview
 
-**Music Genie** é uma aplicação web moderna que combina **Inteligência Artificial** com **integração musical** para criar uma experiência única de descoberta de música. A plataforma permite que usuários criem playlists personalizadas usando prompts naturais ou seleções guiadas, e as salva diretamente em suas contas do Spotify.
+**Music Genie** is a modern web application that combines **Artificial Intelligence** with **music integration** to create a unique music discovery experience. The platform allows users to create personalized playlists using natural prompts or guided selections, and saves them directly to their Spotify accounts.
 
 ### 🎯 **Problema Resolvido**
 - **Descoberta Musical Limitada**: Usuários têm dificuldade em descobrir novas músicas alinhadas com seus gostos
@@ -140,10 +140,10 @@ const { data, error } = await supabase
 ## 📊 Métricas e Impacto
 
 ### **Performance**
-- **Lighthouse Score**: 95+ em todas as categorias
-- **Time to Interactive**: < 2 segundos
-- **Bundle Size**: < 500KB gzipped
-- **Core Web Vitals**: Otimizado
+- **Server-Side Rendering**: Optimized static pages
+- **Image Optimization**: Next.js Image component
+- **Code Splitting**: Automatic lazy loading
+- **Caching**: Supabase + Vercel Edge Cache
 
 ### **Funcionalidades**
 - **Geração de Playlists**: 100% funcional com IA
