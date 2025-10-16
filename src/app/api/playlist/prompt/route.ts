@@ -29,10 +29,7 @@ export async function POST(req: Request) {
       custom_text: body.custom_text,
     };
     
-    const {
-      output,
-      data: { duration_seconds, cost_usd, version },
-    } = await playlistPromptAgent(input);
+    const { output } = await playlistPromptAgent(input);
     
     return NextResponse.json({ 
       prompt: output?.playlist_prompt ?? "",
