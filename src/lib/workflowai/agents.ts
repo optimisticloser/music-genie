@@ -21,7 +21,7 @@ export const playlistPromptAgent = workflowAI.agent<
 >({
   id: "playlist-prompt-generation",
   schemaId: 3,
-  version: "6.1",
+  version: "6.2",
   useCache: "auto",
 });
 

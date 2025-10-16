@@ -29,14 +29,17 @@ export async function POST(req: Request) {
       custom_text: body.custom_text,
     };
     
-    const { output } = await playlistPromptAgent(input);
+    const {
+      output,
+      data: { duration_seconds, cost_usd, version },
+    } = await playlistPromptAgent(input);
     
     return NextResponse.json({ 
       prompt: output?.playlist_prompt ?? "",
       suggestions: output?.prompt_suggestions ?? []
     });
   } catch (error) {
-    console.error("WorkflowAI prompt error", error);
+    console.error("WorkflowAI prompt error:", error);
     return new NextResponse("Internal Server Error", { status: 500 });
   }
 } 
