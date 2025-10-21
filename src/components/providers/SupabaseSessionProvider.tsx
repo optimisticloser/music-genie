@@ -34,6 +34,8 @@ export function SupabaseSessionProvider({
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((event, session) => {
+      console.log("Auth state changed:", event, session?.user?.email);
+      
       if (event === "INITIAL_SESSION") {
         syncServerSession(session ? "SIGNED_IN" : "SIGNED_OUT", session);
         return;

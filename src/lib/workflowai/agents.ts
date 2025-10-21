@@ -21,8 +21,14 @@ export const playlistPromptAgent = workflowAI.agent<
 >({
   id: "playlist-prompt-generation",
   schemaId: 3,
-  version: "6.2",
-  useCache: "auto",
+  version: "production",
+  // Cache options:
+  // - "auto" (default): if a previous run exists with the same version and input, and if
+  // the temperature is 0, the cached output is returned
+  // - "always": the cached output is returned when available, regardless
+  // of the temperature value
+  // - "never": the cache is never used
+  useCache: "auto"
 });
 
 // === Playlist Generator ===
@@ -33,7 +39,10 @@ export interface PlaylistGeneratorInput {
 export interface PlaylistGeneratorOutput {
   name?: string;
   essay?: string;
-  songs?: { title?: string; artist?: string }[];
+  songs?: {
+    title?: string;
+    artist?: string;
+  }[];
   album_art?: {
     style_preferences?: string;
     color_preferences?: string;
@@ -58,8 +67,14 @@ export const playlistGeneratorAgent = workflowAI.agent<
 >({
   id: "playlist-generator",
   schemaId: 3,
-  version: "dev",
-  useCache: "auto",
+  version: "production",
+  // Cache options:
+  // - "auto" (default): if a previous run exists with the same version and input, and if
+  // the temperature is 0, the cached output is returned
+  // - "always": the cached output is returned when available, regardless
+  // of the temperature value
+  // - "never": the cache is never used
+  useCache: "auto"
 });
 
 // === Playlist Cover Art Generation ===

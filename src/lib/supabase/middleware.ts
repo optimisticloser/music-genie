@@ -54,17 +54,26 @@ export async function updateSession(request: NextRequest) {
     return response;
   }
 
-  const { data: { user } } = await supabase.auth.getUser();
+  // Refreshing the auth token - this is the key part for session persistence
+  await supabase.auth.getUser();
+
+  // Only check auth for protected routes to avoid unnecessary session checks
   const path = request.nextUrl.pathname;
+  const isProtectedRoute = PROTECTED_ROUTES.some(route => path.startsWith(route));
+  const isAuthRoute = AUTH_ROUTES.some(route => path.startsWith(route));
 
-  if (!user && PROTECTED_ROUTES.some(route => path.startsWith(route))) {
-    const redirectUrl = new URL('/login', request.url);
-    return NextResponse.redirect(redirectUrl);
-  }
+  if (isProtectedRoute || isAuthRoute) {
+    const { data: { user } } = await supabase.auth.getUser();
 
-  if (user && AUTH_ROUTES.some(route => path.startsWith(route))) {
-    const redirectUrl = new URL('/dashboard/new', request.url);
-    return NextResponse.redirect(redirectUrl);
+    if (!user && isProtectedRoute) {
+      const redirectUrl = new URL('/login', request.url);
+      return NextResponse.redirect(redirectUrl);
+    }
+
+    if (user && isAuthRoute) {
+      const redirectUrl = new URL('/dashboard/new', request.url);
+      return NextResponse.redirect(redirectUrl);
+    }
   }
 
   return response;
