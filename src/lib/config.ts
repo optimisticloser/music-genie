@@ -5,6 +5,10 @@ export const siteConfig = {
   url: "https://music-genie-seven.vercel.app",
   ogImage: "/og-image.png",
   links: {
+    professionalArea: {
+      href: "https://doctor.egidesaude.com.br",
+      enabled: false,
+    },
     github: "https://github.com/optimisticloser/music-genie",
     twitter: "https://twitter.com/musicgenie",
     linkedin: "https://linkedin.com/company/musicgenie",

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { siteConfig } from "@/lib/config";
 import { 
   Sparkles, 
   Music, 
@@ -10,6 +11,8 @@ import {
 } from "lucide-react";
 
 export default function LandingPage() {
+  const professionalAreaLink = siteConfig.links?.professionalArea;
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
       {/* Header */}
@@ -23,6 +26,11 @@ export default function LandingPage() {
               <h1 className="text-xl font-bold text-gray-900">Music Genie</h1>
             </div>
             <div className="flex items-center gap-4">
+              {professionalAreaLink?.enabled && (
+                <Button variant="ghost" asChild className="hidden sm:inline-flex">
+                  <a href={professionalAreaLink.href}>Área do Profissional</a>
+                </Button>
+              )}
               <Link href="/login">
                 <Button variant="ghost">Entrar</Button>
               </Link>
